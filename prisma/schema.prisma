@@ -1,0 +1,310 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  phone     String?  @unique
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  password  String   @default("")
+  avatarUrl String?  @map("avatar_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  isOnboarded Boolean @default(false) @map("is_onboarded")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspaceMemberships WorkspaceMember[]
+  userRoles            UserRole[]
+  createdBusinesses    Business[]        @relation("BusinessCreatedBy")
+  updatedBusinesses    Business[]        @relation("BusinessUpdatedBy")
+
+  @@map("users")
+}
+
+// ─── Workspace ───────────────────────────────────────────────────────────────
+
+model Workspace {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  logoUrl     String?  @map("logo_url")
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members  WorkspaceMember[]
+  businesses Business[]
+
+  @@map("workspaces")
+}
+
+// ─── WorkspaceMember ─────────────────────────────────────────────────────────
+
+model WorkspaceMember {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  role        WorkspaceMemberRole @default(MEMBER)
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("workspace_members")
+}
+
+enum WorkspaceMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+// ─── Business ────────────────────────────────────────────────────────────────
+
+model Business {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @map("workspace_id") @db.Uuid
+  name        String
+  slug        String
+  email       String?
+  phone       String?
+  address     String?
+  logoUrl     String?  @map("logo_url")
+  taxId       String?  @map("tax_id")
+  currency    String   @default("TZS")
+  timezone    String   @default("Africa/Dar_es_Salaam")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String?  @map("created_by") @db.Uuid
+  updatedById String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("BusinessCreatedBy", fields: [createdById], references: [id])
+  updatedBy User?     @relation("BusinessUpdatedBy", fields: [updatedById], references: [id])
+  modes        BusinessMode[]
+  branches     Branch[]
+  catalogItems CatalogItem[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("businesses")
+}
+
+// ─── BusinessMode ────────────────────────────────────────────────────────────
+
+model BusinessMode {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  industry   Industry
+  mode       String
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, industry, mode])
+  @@index([businessId])
+  @@map("business_modes")
+}
+
+enum Industry {
+  COMMERCE
+  HEALTHCARE
+  RESTAURANT
+  MANUFACTURING
+  AGRICULTURE
+  SERVICES
+}
+
+// ─── Branch ──────────────────────────────────────────────────────────────────
+
+model Branch {
+  id             String   @id @default(uuid()) @db.Uuid
+  businessId     String   @map("business_id") @db.Uuid
+  name           String
+  code           String?
+  email          String?
+  phone          String?
+  address        String?
+  city           String?
+  state          String?
+  country        String   @default("Tanzania")
+  postalCode     String?  @map("postal_code")
+  isHeadOffice   Boolean  @default(false) @map("is_head_office")
+  isActive       Boolean  @default(true) @map("is_active")
+  openingTime    String?  @map("opening_time")
+  closingTime    String?  @map("closing_time")
+  metadata       Json?    @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  stores   Store[]
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  @@map("branches")
+}
+
+// ─── Store ───────────────────────────────────────────────────────────────────
+
+model Store {
+  id          String   @id @default(uuid()) @db.Uuid
+  branchId    String   @map("branch_id") @db.Uuid
+  name        String
+  code        String?
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, name])
+  @@index([branchId])
+  @@map("stores")
+}
+
+// ─── CatalogItem ─────────────────────────────────────────────────────────────
+
+model CatalogItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  businessId  String       @map("business_id") @db.Uuid
+  name        String
+  slug        String
+  description String?
+  sku         String?
+  barcode     String?
+  itemType    CatalogItemType
+  category    String?
+  unit        String?
+  price       Decimal      @default(0) @db.Decimal(15, 2)
+  costPrice   Decimal?     @map("cost_price") @db.Decimal(15, 2)
+  taxRate     Decimal?     @map("tax_rate") @db.Decimal(5, 2)
+  currency    String       @default("TZS")
+  imageUrl    String?      @map("image_url")
+  isActive    Boolean      @default(true) @map("is_active")
+  isService   Boolean      @default(false) @map("is_service")
+  trackStock  Boolean      @default(true) @map("track_stock")
+  metadata    Json?        @default("{}")
+  createdById String?      @map("created_by") @db.Uuid
+  updatedById String?      @map("updated_by") @db.Uuid
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, slug])
+  @@unique([businessId, sku])
+  @@index([businessId])
+  @@index([businessId, itemType])
+  @@map("catalog_items")
+}
+
+enum CatalogItemType {
+  PRODUCT
+  SERVICE
+  MEDICINE
+  MENU_ITEM
+}
+
+// ─── Role ────────────────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  scope       RoleScope
+  isSystem    Boolean  @default(false) @map("is_system")
+  businessId  String?  @map("business_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([slug])
+  @@index([scope])
+  @@index([businessId])
+  @@map("roles")
+}
+
+enum RoleScope {
+  PLATFORM
+  BUSINESS
+}
+
+// ─── Permission ──────────────────────────────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  module      String
+  action      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@unique([module, action])
+  @@index([module])
+  @@map("permissions")
+}
+
+// ─── RolePermission ──────────────────────────────────────────────────────────
+
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// ─── UserRole ────────────────────────────────────────────────────────────────
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
+  businessId String?  @map("business_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, businessId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([businessId])
+  @@map("user_roles")
+}

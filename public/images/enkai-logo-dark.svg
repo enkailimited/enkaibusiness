@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <rect width="200" height="60" rx="8" fill="#1e293b"/>
+  <text x="20" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="800" fill="#3b82f6">Enkai</text>
+  <text x="92" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="300" fill="#94a3b8">Business</text>
+</svg>
