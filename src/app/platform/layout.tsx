@@ -1,5 +1,4 @@
-import { Sidebar, platformNavItems } from "@/components/layout/sidebar";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { AppShell } from "@/components/layout/app-shell";
 
 export default function PlatformLayout({
   children,
@@ -7,12 +6,8 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <Sidebar items={platformNavItems} />
-      <main className="pb-16 md:pl-64 md:pb-0">
-        <div className="container py-6">{children}</div>
-      </main>
-      <BottomNav />
-    </div>
+    <AppShell>
+      {children}
+    </AppShell>
   );
 }

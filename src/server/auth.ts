@@ -37,7 +37,9 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       headers: await headers(),
     });
 
-    if (!session?.user) return null;
+    if (!session?.user) {
+      return null;
+    }
 
     const dbUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -85,7 +87,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       currentWorkspaceId: null,
       currentBusinessId: null,
     };
-  } catch {
+  } catch (error) {
+    console.error("getSessionUser error:", error);
     return null;
   }
 }

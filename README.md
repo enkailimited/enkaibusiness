@@ -1,5 +1,5 @@
 
-<img src="./public/images/enkai-logo.svg" alt="Enkai Business" width="200" />
+<img src="./public/images/logo-blue.svg" alt="Enkai Business" width="160" />
 
 # Enkai Business
 
@@ -308,15 +308,25 @@ npm run db:seed
 npm run dev
 ```
 
+### Test Accounts (after seeding)
+
+| Role | Email | Password |
+|------|-------|----------|
+| Platform Admin | admin@enkai.com | Test123! |
+| Business Owner | manager@demo.com | Test123! |
+| Business Staff | cashier@demo.com | Test123! |
+
 ### Environment Variables
 
 ```env
-DATABASE_URL="postgresql://postgres:password@localhost:5432/enkai_business"
-NEXTAUTH_SECRET="your-secret-key"
+DATABASE_URL="postgresql://user:password@localhost:55432/enkai_business"
+BETTER_AUTH_SECRET="your-secret-at-least-32-chars"
+BETTER_AUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY="your-public-key"
 IMAGEKIT_PRIVATE_KEY="your-private-key"
 IMAGEKIT_URL_ENDPOINT="https://ik.imagekit.io/your-endpoint"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_NAME="Enkai Business"
 ```
 
 ### Available Scripts

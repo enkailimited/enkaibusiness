@@ -1,34 +1,25 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { prisma } from "@/server/db";
+import { requireAuth } from "@/server/auth";
+import { PlatformSettingsForm } from "@/features/platform/components/platform-settings-form";
 
-export default function PlatformSettingsPage() {
+export default async function PlatformSettingsPage() {
+  await requireAuth();
+
+  const settings = await prisma.setting.findMany({
+    where: { userId: null, businessId: null },
+  });
+
+  const map: Record<string, string> = {};
+  for (const s of settings) map[s.key] = s.value;
+
+  const name = map["platform_name"] ?? "Enkai Business";
+  const email = map["support_email"] ?? "support@enkai.com";
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Platform Settings"
-        description="Manage platform configuration"
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>General Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Platform Name</label>
-              <Input defaultValue="Enkai Business" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Support Email</label>
-              <Input type="email" defaultValue="support@enkai.com" />
-            </div>
-          </div>
-          <Button>Save Changes</Button>
-        </CardContent>
-      </Card>
+    <div className="space-y-6 pb-10">
+      <PageHeader title="Platform Settings" description="Manage platform configuration" />
+      <PlatformSettingsForm initialName={name} initialEmail={email} />
     </div>
   );
 }

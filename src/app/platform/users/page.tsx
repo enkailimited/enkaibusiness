@@ -1,17 +1,17 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
+import { UserList } from "@/features/users/components/user-list";
+import { StaffRegisterDialog } from "@/features/staff/components/staff-register-dialog";
 
 export default function PlatformUsersPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       <PageHeader
         title="Users"
-        description="Manage platform users"
-      />
-      <EmptyState
-        title="No users found"
-        description="Users will appear here once they register"
-      />
+        description="Manage all platform users"
+      >
+        <StaffRegisterDialog />
+      </PageHeader>
+      <UserList />
     </div>
   );
 }

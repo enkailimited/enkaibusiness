@@ -1,0 +1,57 @@
+export const ACTIVITY_ACTIONS = {
+  CREATED: "created",
+  UPDATED: "updated",
+  DELETED: "deleted",
+  VIEWED: "viewed",
+  DOWNLOADED: "downloaded",
+  EXPORTED: "exported",
+  IMPORTED: "imported",
+  SENT: "sent",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  CANCELLED: "cancelled",
+  COMPLETED: "completed",
+  ASSIGNED: "assigned",
+  LOGIN: "login",
+  LOGOUT: "logout",
+} as const;
+
+export const ACTIVITY_ACTION_LABELS: Record<string, string> = {
+  created: "Created",
+  updated: "Updated",
+  deleted: "Deleted",
+  viewed: "Viewed",
+  downloaded: "Downloaded",
+  exported: "Exported",
+  imported: "Imported",
+  sent: "Sent",
+  approved: "Approved",
+  rejected: "Rejected",
+  cancelled: "Cancelled",
+  completed: "Completed",
+  assigned: "Assigned",
+  login: "Login",
+  logout: "Logout",
+};
+
+export const RESOURCE_TYPE_LABELS: Record<string, string> = {
+  business: "Business",
+  branch: "Branch",
+  store: "Store",
+  user: "User",
+  product: "Product",
+  category: "Category",
+  brand: "Brand",
+  customer: "Customer",
+  invoice: "Invoice",
+  payment: "Payment",
+  order: "Order",
+  quotation: "Quotation",
+  lead: "Lead",
+  ticket: "Support Ticket",
+  notification: "Notification",
+  role: "Role",
+  permission: "Permission",
+};
+
+export const DEFAULT_PAGE_SIZE = 20;

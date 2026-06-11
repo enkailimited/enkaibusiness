@@ -48,3 +48,95 @@ export const BUSINESS_ROLES = [
   { name: "Pharmacist", slug: "pharmacist" },
   { name: "Chef", slug: "chef" },
 ] as const;
+
+export enum SalesProfileStatus {
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  SUSPENDED = "SUSPENDED",
+}
+
+export enum LeadSource {
+  MANUAL = "MANUAL",
+  SELF_REGISTRATION = "SELF_REGISTRATION",
+  SALES_REGISTRATION = "SALES_REGISTRATION",
+  REFERRAL = "REFERRAL",
+  CAMPAIGN = "CAMPAIGN",
+}
+
+export enum LeadStatus {
+  NEW = "NEW",
+  CONTACTED = "CONTACTED",
+  INTERESTED = "INTERESTED",
+  DEMO = "DEMO",
+  NEGOTIATION = "NEGOTIATION",
+  CONVERTED = "CONVERTED",
+  LOST = "LOST",
+}
+
+export enum SubscriptionInterval {
+  DAILY = "DAILY",
+  WEEKLY = "WEEKLY",
+  MONTHLY = "MONTHLY",
+  YEARLY = "YEARLY",
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = "ACTIVE",
+  GRACE_PERIOD = "GRACE_PERIOD",
+  SUSPENDED = "SUSPENDED",
+  EXPIRED = "EXPIRED",
+  CANCELLED = "CANCELLED",
+}
+
+export enum CommissionType {
+  FLAT = "FLAT",
+  PERCENTAGE = "PERCENTAGE",
+}
+
+export enum CommissionLedgerStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  PAID = "PAID",
+  CANCELLED = "CANCELLED",
+}
+
+export enum CampaignStatus {
+  DRAFT = "DRAFT",
+  ACTIVE = "ACTIVE",
+  COMPLETED = "COMPLETED",
+  ARCHIVED = "ARCHIVED",
+}
+
+export enum QRCodeStatus {
+  UNASSIGNED = "UNASSIGNED",
+  ASSIGNED = "ASSIGNED",
+  INSTALLED = "INSTALLED",
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
+  DAMAGED = "DAMAGED",
+}
+
+export enum TicketStatus {
+  OPEN = "OPEN",
+  IN_PROGRESS = "IN_PROGRESS",
+  RESOLVED = "RESOLVED",
+  CLOSED = "CLOSED",
+}
+
+export enum TicketPriority {
+  LOW = "LOW",
+  MEDIUM = "MEDIUM",
+  HIGH = "HIGH",
+  URGENT = "URGENT",
+}
+
+export enum OnboardingStep {
+  LEAD_CREATED = "LEAD_CREATED",
+  CONTACTED = "CONTACTED",
+  CONVERTED = "CONVERTED",
+  WORKSPACE_CREATED = "WORKSPACE_CREATED",
+  BUSINESS_CREATED = "BUSINESS_CREATED",
+  OWNER_ASSIGNED = "OWNER_ASSIGNED",
+  TRAINING_COMPLETED = "TRAINING_COMPLETED",
+  ACTIVE_CUSTOMER = "ACTIVE_CUSTOMER",
+}

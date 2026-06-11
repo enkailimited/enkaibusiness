@@ -40,8 +40,9 @@ export interface ApiResponse<T = unknown> {
   message?: string;
 }
 
-export interface ActionResponse {
+export interface ActionResponse<T = unknown> {
   success: boolean;
   message: string;
   errors?: Record<string, string[]>;
+  data?: T;
 }

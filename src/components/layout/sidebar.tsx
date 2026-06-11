@@ -4,15 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/ui/logo";
 import {
   LayoutDashboard,
-  ShoppingCart,
-  BarChart3,
-  Package,
-  Users,
   Settings,
-  Building2,
-  Store,
   Menu,
   X,
   ChevronLeft,
@@ -28,11 +23,9 @@ interface NavItem {
 
 interface SidebarProps {
   items: NavItem[];
-  title?: string;
-  logo?: React.ReactNode;
 }
 
-export function Sidebar({ items, title = "Enkai Business", logo }: SidebarProps) {
+export function Sidebar({ items }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -55,11 +48,9 @@ export function Sidebar({ items, title = "Enkai Business", logo }: SidebarProps)
           "md:translate-x-0",
         )}
       >
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          {logo}
-          {!collapsed && (
-            <span className="text-lg font-semibold tracking-tight">{title}</span>
-          )}
+        <div className="flex h-16 items-center border-b px-6">
+          <Logo variant="blue" width={24} height={24} />
+          {!collapsed && <span className="ml-3 font-bold text-lg tracking-tight text-brand-700">Enkai</span>}
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-2">
@@ -121,13 +112,5 @@ export function Sidebar({ items, title = "Enkai Business", logo }: SidebarProps)
 
 export const platformNavItems: NavItem[] = [
   { title: "Dashboard", href: "/platform/dashboard", icon: LayoutDashboard },
-  { title: "Sales", href: "/platform/sales", icon: ShoppingCart },
-  { title: "Marketing", href: "/platform/marketing", icon: BarChart3 },
-  { title: "Support", href: "/platform/support", icon: Users },
-  { title: "Subscriptions", href: "/platform/subscriptions", icon: Package },
-  { title: "Commissions", href: "/platform/commissions", icon: Building2 },
-  { title: "Distribution", href: "/platform/distribution", icon: Store },
-  { title: "Users", href: "/platform/users", icon: Users },
-  { title: "Roles", href: "/platform/roles", icon: Settings },
   { title: "Settings", href: "/platform/settings", icon: Settings },
 ];

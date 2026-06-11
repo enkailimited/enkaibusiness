@@ -1,0 +1,3 @@
+export const QR_CODE_LENGTH = 32;
+
+export const QR_CODE_GENERATION_BATCH_LIMIT = 1000;

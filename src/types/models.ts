@@ -1,3 +1,17 @@
+import type {
+  SalesProfileStatus,
+  LeadSource,
+  LeadStatus,
+  SubscriptionInterval,
+  SubscriptionStatus,
+  CommissionType,
+  CommissionLedgerStatus,
+  CampaignStatus,
+  QRCodeStatus,
+  TicketStatus,
+  TicketPriority,
+} from "./enums";
+
 export interface User {
   id: string;
   email: string;
@@ -173,4 +187,261 @@ export interface UserRole {
   roleId: string;
   businessId: string | null;
   createdAt: string;
+}
+
+export interface SalesHierarchy {
+  id: string;
+  level: number;
+  title: string;
+  slug: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  profiles?: SalesProfile[];
+  commissionRules?: CommissionRule[];
+}
+
+export interface SalesProfile {
+  id: string;
+  userId: string;
+  phone: string | null;
+  photo: string | null;
+  region: string | null;
+  status: SalesProfileStatus;
+  hierarchyId: string | null;
+  managerId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: User;
+  hierarchy?: SalesHierarchy | null;
+  manager?: SalesProfile | null;
+  subordinates?: SalesProfile[];
+  leads?: Lead[];
+  leadAssignments?: LeadAssignment[];
+  commissionEntries?: CommissionLedger[];
+}
+
+export interface Lead {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  businessName: string | null;
+  source: LeadSource;
+  status: LeadStatus;
+  notes: string | null;
+  assignedToId: string | null;
+  convertedAt: string | null;
+  convertedToUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  assignedTo?: SalesProfile | null;
+  activities?: LeadActivity[];
+  assignments?: LeadAssignment[];
+}
+
+export interface Activity {
+  id: string;
+  userId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  metadata?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+export interface LeadActivity {
+  id: string;
+  leadId: string;
+  action: string;
+  detail: string | null;
+  createdById: string | null;
+  createdAt: string;
+  lead?: Lead;
+  createdBy?: User | null;
+}
+
+export interface LeadAssignment {
+  id: string;
+  leadId: string;
+  assignedToId: string;
+  assignedById: string;
+  reason: string | null;
+  assignedAt: string;
+  createdAt: string;
+  lead?: Lead;
+  assignedTo?: SalesProfile;
+  assignedBy?: User;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  amount: string | number;
+  currency: string;
+  interval: SubscriptionInterval;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  subscriptions?: Subscription[];
+}
+
+export interface Subscription {
+  id: string;
+  planId: string;
+  businessId: string;
+  status: SubscriptionStatus;
+  startDate: string;
+  endDate: string | null;
+  graceEndDate: string | null;
+  suspendedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  plan?: SubscriptionPlan;
+  business?: Business;
+  payments?: SubscriptionPayment[];
+}
+
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId: string;
+  amount: string | number;
+  currency: string;
+  method: string | null;
+  reference: string | null;
+  paidAt: string;
+  createdAt: string;
+  subscription?: Subscription;
+}
+
+export interface CommissionRule {
+  id: string;
+  name: string;
+  hierarchyLevelId: string | null;
+  type: CommissionType;
+  value: string | number;
+  minAmount: string | number | null;
+  maxAmount: string | number | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  hierarchyLevel?: SalesHierarchy | null;
+}
+
+export interface CommissionLedger {
+  id: string;
+  salesProfileId: string;
+  subscriptionId: string | null;
+  payoutId: string | null;
+  amount: string | number;
+  type: CommissionType;
+  description: string | null;
+  status: CommissionLedgerStatus;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  salesProfile?: SalesProfile;
+  payout?: CommissionPayout | null;
+}
+
+export interface CommissionPayout {
+  id: string;
+  amount: string | number;
+  notes: string | null;
+  paidById: string | null;
+  paidAt: string;
+  createdAt: string;
+  entries?: CommissionLedger[];
+  paidBy?: User | null;
+}
+
+export interface DistributionCampaign {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  totalQRCodes: number;
+  status: CampaignStatus;
+  startDate: string | null;
+  endDate: string | null;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: User | null;
+  qrCodes?: QRCode[];
+}
+
+export interface QRCode {
+  id: string;
+  campaignId: string;
+  code: string;
+  businessId: string | null;
+  status: QRCodeStatus;
+  assignedToId: string | null;
+  installedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  campaign?: DistributionCampaign;
+  business?: Business | null;
+  assignments?: QRCodeAssignment[];
+  installations?: QRCodeInstallation[];
+}
+
+export interface QRCodeAssignment {
+  id: string;
+  qrCodeId: string;
+  assignedTo: string;
+  assignedBy: string;
+  notes: string | null;
+  assignedAt: string;
+  createdAt: string;
+  qrCode?: QRCode;
+}
+
+export interface QRCodeInstallation {
+  id: string;
+  qrCodeId: string;
+  businessId: string;
+  location: string | null;
+  installedBy: string;
+  notes: string | null;
+  installedAt: string;
+  createdAt: string;
+  qrCode?: QRCode;
+  business?: Business;
+}
+
+export interface SupportTicket {
+  id: string;
+  title: string;
+  description: string | null;
+  status: TicketStatus;
+  priority: TicketPriority;
+  customerId: string;
+  assignedToId: string | null;
+  businessId: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: User;
+  assignedTo?: User | null;
 }
