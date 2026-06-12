@@ -10,11 +10,15 @@ export interface AssistantMessage {
 }
 
 export interface AssistantContext {
-  businessId: string;
+  userId: string;
+  businessId?: string;
   branchId?: string;
   storeId?: string;
-  userId: string;
   staffId?: string;
+  roles?: string[];
+  permissions?: string[];
+  workspaceId?: string;
+  salesHierarchyLevel?: string;
 }
 
 export interface AssistantResponse {
@@ -33,4 +37,17 @@ export interface IntentHandler {
 export interface AssistantConfig {
   maxHistoryLength: number;
   systemPrompt: string;
+}
+
+export interface WorkflowStep {
+  field: string;
+  question: string;
+  required: boolean;
+  validator?: (value: string) => boolean;
+}
+
+export interface WorkflowDefinition {
+  intent: IntentType;
+  steps: WorkflowStep[];
+  execute: (params: Record<string, string | number | undefined>, context: AssistantContext) => Promise<AssistantResponse>;
 }

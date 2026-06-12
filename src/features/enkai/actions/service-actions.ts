@@ -3,6 +3,7 @@
 import { processMessage, getSessionHistory, clearSession } from "../assistant/assistant-service";
 import { generateInsights, getCachedInsights } from "../insights/insights-service";
 import { evaluateRules } from "../automation/automation-service";
+import { generateProactiveInsights } from "../services/proactive-insights";
 import { memoryStore } from "../memory/memory-store";
 import { generateBusinessInsights } from "@/enkai/intelligence/business-insights/insights-engine";
 import { forecastRevenue } from "@/enkai/intelligence/forecasting/revenue-forecast";
@@ -68,4 +69,8 @@ export async function getSalesTrendsAction(businessId: string, days?: number) {
 
 export async function getProfitAnalysisAction(businessId: string, days?: number) {
   return getProfitAnalysis(businessId, days);
+}
+
+export async function getProactiveInsightsAction(businessId: string) {
+  return generateProactiveInsights(businessId);
 }

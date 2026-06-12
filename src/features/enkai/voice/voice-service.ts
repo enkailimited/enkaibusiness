@@ -13,12 +13,31 @@ const commonVoicePatterns: Array<{
   pattern: RegExp;
   replacement: string;
 }> = [
+  // Swahili patterns
+  { pattern: /stock ya (.+) imebaki/gi, replacement: "/stock $1" },
+  { pattern: /stock ya (.+) zimebaki/gi, replacement: "/stock $1" },
+  { pattern: /nimeuza/gi, replacement: "/sell" },
+  { pattern: /nimenunua/gi, replacement: "/purchase" },
+  { pattern: /nimetumia/gi, replacement: "/expense" },
+  { pattern: /nimegharamia/gi, replacement: "/expense" },
+  { pattern: /nimelipa/gi, replacement: "/expense" },
+  { pattern: /tafuta mteja/gi, replacement: "/customer" },
+  { pattern: /tafuta msambazaji/gi, replacement: "/supplier" },
+  { pattern: /ongeza mteja/gi, replacement: "/add-customer" },
+  { pattern: /ongeza msambazaji/gi, replacement: "/add-supplier" },
+  { pattern: /bei ya (.+)/gi, replacement: "/price $1" },
+  { pattern: /ripoti ya (.+)/gi, replacement: "/report $1" },
+  { pattern: /taarifa ya (.+)/gi, replacement: "/report $1" },
+  { pattern: /hamisha stock/gi, replacement: "/transfer" },
+  { pattern: /angalia pochi/gi, replacement: "/wallet" },
+  { pattern: /maarifa ya biashara/gi, replacement: "/insights" },
+
+  // English patterns (existing)
   { pattern: /what's the stock of/gi, replacement: "/stock" },
   { pattern: /how much stock of/gi, replacement: "/stock" },
   { pattern: /check stock for/gi, replacement: "/stock" },
   { pattern: /i want to sell/gi, replacement: "/sell" },
   { pattern: /record a sale of/gi, replacement: "/sell" },
-  { pattern: /sell\s+(\d+(?:\.\d+)?)\s*(kg|g|l|ml|pcs|units?)\s+(?:of\s+)?(.+)/gi, replacement: "/sell $1$2 $3" },
   { pattern: /look up customer/gi, replacement: "/customer" },
   { pattern: /find customer/gi, replacement: "/customer" },
   { pattern: /add new customer/gi, replacement: "/add-customer" },
@@ -30,7 +49,7 @@ const commonVoicePatterns: Array<{
 ];
 
 export function processVoiceInput(transcript: string): VoiceInputResult {
-  let normalized = transcript.trim();
+  let normalized = transcript.trim().toLowerCase();
 
   for (const vp of commonVoicePatterns) {
     normalized = normalized.replace(vp.pattern, vp.replacement);
@@ -47,8 +66,8 @@ export function processVoiceInput(transcript: string): VoiceInputResult {
 
 export function isVoiceCommand(transcript: string): boolean {
   const commandIndicators = [
-    /^(sell|check|show|find|look|add|create|make|record|how|what)/i,
-    /^\/(sell|stock|price|customer|staff|order|report|help)/i,
+    /^(sell|check|show|find|look|add|create|make|record|how|what|nimeuza|nimenunua|nimetumia|tafuta|ongeza|angalia|hamisha|bei|ripoti)/i,
+    /^\/(sell|stock|price|customer|staff|order|report|help|expense|purchase|supplier|transfer|wallet|insights)/i,
   ];
   return commandIndicators.some((p) => p.test(transcript.trim()));
 }

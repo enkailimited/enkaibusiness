@@ -1,7 +1,9 @@
 export interface ToolDefinition {
   name: string;
   description: string;
+  descriptionSwahili?: string;
   parameters: ToolParameter[];
+  requiredPermission?: string;
   handler: (params: Record<string, unknown>) => Promise<ToolResult>;
 }
 
@@ -9,6 +11,7 @@ export interface ToolParameter {
   name: string;
   type: "string" | "number" | "boolean" | "array";
   description: string;
+  descriptionSwahili?: string;
   required: boolean;
 }
 

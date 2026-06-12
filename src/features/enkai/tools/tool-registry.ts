@@ -1,8 +1,6 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
-import { sendEmailWithDefaultConfig } from "@/notifications/email/services/smtp-service";
-import { convert } from "@/features/unit-conversions/services/conversion-service";
 import type { ToolDefinition, ToolResult, ToolRegistry } from "./types";
 
 function createRegistry(): ToolRegistry {
@@ -37,13 +35,16 @@ function createRegistry(): ToolRegistry {
     },
   };
 
+  // ── Stock Check ──
   registry.register({
     name: "check-stock",
     description: "Check current stock level for an item",
+    descriptionSwahili: "Angalia kiwango cha stock cha bidhaa",
     parameters: [
       { name: "item", type: "string", description: "Item name or SKU", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "inventory.view",
     handler: async (params) => {
       const item = params.item as string;
       const businessId = params.businessId as string;
@@ -63,14 +64,16 @@ function createRegistry(): ToolRegistry {
       });
 
       if (!catalogItem) {
-        return { success: false, message: `Item "${item}" not found in catalog.` };
+        return { success: false, message: `Bidhaa "${item}" haikupatikana.` };
       }
 
       const totalStock = catalogItem.balances.reduce((sum, b) => sum + Number(b.quantityOnHand), 0);
+      const locations = catalogItem.balances.map((b) =>
+        `${b.location.name}: ${Number(b.quantityOnHand)}`).join(", ");
 
       return {
         success: true,
-        message: `Stock for ${catalogItem.name}: ${totalStock} across ${catalogItem.balances.length} location(s).`,
+        message: `Stock ya ${catalogItem.name}: ${totalStock} kwenye sehemu ${catalogItem.balances.length}.\n${locations}`,
         data: {
           itemName: catalogItem.name,
           sku: catalogItem.sku,
@@ -85,13 +88,16 @@ function createRegistry(): ToolRegistry {
     },
   });
 
+  // ── Price Check ──
   registry.register({
     name: "check-price",
     description: "Check the price of an item",
+    descriptionSwahili: "Angalia bei ya bidhaa",
     parameters: [
       { name: "item", type: "string", description: "Item name or SKU", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "inventory.view",
     handler: async (params) => {
       const item = params.item as string;
       const businessId = params.businessId as string;
@@ -108,12 +114,15 @@ function createRegistry(): ToolRegistry {
       });
 
       if (!catalogItem) {
-        return { success: false, message: `Item "${item}" not found.` };
+        return { success: false, message: `Bidhaa "${item}" haikupatikana.` };
       }
+
+      const price = Number(catalogItem.price).toLocaleString("sw-TZ");
+      const cost = catalogItem.costPrice ? Number(catalogItem.costPrice).toLocaleString("sw-TZ") : "haijulikani";
 
       return {
         success: true,
-        message: `${catalogItem.name}: ${Number(catalogItem.price).toFixed(2)} ${catalogItem.currency}. Cost: ${catalogItem.costPrice ? Number(catalogItem.costPrice).toFixed(2) : "N/A"}.`,
+        message: `Bei ya ${catalogItem.name}: TZS ${price}\nGharama ya ununuzi: TZS ${cost}`,
         data: {
           itemName: catalogItem.name,
           price: Number(catalogItem.price),
@@ -124,9 +133,11 @@ function createRegistry(): ToolRegistry {
     },
   });
 
+  // ── Sell ──
   registry.register({
     name: "sell",
     description: "Record a sale transaction",
+    descriptionSwahili: "Rekodi mauzo",
     parameters: [
       { name: "item", type: "string", description: "Item name", required: true },
       { name: "quantity", type: "number", description: "Quantity sold", required: true },
@@ -134,6 +145,7 @@ function createRegistry(): ToolRegistry {
       { name: "staffId", type: "string", description: "Staff ID", required: false },
       { name: "customerId", type: "string", description: "Customer ID", required: false },
     ],
+    requiredPermission: "sales.create",
     handler: async (params) => {
       const item = params.item as string;
       const quantity = Number(params.quantity);
@@ -142,7 +154,7 @@ function createRegistry(): ToolRegistry {
       const customerId = params.customerId as string | undefined;
 
       if (!item || !quantity || quantity <= 0) {
-        return { success: false, message: "Please specify item and valid quantity.", actionRequired: true };
+        return { success: false, message: "Tafadhali toa bidhaa na idadi sahihi.", actionRequired: true };
       }
 
       const catalogItem = await prisma.catalogItem.findFirst({
@@ -151,17 +163,17 @@ function createRegistry(): ToolRegistry {
       });
 
       if (!catalogItem) {
-        return { success: false, message: `Item "${item}" not found.` };
+        return { success: false, message: `Bidhaa "${item}" haikupatikana kwenye katalogi.` };
       }
 
       const totalStock = catalogItem.balances.reduce((s, b) => s + Number(b.quantityOnHand), 0);
       if (totalStock < quantity) {
-        return { success: false, message: `Insufficient stock. Only ${totalStock} available.` };
+        return { success: false, message: `Stock haitoshi. Zimebaki ${totalStock} tu.` };
       }
 
       const locationId = catalogItem.balances[0]?.locationId;
       if (!locationId) {
-        return { success: false, message: "No inventory location configured." };
+        return { success: false, message: "Hakuna sehemu ya stock imesanidiwa." };
       }
 
       const unitPrice = Number(catalogItem.price);
@@ -194,21 +206,26 @@ function createRegistry(): ToolRegistry {
         },
       });
 
+      const formattedTotal = total.toLocaleString("sw-TZ");
+
       return {
         success: true,
-        message: `Sale completed: ${quantity} x ${catalogItem.name} = ${total.toFixed(2)} ${catalogItem.currency}.`,
+        message: `Mauzo yamekamilika: ${quantity} x ${catalogItem.name} = TZS ${formattedTotal}.`,
         data: { saleId: sale.id, total, itemName: catalogItem.name, quantity },
       };
     },
   });
 
+  // ── Customer Lookup ──
   registry.register({
     name: "lookup-customer",
     description: "Look up a customer by name, phone, or email",
+    descriptionSwahili: "Tafuta mteja kwa jina, simu, au barua pepe",
     parameters: [
       { name: "query", type: "string", description: "Customer name, phone, or email", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: false },
     ],
+    requiredPermission: "customers.view",
     handler: async (params) => {
       const query = params.query as string;
       const businessId = params.businessId as string | undefined;
@@ -234,12 +251,19 @@ function createRegistry(): ToolRegistry {
       });
 
       if (customers.length === 0) {
-        return { success: false, message: `No customers found matching "${query}".` };
+        return { success: false, message: `Hakuna mteja anayefanana na "${query}".` };
       }
+
+      const customerList = customers.map((c) => {
+        const name = `${c.firstName} ${c.lastName || ""}`.trim();
+        const balance = c.creditAccount ? Number(c.creditAccount.balance) : 0;
+        const limit = c.creditAccount ? Number(c.creditAccount.creditLimit) : 0;
+        return `• ${name} - ${c.phone || "hakuna simu"}${balance > 0 ? ` - Deni: TZS ${balance.toLocaleString("sw-TZ")}` : ""}`;
+      }).join("\n");
 
       return {
         success: true,
-        message: `Found ${customers.length} customer(s).`,
+        message: `Wateja ${customers.length} wamepatikana:\n${customerList}`,
         data: {
           customers: customers.map((c) => ({
             id: c.id,
@@ -257,15 +281,18 @@ function createRegistry(): ToolRegistry {
     },
   });
 
+  // ── Add Customer ──
   registry.register({
     name: "add-customer",
     description: "Add a new customer",
+    descriptionSwahili: "Ongeza mteja mpya",
     parameters: [
       { name: "name", type: "string", description: "Customer name", required: true },
       { name: "phone", type: "string", description: "Phone number", required: false },
       { name: "email", type: "string", description: "Email address", required: false },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "customers.create",
     handler: async (params) => {
       const name = params.name as string;
       const phone = params.phone as string | undefined;
@@ -282,19 +309,215 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Customer "${firstName} ${lastName || ""}" created successfully.`,
+        message: `Mteja "${firstName} ${lastName || ""}" ameongezwa.`,
         data: { id: customer.id, firstName, lastName, phone, email },
       };
     },
   });
 
+  // ── Add Expense ──
+  registry.register({
+    name: "add-expense",
+    description: "Record a business expense",
+    descriptionSwahili: "Rekodi gharama ya biashara",
+    parameters: [
+      { name: "amount", type: "number", description: "Expense amount", required: true },
+      { name: "description", type: "string", description: "Expense description", required: true },
+      { name: "category", type: "string", description: "Expense category", required: false },
+      { name: "businessId", type: "string", description: "Business ID", required: true },
+    ],
+    requiredPermission: "expenses.create",
+    handler: async (params) => {
+      const amount = Number(params.amount);
+      const description = params.description as string;
+      const category = (params.category as string) || "general";
+      const businessId = params.businessId as string;
+
+      const expense = await prisma.expense.create({
+        data: {
+          businessId,
+          amount,
+          description,
+          category,
+          date: new Date(),
+          status: "approved",
+        },
+      });
+
+      const formattedAmount = amount.toLocaleString("sw-TZ");
+      return {
+        success: true,
+        message: `Gharama imerekodiwa: TZS ${formattedAmount} kwa ${description}.`,
+        data: { expenseId: expense.id, amount, description, category },
+      };
+    },
+  });
+
+  // ── Add Purchase ──
+  registry.register({
+    name: "add-purchase",
+    description: "Record a purchase / goods receipt",
+    descriptionSwahili: "Rekodi ununuzi wa bidhaa",
+    parameters: [
+      { name: "item", type: "string", description: "Item name", required: true },
+      { name: "quantity", type: "number", description: "Quantity purchased", required: true },
+      { name: "cost", type: "number", description: "Unit cost", required: true },
+      { name: "supplierId", type: "string", description: "Supplier ID", required: false },
+      { name: "businessId", type: "string", description: "Business ID", required: true },
+    ],
+    requiredPermission: "purchases.create",
+    handler: async (params) => {
+      const item = params.item as string;
+      const quantity = Number(params.quantity);
+      const cost = Number(params.cost);
+      const supplierId = params.supplierId as string | undefined;
+      const businessId = params.businessId as string;
+
+      let catalogItem = await prisma.catalogItem.findFirst({
+        where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
+      });
+
+      if (!catalogItem) {
+        catalogItem = await prisma.catalogItem.create({
+          data: {
+            businessId,
+            name: item,
+            sku: `AUTO-${Date.now()}`,
+            price: cost * 1.3,
+            costPrice: cost,
+            trackStock: true,
+            isActive: true,
+            currency: "TZS",
+            type: "product",
+          },
+        });
+      }
+
+      const inventoryLocation = await prisma.inventoryLocation.findFirst({
+        where: { businessId },
+      });
+
+      if (!inventoryLocation) {
+        return { success: false, message: "Hakuna sehemu ya stock imesanidiwa." };
+      }
+
+      const balance = await prisma.inventoryBalance.findUnique({
+        where: {
+          locationId_catalogItemId_variantId: {
+            locationId: inventoryLocation.id,
+            catalogItemId: catalogItem.id,
+            variantId: null,
+          },
+        },
+      });
+
+      if (balance) {
+        await prisma.inventoryBalance.update({
+          where: { id: balance.id },
+          data: {
+            quantityOnHand: { increment: quantity },
+            quantityAvailable: { increment: quantity },
+            unitCost: cost,
+          },
+        });
+      } else {
+        await prisma.inventoryBalance.create({
+          data: {
+            locationId: inventoryLocation.id,
+            catalogItemId: catalogItem.id,
+            quantityOnHand: quantity,
+            quantityAvailable: quantity,
+            unitCost: cost,
+          },
+        });
+      }
+
+      const totalCost = quantity * cost;
+      const formattedTotal = totalCost.toLocaleString("sw-TZ");
+
+      return {
+        success: true,
+        message: `Ununuzi umerekodiwa: ${quantity} x ${catalogItem.name} = TZS ${formattedTotal}. Stock imeongezwa.`,
+        data: { itemId: catalogItem.id, quantity, cost, totalCost },
+      };
+    },
+  });
+
+  // ── Supplier Lookup ──
+  registry.register({
+    name: "lookup-supplier",
+    description: "Look up a supplier by name or phone",
+    descriptionSwahili: "Tafuta msambazaji kwa jina au simu",
+    parameters: [
+      { name: "query", type: "string", description: "Supplier name or phone", required: true },
+    ],
+    handler: async (params) => {
+      const query = params.query as string;
+
+      const suppliers = await prisma.supplier.findMany({
+        where: {
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { contactPhone: { contains: query } },
+          ],
+        },
+        take: 5,
+      });
+
+      if (suppliers.length === 0) {
+        return { success: false, message: `Hakuna msambazaji anayefanana na "${query}".` };
+      }
+
+      const list = suppliers.map((s) =>
+        `• ${s.name} - ${s.contactPhone || "hakuna simu"} (${s.type || "N/A"})`
+      ).join("\n");
+
+      return {
+        success: true,
+        message: `Wasambazaji ${suppliers.length} wamepatikana:\n${list}`,
+        data: { suppliers },
+      };
+    },
+  });
+
+  // ── Add Supplier ──
+  registry.register({
+    name: "add-supplier",
+    description: "Add a new supplier",
+    descriptionSwahili: "Ongeza msambazaji mpya",
+    parameters: [
+      { name: "name", type: "string", description: "Supplier name", required: true },
+      { name: "phone", type: "string", description: "Phone number", required: false },
+      { name: "email", type: "string", description: "Email address", required: false },
+    ],
+    requiredPermission: "purchases.create",
+    handler: async (params) => {
+      const name = params.name as string;
+      const phone = params.phone as string | undefined;
+      const email = params.email as string | undefined;
+
+      const supplier = await prisma.supplier.create({
+        data: { name, contactPhone: phone, email },
+      });
+
+      return {
+        success: true,
+        message: `Msambazaji "${name}" ameongezwa.`,
+        data: { id: supplier.id, name, phone, email },
+      };
+    },
+  });
+
+  // ── View Orders ──
   registry.register({
     name: "view-orders",
     description: "View recent sales orders",
+    descriptionSwahili: "Angalia mauzo ya hivi karibuni",
     parameters: [
       { name: "businessId", type: "string", description: "Business ID", required: true },
       { name: "limit", type: "number", description: "Number of orders to return", required: false },
     ],
+    requiredPermission: "sales.view",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const limit = (params.limit as number) || 5;
@@ -309,9 +532,15 @@ function createRegistry(): ToolRegistry {
         },
       });
 
+      const orderList = orders.map((o) => {
+        const customerName = o.customer ? `${o.customer.firstName} ${o.customer.lastName || ""}`.trim() : "Mteja wa dukani";
+        const formattedTotal = Number(o.total).toLocaleString("sw-TZ");
+        return `• TZS ${formattedTotal} - ${customerName} (${o.createdAt.toLocaleDateString("sw-TZ")})`;
+      }).join("\n");
+
       return {
         success: true,
-        message: `Found ${orders.length} recent order(s).`,
+        message: `Mauzo ${orders.length} ya hivi karibuni:\n${orderList}`,
         data: {
           orders: orders.map((o) => ({
             id: o.id,
@@ -326,6 +555,7 @@ function createRegistry(): ToolRegistry {
     },
   });
 
+  // ── Create Sale ──
   registry.register({
     name: "create-sale",
     description: "Create a new sale",
@@ -335,6 +565,7 @@ function createRegistry(): ToolRegistry {
       { name: "staffId", type: "string", description: "Staff ID", required: false },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "sales.create",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const items = params.items as Array<{ itemId: string; quantity: number }>;
@@ -342,7 +573,7 @@ function createRegistry(): ToolRegistry {
       const staffId = params.staffId as string | undefined;
 
       if (!items || items.length === 0) {
-        return { success: false, message: "No items provided for sale.", actionRequired: true };
+        return { success: false, message: "Hakuna bidhaa kwenye mauzo.", actionRequired: true };
       }
 
       let subtotal = 0;
@@ -353,7 +584,7 @@ function createRegistry(): ToolRegistry {
           where: { id: item.itemId, businessId },
         });
         if (!catalogItem) {
-          return { success: false, message: `Item ${item.itemId} not found.` };
+          return { success: false, message: `Bidhaa ${item.itemId} haikupatikana.` };
         }
         const unitPrice = Number(catalogItem.price);
         const lineTotal = unitPrice * item.quantity;
@@ -380,12 +611,13 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Sale #${sale.id.slice(0, 8)} created: ${formatCurrency(subtotal)}.`,
+        message: `Mauzo #${sale.id.slice(0, 8)} yamekamilika: ${formatCurrency(subtotal)}.`,
         data: { saleId: sale.id, total: subtotal, items: saleItems.length },
       };
     },
   });
 
+  // ── Create Quotation ──
   registry.register({
     name: "create-quotation",
     description: "Create a customer quotation",
@@ -394,13 +626,14 @@ function createRegistry(): ToolRegistry {
       { name: "items", type: "array", description: "Array of {itemId, quantity} objects", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "sales.create",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const customerId = params.customerId as string;
       const items = params.items as Array<{ itemId: string; quantity: number }>;
 
       if (!items || items.length === 0) {
-        return { success: false, message: "No items provided.", actionRequired: true };
+        return { success: false, message: "Hakuna bidhaa.", actionRequired: true };
       }
 
       let total = 0;
@@ -435,12 +668,13 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Quotation #${quotation.id.slice(0, 8)} created: ${formatCurrency(total)}.`,
+        message: `Nukta #${quotation.id.slice(0, 8)} imeundwa: ${formatCurrency(total)}.`,
         data: { quotationId: quotation.id, total },
       };
     },
   });
 
+  // ── Create Invoice ──
   registry.register({
     name: "create-invoice",
     description: "Create an invoice",
@@ -449,6 +683,7 @@ function createRegistry(): ToolRegistry {
       { name: "items", type: "array", description: "Array of {itemId, quantity} objects", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "sales.create",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const customerId = params.customerId as string;
@@ -486,12 +721,13 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Invoice #${invoice.id.slice(0, 8)} created: ${formatCurrency(total)}.`,
+        message: `Ankara #${invoice.id.slice(0, 8)} imeundwa: ${formatCurrency(total)}.`,
         data: { invoiceId: invoice.id, total },
       };
     },
   });
 
+  // ── Create Return ──
   registry.register({
     name: "create-return",
     description: "Create a sales return",
@@ -500,6 +736,7 @@ function createRegistry(): ToolRegistry {
       { name: "items", type: "array", description: "Array of {itemId, quantity} objects", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "sales.create",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const saleId = params.saleId as string;
@@ -510,7 +747,7 @@ function createRegistry(): ToolRegistry {
         include: { items: true },
       });
       if (!sale) {
-        return { success: false, message: "Sale not found." };
+        return { success: false, message: "Mauzo hayakupatikana." };
       }
 
       const returnRecord = await prisma.return.create({
@@ -531,15 +768,17 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Return #${returnRecord.id.slice(0, 8)} created.`,
+        message: `Rudisho #${returnRecord.id.slice(0, 8)} limeundwa.`,
         data: { returnId: returnRecord.id },
       };
     },
   });
 
+  // ── Transfer Stock ──
   registry.register({
     name: "transfer-stock",
     description: "Transfer stock between locations",
+    descriptionSwahili: "Hamisha stock kati ya sehemu",
     parameters: [
       { name: "itemId", type: "string", description: "Item ID", required: true },
       { name: "quantity", type: "number", description: "Quantity to transfer", required: true },
@@ -547,6 +786,7 @@ function createRegistry(): ToolRegistry {
       { name: "toLocationId", type: "string", description: "Destination location ID", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "inventory.transfer",
     handler: async (params) => {
       const itemId = params.itemId as string;
       const quantity = Number(params.quantity);
@@ -558,7 +798,7 @@ function createRegistry(): ToolRegistry {
         where: { locationId_catalogItemId_variantId: { locationId: fromLocationId, catalogItemId: itemId, variantId: null } },
       });
       if (!fromBalance || Number(fromBalance.quantityOnHand) < quantity) {
-        return { success: false, message: "Insufficient stock at source location." };
+        return { success: false, message: "Stock haitoshi kwenye sehemu ya kutoka." };
       }
 
       const transfer = await prisma.stockTransfer.create({
@@ -590,21 +830,24 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Transferred ${quantity} units.`,
+        message: `${quantity} bidhaa zimehamishwa.`,
         data: { transferId: transfer.id },
       };
     },
   });
 
+  // ── Adjust Stock ──
   registry.register({
     name: "adjust-stock",
     description: "Adjust stock quantity",
+    descriptionSwahili: "Rekebisha kiwango cha stock",
     parameters: [
       { name: "itemId", type: "string", description: "Item ID", required: true },
       { name: "quantity", type: "number", description: "New quantity", required: true },
       { name: "locationId", type: "string", description: "Location ID", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "inventory.adjust",
     handler: async (params) => {
       const itemId = params.itemId as string;
       const quantity = Number(params.quantity);
@@ -614,7 +857,7 @@ function createRegistry(): ToolRegistry {
         where: { locationId_catalogItemId_variantId: { locationId, catalogItemId: itemId, variantId: null } },
       });
       if (!balance) {
-        return { success: false, message: "No balance record found." };
+        return { success: false, message: "Hakuna rekodi ya stock." };
       }
 
       await prisma.inventoryBalance.update({
@@ -624,20 +867,23 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Stock adjusted to ${quantity}.`,
+        message: `Stock imerekebishwa kuwa ${quantity}.`,
         data: { itemId, newQuantity: quantity },
       };
     },
   });
 
+  // ── Create Purchase Order ──
   registry.register({
     name: "create-purchase-order",
     description: "Create a purchase order",
+    descriptionSwahili: "Unda agizo la ununuzi",
     parameters: [
       { name: "supplierId", type: "string", description: "Supplier ID", required: true },
       { name: "items", type: "array", description: "Array of {itemId, quantity, unitCost} objects", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
+    requiredPermission: "purchases.create",
     handler: async (params) => {
       const businessId = params.businessId as string;
       const supplierId = params.supplierId as string;
@@ -663,15 +909,17 @@ function createRegistry(): ToolRegistry {
 
       return {
         success: true,
-        message: `Purchase Order #${po.id.slice(0, 8)} created: ${formatCurrency(total)}.`,
+        message: `Agizo la ununuzi #${po.id.slice(0, 8)} limeundwa: ${formatCurrency(total)}.`,
         data: { poId: po.id, total },
       };
     },
   });
 
+  // ── Check Wallet ──
   registry.register({
     name: "check-wallet",
     description: "Check subscription wallet balance",
+    descriptionSwahili: "Angalia pochi ya usajili",
     parameters: [
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
@@ -681,21 +929,24 @@ function createRegistry(): ToolRegistry {
         where: { businessId },
       });
 
+      const balance = wallet ? Number(wallet.balance) : 0;
       return {
         success: true,
         message: wallet
-          ? `Wallet balance: ${formatCurrency(Number(wallet.balance))}.`
-          : "No wallet found.",
-        data: { balance: wallet ? Number(wallet.balance) : 0 },
+          ? `Pochi yako ina TZS ${balance.toLocaleString("sw-TZ")}.`
+          : "Hakuna pochi ya usajili.",
+        data: { balance },
       };
     },
   });
 
+  // ── View Report ──
   registry.register({
     name: "view-report",
     description: "Generate a business report",
+    descriptionSwahili: "Toa ripoti ya biashara",
     parameters: [
-      { name: "type", type: "string", description: "Report type (sales, stock, staff, customers, profit)", required: true },
+      { name: "type", type: "string", description: "Report type (sales, stock, staff, customers, profit, expenses)", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
       { name: "days", type: "number", description: "Days to look back", required: false },
     ],
@@ -706,18 +957,20 @@ function createRegistry(): ToolRegistry {
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
       switch (type) {
-        case "sales": {
+        case "sales":
+        case "mauzo": {
           const sales = await prisma.sale.findMany({
             where: { businessId, createdAt: { gte: startDate } },
           });
           const totalRevenue = sales.reduce((s, sale) => s + Number(sale.total), 0);
           return {
             success: true,
-            message: `Sales report (${days} days): ${sales.length} transactions, ${formatCurrency(totalRevenue)} total.`,
+            message: `Ripoti ya mauzo (siku ${days}): ${sales.length} mauzo, jumla ${formatCurrency(totalRevenue)}.`,
             data: { count: sales.length, total: totalRevenue, period: days },
           };
         }
-        case "profit": {
+        case "profit":
+        case "faida": {
           const sales = await prisma.sale.findMany({
             where: { businessId, createdAt: { gte: startDate } },
             include: { items: { include: { catalogItem: { select: { costPrice: true } } } } },
@@ -733,11 +986,12 @@ function createRegistry(): ToolRegistry {
           const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
           return {
             success: true,
-            message: `Profit report: Revenue ${formatCurrency(revenue)}, Cost ${formatCurrency(cost)}, Profit ${formatCurrency(profit)} (${margin.toFixed(1)}% margin).`,
+            message: `Ripoti ya faida: Mapato ${formatCurrency(revenue)}, Gharama ${formatCurrency(cost)}, Faida ${formatCurrency(profit)} (${margin.toFixed(1)}% margin).`,
             data: { revenue, cost, profit, margin: Math.round(margin * 100) / 100 },
           };
         }
-        case "stock": {
+        case "stock":
+        case "hesabu": {
           const items = await prisma.catalogItem.findMany({
             where: { businessId, trackStock: true },
             include: { balances: true },
@@ -747,25 +1001,39 @@ function createRegistry(): ToolRegistry {
           const lowStock = items.filter((i) => i.balances.some((b) => Number(b.quantityOnHand) <= Number(b.reorderPoint) && Number(b.reorderPoint) > 0)).length;
           return {
             success: true,
-            message: `Stock report: ${totalItems} items, ${formatCurrency(totalValue)} total value, ${lowStock} low stock alerts.`,
+            message: `Ripoti ya stock: ${totalItems} bidhaa, thamani ${formatCurrency(totalValue)}, ${lowStock} zinaisha.`,
             data: { totalItems, totalValue, lowStock },
+          };
+        }
+        case "expenses":
+        case "gharama": {
+          const expenses = await prisma.expense.findMany({
+            where: { businessId, createdAt: { gte: startDate } },
+          });
+          const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+          return {
+            success: true,
+            message: `Ripoti ya gharama (siku ${days}): ${expenses.length} gharama, jumla ${formatCurrency(totalExpenses)}.`,
+            data: { count: expenses.length, total: totalExpenses, period: days },
           };
         }
         case "staff":
           return {
             success: true,
-            message: `Staff report: Use the staff management page for detailed information.`,
+            message: `Ripoti ya wafanyakazi: Tumia ukurasa wa usimamizi wa wafanyakazi kwa maelezo kamili.`,
             data: { type: "staff" },
           };
         default:
-          return { success: false, message: `Unknown report type: ${type}` };
+          return { success: false, message: `Aina ya ripoti haijulikani: ${type}. Jaribu: sales, stock, profit, expenses.` };
       }
     },
   });
 
+  // ── Check Staff ──
   registry.register({
     name: "check-staff",
     description: "Look up staff information",
+    descriptionSwahili: "Tafuta taarifa za mfanyakazi",
     parameters: [
       { name: "name", type: "string", description: "Staff name", required: false },
       { name: "businessId", type: "string", description: "Business ID", required: true },
@@ -793,9 +1061,18 @@ function createRegistry(): ToolRegistry {
         take: 10,
       });
 
+      if (staff.length === 0) {
+        return { success: false, message: "Hakuna wafanyakazi waliopatikana." };
+      }
+
+      const staffList = staff.map((s) => {
+        const roles = s.assignments.map((a) => a.role?.name).filter(Boolean).join(", ");
+        return `• ${s.user.firstName} ${s.user.lastName} - ${s.position || roles || "hakuna cheo"}`;
+      }).join("\n");
+
       return {
         success: true,
-        message: `Found ${staff.length} staff member(s).`,
+        message: `Wafanyakazi ${staff.length} wamepatikana:\n${staffList}`,
         data: {
           staff: staff.map((s) => ({
             name: `${s.user.firstName} ${s.user.lastName}`,
@@ -812,6 +1089,7 @@ function createRegistry(): ToolRegistry {
     },
   });
 
+  // ── Send Notification ──
   registry.register({
     name: "send-notification",
     description: "Send a notification to a user",
@@ -831,10 +1109,11 @@ function createRegistry(): ToolRegistry {
         data: { userId, businessId, type: "system", title, message },
       });
 
-      return { success: true, message: "Notification sent." };
+      return { success: true, message: "Arifa imetumwa." };
     },
   });
 
+  // ── Send Email ──
   registry.register({
     name: "send-email",
     description: "Send an email",
@@ -848,12 +1127,13 @@ function createRegistry(): ToolRegistry {
       const subject = params.subject as string;
       const html = params.html as string;
 
+      const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
       const result = await sendEmailWithDefaultConfig({ to, subject, html });
       if (!result.success) {
-        return { success: false, message: result.error || "Failed to send email" };
+        return { success: false, message: result.error || "Imeshindwa kutuma barua pepe" };
       }
 
-      return { success: true, message: `Email sent to ${to}.` };
+      return { success: true, message: `Barua pepe imetumwa kwa ${to}.` };
     },
   });
 
@@ -861,7 +1141,7 @@ function createRegistry(): ToolRegistry {
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-TZ", { style: "currency", currency: "TZS" }).format(value);
+  return `TZS ${value.toLocaleString("sw-TZ")}`;
 }
 
 export const toolRegistry = createRegistry();

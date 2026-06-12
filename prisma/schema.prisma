@@ -184,6 +184,7 @@ model User {
   notificationPreferences           NotificationPreference[]
   sessions                          Session[]
   accounts                          Account[]
+  firdausWorkflows                  FirdausWorkflow[]
 
   invites UserInvite[]
 
@@ -373,6 +374,8 @@ model Business {
   campaignSegments        CampaignSegment[]
   campaigns               Campaign[]
   userInvites             UserInvite[]
+  firdausWorkflows        FirdausWorkflow[]
+  businessMemories        BusinessMemory[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -2426,6 +2429,68 @@ model Campaign {
   @@index([businessId])
   @@index([status])
   @@map("campaigns")
+}
+
+// ─── Firdaus Persistent Workflow ─────────────────────────────────────────────
+
+enum FirdausWorkflowStatus {
+  STARTED
+  COLLECTING_DATA
+  VALIDATING
+  EXECUTING
+  COMPLETED
+  FAILED
+}
+
+model FirdausWorkflow {
+  id          String                  @id @default(uuid()) @db.Uuid
+  businessId  String                  @map("business_id") @db.Uuid
+  userId      String                  @map("user_id") @db.Uuid
+  type        String                  // "sales" | "purchases" | "expenses" | "inventory" | "customers" | "suppliers" | "business_setup"
+  status      FirdausWorkflowStatus   @default(STARTED)
+  currentStep String                  @default("") @map("current_step")
+  collectedData Json                  @default("{}") @map("collected_data")
+  context      Json                  @default("{}")
+  error       String?                 @map("error")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([businessId, userId])
+  @@index([businessId, status])
+  @@index([type, status])
+  @@map("firdaus_workflows")
+}
+
+// ─── Business Learned Memory ─────────────────────────────────────────────────
+
+enum MemoryType {
+  PREFERRED_SUPPLIER
+  TOP_CUSTOMER
+  COMMON_EXPENSE
+  POPULAR_PRODUCT
+  PAYMENT_METHOD
+  FREQUENT_PRODUCT
+}
+
+model BusinessMemory {
+  id         String     @id @default(uuid()) @db.Uuid
+  businessId String     @map("business_id") @db.Uuid
+  type       MemoryType
+  key        String     // e.g. supplier name, product name, category
+  value      String     // e.g. supplier name, count as text
+  confidence Float      @default(0.5) // 0.0 – 1.0
+  metadata   Json?      @default("{}")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, type, key])
+  @@index([businessId, type])
+  @@map("business_memory")
 }
 
 // ─── Campaign Recipient ───────────────────────────────────────────────────────

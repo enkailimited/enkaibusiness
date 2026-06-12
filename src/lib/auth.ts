@@ -19,15 +19,19 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
     requireEmailVerification: false,
-    sendResetPasswordEmail: async ({ user, url }) => {
+    sendResetPassword: async ({ user, url }) => {
       try {
+        const baseUrl = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const token = url.split("/").pop()?.split("?")[0] || "";
+        const callbackUrl = `${baseUrl}/reset-password?token=${token}`;
+
         const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
         const { renderTemplate } = await import("@/notifications/email/services/template-service");
         const tpl = await import("@/notifications/email/services/template-service").then(
           (m) => m.SYSTEM_TEMPLATES.find((t) => t.slug === "password-reset"),
         );
         if (tpl) {
-          const rendered = await renderTemplate(tpl, { resetUrl: url });
+          const rendered = await renderTemplate(tpl, { resetUrl: callbackUrl });
           await sendEmailWithDefaultConfig({
             to: user.email,
             subject: rendered.subject,
@@ -38,7 +42,7 @@ export const auth = betterAuth({
           await sendEmailWithDefaultConfig({
             to: user.email,
             subject: "Reset your password",
-            html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+            html: `<p>Click <a href="${callbackUrl}">here</a> to reset your password.</p>`,
           });
         }
       } catch (err) {
@@ -50,7 +54,6 @@ export const auth = betterAuth({
     expiresIn: 7 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
     freshAge: 5 * 60,
-    rememberMeExpiresIn: 30 * 24 * 60 * 60,
   },
   user: {
     additionalFields: {
@@ -131,7 +134,7 @@ export const auth = betterAuth({
     },
   },
   experimental: {
-    useSessionQuery: true
+    joins: true,
   },
   rateLimit: {
     window: 60,

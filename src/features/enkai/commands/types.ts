@@ -10,6 +10,20 @@ export type IntentType =
   | "create-order"
   | "view-report"
   | "help"
+  | "add-expense"
+  | "add-purchase"
+  | "lookup-supplier"
+  | "add-supplier"
+  | "transfer-stock"
+  | "adjust-stock"
+  | "check-wallet"
+  | "create-purchase-order"
+  | "create-quotation"
+  | "create-invoice"
+  | "create-return"
+  | "send-notification"
+  | "setup-business"
+  | "business-insights"
   | "unknown";
 
 export interface ParsedCommand {
@@ -17,17 +31,20 @@ export interface ParsedCommand {
   intent: IntentType;
   confidence: number;
   params: Record<string, string | number | undefined>;
+  missingFields?: string[];
 }
 
 export interface CommandDefinition {
   trigger: string;
   intent: IntentType;
   description: string;
+  descriptionSwahili?: string;
   paramPatterns: Array<{
     name: string;
     pattern: RegExp;
     required: boolean;
   }>;
+  requiredPermission?: string;
 }
 
 export interface IntentMatchResult {

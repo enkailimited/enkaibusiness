@@ -1,22 +1,61 @@
-export const systemPrompt = `You are Enkai, an AI business assistant for the Enkai Business platform.
-You help business owners and staff manage their daily operations including sales, inventory, customers, and staff.
-You interpret natural language and slash commands to perform actions.
-Keep responses concise and action-oriented. When you don't know something, suggest using /help.`;
+export const systemPrompt = `Wewe ni Firdaus, Wakala wa Uendeshaji Biashara wa Enkai Business.
 
-export const sellPrompt = (params: { item?: string; quantity?: string | number; unit?: string }): string =>
-  `Process a sale: ${params.quantity} ${params.unit || "units"} of ${params.item || "item"}. Confirm item exists in catalog and has sufficient stock.`;
+Wewe si chatbot.
+Wewe si msaidizi wa jumla.
+Wewe ni wakala wa biashara anayesaidia wamiliki wa biashara, wasimamizi, timu za mauzo, timu za ununuzi, maafisa wa hesabu, maafisi wa fedha na wasimamizi KUENDESHA biashara zao.
 
-export const stockCheckPrompt = (item: string): string =>
-  `Check current stock levels for "${item}". Return quantity on hand, available quantity, and location.`;
+Lugha yako kuu ni Kiswahili Rahisi.
+Epuka misamiati ya kisasa na maneno magumu ya uhasibu.
+Mawasiliano yako ni mafupi, wazi, na ya kitaalamu.
 
-export const customerLookupPrompt = (query: string): string =>
-  `Search for customer matching "${query}". Return name, phone, email, and any outstanding balance.`;
+Kazi yako si kujibu maswali tu — kazi yako ni kusaidia WATEJA KU KAMILISHA SHUGHULI ZA BIASHARA.
 
-export const reportPrompt = (type: string, period: string): string =>
-  `Generate a ${period} ${type} report. Include total transactions, revenue, top items, and any anomalies.`;
+Kanuni zako:
+1. Tekeleza shughuli za biashara kwa usahihi na usalama
+2. Mwongozo mtumiaji hatua kwa hatua
+3. Angalia ruhusa kwa kila operesheni (kimya kimya)
+4. Kamwe usitekeleze shughuli ambazo hazijakamilika
+5. Unda kumbukumbu za kila operesheni
+6. Toa taarifa za akili (insights) za biashara
 
-export const greetingPrompt = (timeOfDay: string): string =>
-  `Good ${timeOfDay}! I'm Enkai, your business assistant. I can help with sales, stock checks, customer lookups, and more. Type /help to see what I can do.`;
+Baada ya kusalamia, subiri agizo la mtumiaji. Usitoa chochote mpaka mtumiaji aambie anachotaka.`;
 
-export const errorPrompt = (error: string): string =>
-  `I encountered an issue: ${error}. Please try again or rephrase your request.`;
+export const greetingSwahili = `Habari! Mimi ni Firdaus, wakala wako wa uendeshaji biashara. Naweza kukusaidia kuuza, kuangalia stock, kununua bidhaa, kurekodi gharama, na mengine mengi. Niambie nini unachotaka kufanya.`;
+
+export const greetingEnglish = `Hello! I am Firdaus, your business operations agent. I can help you sell, check stock, purchase items, record expenses, and more. Tell me what you'd like to do.`;
+
+export const helpSwahili = `Naweza kukusaidia kwa:
+• Mauzo - "nimeuza bidhaa"
+• Stock - "stock ya bidhaa gani imebaki"
+• Ununuzi - "nimenunua bidhaa"
+• Gharama - "nimetumia gharama"
+• Wateja - "tafuta mteja" au "ongeza mteja"
+• Wasambazaji - "tafuta msambazaji"
+• Ripoti - "ripoti ya mauzo" au "taarifa ya biashara"
+• Bei - "bei ya bidhaa"
+• Wafanyakazi - "tafuta mfanyakazi"
+
+Kwa msaada zaidi, tumia: /help`;
+
+export const noPermission = "Samahani, huna ruhusa ya kufanya operesheni hiyo. Tafadhali wasiliana na msimamizi wa mfumo kwa msaada zaidi.";
+
+export const incompleteTransaction = (field: string): string =>
+  `Tafadhali niongezee ${field}.`;
+
+export const confirmAction = (description: string): string =>
+  `Je, una uhakika unataka ${description}?`;
+
+export const successMessage = (operation: string, details: string): string =>
+  `Imefanikiwa! ${operation}: ${details}`;
+
+export const errorMessage = (error: string): string =>
+  `Samahani, tatizo limetokea: ${error}. Tafadhali jaribu tena.`;
+
+export const proactiveStockAlert = (item: string, quantity: number): string =>
+  `Tahadhari! "${item}" imebaki ${quantity} tu. Inashauriwa kuongeza stock.`;
+
+export const proactiveSalesDrop = (percent: number, period: string): string =>
+  `Mauzo ya ${period} yameshuka kwa ${percent}% ukilinganisha na kipindi kilichopita.`;
+
+export const proactiveTrendUp = (item: string, percent: number): string =>
+  `"${item}" inauzwa kwa kasi kubwa. Mauzo yameongezeka kwa ${percent}%. Inashauriwa kuongeza stock.`;

@@ -1,10 +1,11 @@
 import "server-only";
 
-import { parseCommand } from "../commands/command-parser";
+import { prisma } from "@/server/db";
+import { parseCommand, getHelpText } from "../commands/command-parser";
 import { memoryStore } from "../memory/memory-store";
 import { toolRegistry } from "../tools/tool-registry";
-import { systemPrompt } from "../prompts/prompts";
-import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler } from "./types";
+import { systemPrompt, greetingSwahili, helpSwahili, noPermission, incompleteTransaction, successMessage, errorMessage } from "../prompts/prompts";
+import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler, WorkflowDefinition } from "./types";
 import type { IntentType } from "../commands/types";
 
 const config = {
@@ -23,7 +24,7 @@ const intentHandlers: IntentHandler[] = [
       const item = params.item as string | undefined;
       if (!item) {
         return {
-          message: "Please specify an item to check stock for.",
+          message: incompleteTransaction("jina la bidhaa"),
           intent: "check-stock",
           confidence: 1,
           actionRequired: false,
@@ -44,9 +45,25 @@ const intentHandlers: IntentHandler[] = [
     handler: async (params, context) => {
       const quantity = params.quantity;
       const item = params.item as string | undefined;
-      if (!quantity || !item) {
+      if (!quantity && !item) {
         return {
-          message: "Please specify both quantity and item. Example: sell 2kg sugar",
+          message: `Umeuza bidhaa gani?`,
+          intent: "sell",
+          confidence: 0.5,
+          actionRequired: false,
+        };
+      }
+      if (!quantity) {
+        return {
+          message: `Umeuza kiasi gani cha ${item || "bidhaa"}?`,
+          intent: "sell",
+          confidence: 0.5,
+          actionRequired: false,
+        };
+      }
+      if (!item) {
+        return {
+          message: `Umeuza bidhaa gani?`,
           intent: "sell",
           confidence: 0.5,
           actionRequired: false,
@@ -73,7 +90,7 @@ const intentHandlers: IntentHandler[] = [
       const item = params.item as string | undefined;
       if (!item) {
         return {
-          message: "Please specify an item to check price for.",
+          message: "Tafadhali taja bidhaa.",
           intent: "check-price",
           confidence: 1,
           actionRequired: false,
@@ -95,7 +112,7 @@ const intentHandlers: IntentHandler[] = [
       const query = (params.query || params.phone || params.name) as string | undefined;
       if (!query) {
         return {
-          message: "Please provide a customer name or phone number.",
+          message: "Tafadhali toa jina la mteja au namba ya simu.",
           intent: "lookup-customer",
           confidence: 0.8,
           actionRequired: false,
@@ -116,9 +133,17 @@ const intentHandlers: IntentHandler[] = [
     handler: async (params) => {
       const name = params.name as string | undefined;
       const phone = params.phone as string | undefined;
-      if (!name || !phone) {
+      if (!name) {
         return {
-          message: "Please provide both name and phone number. Example: add-customer John 255712345678",
+          message: "Tafadhali toa jina la mteja.",
+          intent: "add-customer",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      if (!phone) {
+        return {
+          message: `Tafadhali toa namba ya simu ya ${name}.`,
           intent: "add-customer",
           confidence: 0.6,
           actionRequired: false,
@@ -135,11 +160,143 @@ const intentHandlers: IntentHandler[] = [
     },
   },
   {
+    intent: "add-expense",
+    handler: async (params, context) => {
+      const amount = params.amount;
+      const description = params.description as string | undefined;
+      if (!amount) {
+        return {
+          message: "Gharama ni kiasi gani?",
+          intent: "add-expense",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      if (!description) {
+        return {
+          message: "Gharama hii ni ya nini? (mf: mafuta, usafiri, internet, umeme, kodi)",
+          intent: "add-expense",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      const result = await toolRegistry.execute("add-expense", {
+        amount: Number(amount),
+        description,
+        businessId: context.businessId,
+      });
+      return {
+        message: result.message || `Expense recorded: ${amount}`,
+        intent: "add-expense",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
+    intent: "add-purchase",
+    handler: async (params, context) => {
+      const item = params.item as string | undefined;
+      const quantity = params.quantity;
+      const cost = params.cost;
+      if (!item) {
+        return {
+          message: "Umenunua bidhaa gani?",
+          intent: "add-purchase",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      if (!quantity) {
+        return {
+          message: `Umenunua kiasi gani cha ${item}?`,
+          intent: "add-purchase",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      if (!cost) {
+        return {
+          message: `Umenunua kwa bei gani kwa kila ${item}?`,
+          intent: "add-purchase",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      const result = await toolRegistry.execute("add-purchase", {
+        item,
+        quantity: Number(quantity),
+        cost: Number(cost),
+        businessId: context.businessId,
+      });
+      return {
+        message: result.message || `Purchase recorded: ${quantity} of ${item}.`,
+        intent: "add-purchase",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
+    intent: "lookup-supplier",
+    handler: async (params) => {
+      const query = (params.query || params.name) as string | undefined;
+      if (!query) {
+        return {
+          message: "Tafadhali toa jina la msambazaji.",
+          intent: "lookup-supplier",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      const result = await toolRegistry.execute("lookup-supplier", { query });
+      return {
+        message: result.message || `Supplier lookup for ${query}.`,
+        intent: "lookup-supplier",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
+    intent: "add-supplier",
+    handler: async (params) => {
+      const name = params.name as string | undefined;
+      const phone = params.phone as string | undefined;
+      if (!name) {
+        return {
+          message: "Tafadhali toa jina la msambazaji.",
+          intent: "add-supplier",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      if (!phone) {
+        return {
+          message: `Tafadhali toa namba ya simu ya ${name}.`,
+          intent: "add-supplier",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      const result = await toolRegistry.execute("add-supplier", { name, phone });
+      return {
+        message: result.message || `Supplier ${name} added successfully.`,
+        intent: "add-supplier",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
     intent: "help",
     handler: async () => {
-      const { getHelpText } = await import("../commands/command-parser");
       return {
-        message: getHelpText(),
+        message: helpSwahili,
         intent: "help",
         confidence: 1,
         actionRequired: false,
@@ -161,17 +318,17 @@ const intentHandlers: IntentHandler[] = [
   },
   {
     intent: "view-report",
-    handler: async (params) => {
+    handler: async (params, context) => {
       const type = params.type as string | undefined;
       if (!type) {
         return {
-          message: "Please specify report type: sales, stock, staff, or customers.",
+          message: "Tafadhali chagua aina ya ripoti: sales, stock, staff, customers, au profit.",
           intent: "view-report",
           confidence: 0.7,
           actionRequired: false,
         };
       }
-      const result = await toolRegistry.execute("view-report", { type });
+      const result = await toolRegistry.execute("view-report", { type, businessId: context.businessId });
       return {
         message: result.message || `${type} report generated.`,
         intent: "view-report",
@@ -183,9 +340,9 @@ const intentHandlers: IntentHandler[] = [
   },
   {
     intent: "check-staff",
-    handler: async (params) => {
+    handler: async (params, context) => {
       const name = params.name as string | undefined;
-      const result = await toolRegistry.execute("check-staff", { name });
+      const result = await toolRegistry.execute("check-staff", { name, businessId: context.businessId });
       return {
         message: result.message || "Staff information retrieved.",
         intent: "check-staff",
@@ -232,10 +389,111 @@ const intentHandlers: IntentHandler[] = [
       };
     },
   },
+  {
+    intent: "transfer-stock",
+    handler: async (params, context) => {
+      const item = params.item as string | undefined;
+      const quantity = params.quantity;
+      const from = params.from as string | undefined;
+      const to = params.to as string | undefined;
+      if (!item || !quantity || !from || !to) {
+        return {
+          message: "Tafadhali toa: bidhaa, idadi, sehemu ya kutoka na sehemu ya kwenda.",
+          intent: "transfer-stock",
+          confidence: 0.6,
+          actionRequired: false,
+        };
+      }
+      const result = await toolRegistry.execute("transfer-stock", {
+        item,
+        quantity: Number(quantity),
+        from,
+        to,
+        businessId: context.businessId,
+      });
+      return {
+        message: result.message || `Transferred ${quantity} of ${item}.`,
+        intent: "transfer-stock",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
+    intent: "check-wallet",
+    handler: async (_, context) => {
+      const result = await toolRegistry.execute("check-wallet", { businessId: context.businessId });
+      return {
+        message: result.message || "Wallet info retrieved.",
+        intent: "check-wallet",
+        confidence: 1,
+        actionRequired: false,
+        actionData: result.data,
+      };
+    },
+  },
+  {
+    intent: "business-insights",
+    handler: async (_, context) => {
+      try {
+        const { generateBusinessInsights } = await import("@/enkai/intelligence/business-insights/insights-engine");
+        const insights = await generateBusinessInsights(context.businessId!);
+        const insightMessages = insights.map((i: { type: string; title: string; description: string; severity: string }) =>
+          `${i.type === "opportunity" ? "⚡" : i.type === "warning" ? "⚠️" : "ℹ️"} **${i.title}**: ${i.description}`
+        ).join("\n\n");
+        return {
+          message: `**Maarifa ya Biashara**\n\n${insightMessages || "Hakuna maarifa mapya kwa sasa."}`,
+          intent: "business-insights",
+          confidence: 1,
+          actionRequired: false,
+          actionData: { insights },
+        };
+      } catch {
+        return {
+          message: "Samahani, siwezi kupata maarifa ya biashara kwa sasa. Tafadhali jaribu tena baadaye.",
+          intent: "business-insights",
+          confidence: 0.5,
+          actionRequired: false,
+        };
+      }
+    },
+  },
 ];
 
 function findHandler(intent: IntentType): IntentHandler | undefined {
   return intentHandlers.find((h) => h.intent === intent);
+}
+
+async function checkPermission(context: AssistantContext, requiredPermission?: string): Promise<boolean> {
+  if (!requiredPermission || !context.userId) return true;
+  if (context.permissions && context.permissions.includes(requiredPermission)) return true;
+  if (context.permissions && context.permissions.includes("*")) return true;
+  return false;
+}
+
+async function createAuditLog(
+  userId: string,
+  businessId: string | undefined,
+  action: string,
+  details: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const { prisma } = await import("@/server/db");
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        businessId: businessId || "",
+        action,
+        entity: "firdaus_assistant",
+        entityId: action,
+        before: null,
+        after: details,
+      },
+    });
+  } catch (err) {
+    console.error("Failed to create audit log:", err);
+  }
 }
 
 export async function processMessage(
@@ -243,59 +501,32 @@ export async function processMessage(
   context: AssistantContext,
   sessionId?: string,
 ): Promise<AssistantResponse> {
-  const history = sessionId ? memoryStore.getHistory(sessionId) : [];
   const session = sessionId || `session_${context.userId}_${Date.now()}`;
 
-  const userMessage: AssistantMessage = {
+  memoryStore.addMessage(session, {
     id: generateId(),
     role: "user",
     content: input,
     timestamp: new Date(),
-  };
-
-  memoryStore.addMessage(session, userMessage);
-
-  const parsed = parseCommand(input);
-
-  if (parsed.intent === "unknown" && parsed.confidence === 0) {
-    const response: AssistantResponse = {
-      message: "I didn't understand that. Type /help to see available commands.",
-      intent: null,
-      confidence: 0,
-      actionRequired: false,
-    };
-
-    memoryStore.addMessage(session, {
-      id: generateId(),
-      role: "assistant",
-      content: response.message,
-      timestamp: new Date(),
-    });
-
-    return response;
-  }
-
-  const handler = findHandler(parsed.intent);
-  if (!handler) {
-    const response: AssistantResponse = {
-      message: `I don't know how to handle "${parsed.intent}" yet. Type /help to see what I can do.`,
-      intent: parsed.intent,
-      confidence: parsed.confidence,
-      actionRequired: false,
-    };
-
-    memoryStore.addMessage(session, {
-      id: generateId(),
-      role: "assistant",
-      content: response.message,
-      timestamp: new Date(),
-    });
-
-    return response;
-  }
+  });
 
   try {
-    const response = await handler.handler(parsed.params, context);
+    const brainResponse = await processWithBrain({
+      input,
+      context,
+    });
+
+    const response: AssistantResponse = {
+      message: brainResponse.message,
+      intent: null,
+      confidence: 1,
+      actionRequired: !!brainResponse.workflow,
+      actionData: {
+        ...brainResponse.data,
+        currentWorkflow: brainResponse.workflow,
+        currentStep: brainResponse.step,
+      },
+    };
 
     memoryStore.addMessage(session, {
       id: generateId(),
@@ -303,18 +534,14 @@ export async function processMessage(
       content: response.message,
       timestamp: new Date(),
     });
-
-    if (history.length > config.maxHistoryLength) {
-      memoryStore.clear(session);
-    }
 
     return response;
   } catch (error) {
-    console.error("Assistant handler error:", error);
+    console.error("Firdaus brain error:", error);
     return {
-      message: "An error occurred while processing your request. Please try again.",
-      intent: parsed.intent,
-      confidence: parsed.confidence,
+      message: errorMessage(error instanceof Error ? error.message : "Tatizo la mfumo"),
+      intent: null,
+      confidence: 0,
       actionRequired: false,
     };
   }
