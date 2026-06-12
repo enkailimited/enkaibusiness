@@ -7,4 +7,4 @@ node_modules/
 next-env.d.ts
 .DS_Store
 *.log
-prisma/migrations/
+# prisma/migrations/

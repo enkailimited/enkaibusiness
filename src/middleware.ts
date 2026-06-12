@@ -32,8 +32,6 @@ export function middleware(req: NextRequest) {
     c.name.includes("better-auth")
   );
 
-  console.log(`Middleware: ${pathname}, hasSession: ${hasSession}, cookies: ${allCookies.map(c => c.name).join(", ")}`);
-
   if (!hasSession && !isPublic) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("redirect", pathname);
