@@ -99,8 +99,8 @@ export default function PrivacyPolicyPage() {
             <h2 className="mb-3 text-lg font-semibold text-foreground">8. Contact Us</h2>
             <p>
               If you have questions about this Privacy Policy, please contact us at{" "}
-              <a href="mailto:privacy@enkai.com" className="text-primary underline-offset-4 hover:underline">
-                privacy@enkai.com
+              <a href="mailto:privacy@enkaibusiness.com" className="text-primary underline-offset-4 hover:underline">
+                privacy@enkaibusiness.com
               </a>.
             </p>
           </section>

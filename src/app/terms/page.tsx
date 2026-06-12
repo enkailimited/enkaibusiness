@@ -106,8 +106,8 @@ export default function TermsPage() {
             <h2 className="mb-3 text-lg font-semibold text-foreground">10. Contact</h2>
             <p>
               For questions about these terms, please contact us at{" "}
-              <a href="mailto:legal@enkai.com" className="text-primary underline-offset-4 hover:underline">
-                legal@enkai.com
+              <a href="mailto:legal@enkaibusiness.com" className="text-primary underline-offset-4 hover:underline">
+                legal@enkaibusiness.com
               </a>.
             </p>
           </section>
