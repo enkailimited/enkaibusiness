@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
+import { ImageUploader } from "@/components/upload/image-uploader";
 import { createCategoryAction, updateCategoryAction } from "../actions";
 import { FolderTree, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import type { ActionResponse } from "@/types/relationships";
+import type { UploadedFile } from "@/types/upload";
 
 const STEPS = [
   { title: "Basic Info", description: "Name and parent category" },
@@ -33,6 +35,7 @@ interface CategoryFormProps {
 
 export function CategoryForm({ mode, businessId, categories, initialData }: CategoryFormProps) {
   const [step, setStep] = useState(0);
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
   const formActionRef = useMemo(
     () => (mode === "create"
       ? createCategoryAction.bind(null, businessId)
@@ -112,10 +115,20 @@ export function CategoryForm({ mode, businessId, categories, initialData }: Cate
                   <Textarea id="description" name="description" defaultValue={initialData?.description ?? ""}                     placeholder="Optional description" rows={3} className="rounded-xl border-gray-200 h-24" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-sm font-medium">
-                    Image URL <span className="text-gray-400">(Optional)</span>
+                  <Label className="text-sm font-medium">
+                    Category Image <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input id="imageUrl" name="imageUrl" defaultValue={initialData?.imageUrl ?? ""} placeholder="https://example.com/category-image.jpg" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <input type="hidden" name="imageUrl" value={imageUrl} />
+                  <ImageUploader
+                    onUpload={(files: UploadedFile[]) => {
+                      if (files[0]) setImageUrl(files[0].url);
+                    }}
+                    maxFiles={1}
+                    existingImages={imageUrl ? [{ id: "existing", url: imageUrl, fileId: "existing", name: "current-image", size: 0, mimeType: "image/*", createdAt: "" }] : []}
+                  />
+                  {imageUrl && (
+                    <p className="text-xs text-green-600">Image uploaded</p>
+                  )}
                 </div>
               </div>
             </div>

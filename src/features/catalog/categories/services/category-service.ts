@@ -11,7 +11,19 @@ export async function createCategory(
   data: CreateCategorySchema,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
-    const slug = slugify(data.name);
+    let slug = slugify(data.name);
+
+    const existing = await prisma.category.findFirst({
+      where: { businessId, slug: { startsWith: slug } },
+      select: { slug: true },
+      orderBy: { slug: "desc" },
+    });
+
+    if (existing) {
+      const match = existing.slug.match(new RegExp(`^${slug}-(\\d+)$`));
+      const nextNum = match ? parseInt(match[1]!, 10) + 1 : 1;
+      slug = `${slug}-${nextNum}`;
+    }
 
     const category = await prisma.category.create({
       data: {
@@ -41,14 +53,35 @@ export async function updateCategory(
   data: UpdateCategorySchema,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
-    const updateData: Record<string, unknown> = {
-      ...data,
-      slug: data.name ? slugify(data.name) : undefined,
-    };
+    const existingCat = await prisma.category.findUnique({ where: { id } });
+    if (!existingCat) return { success: false, message: "Category not found" };
 
-    if (data.parentId !== undefined) {
-      updateData.parentId = data.parentId;
+    const updateData: Record<string, unknown> = { ...data };
+    delete updateData.isActive;
+
+    if (data.name) {
+      let slug = slugify(data.name);
+
+      const dup = await prisma.category.findFirst({
+        where: { businessId: existingCat.businessId, slug, id: { not: id } },
+        select: { id: true },
+      });
+
+      if (dup) {
+        const last = await prisma.category.findFirst({
+          where: { businessId: existingCat.businessId, slug: { startsWith: slug }, id: { not: id } },
+          select: { slug: true },
+          orderBy: { slug: "desc" },
+        });
+        const match = last?.slug.match(new RegExp(`^${slug}-(\\d+)$`));
+        const nextNum = match ? parseInt(match[1]!, 10) + 1 : 1;
+        slug = `${slug}-${nextNum}`;
+      }
+
+      updateData.slug = slug;
     }
+
+    if (data.parentId !== undefined) updateData.parentId = data.parentId;
 
     await prisma.category.update({
       where: { id },
