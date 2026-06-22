@@ -4,13 +4,17 @@ import { QuickActionCard } from "@/components/ui/quick-action-card";
 import {
   GitBranch, Store, Users, Package, ShoppingCart, Truck,
   ClipboardList, Wallet, CircleUser, FileText, CreditCard, PiggyBank,
+  FolderTree, Tag, Ruler,
 } from "lucide-react";
 
 const actions = [
   { title: "Branches", id: "branches", icon: GitBranch, color: "text-blue-600", bg: "bg-blue-100" },
   { title: "Stores", id: "stores", icon: Store, color: "text-teal-600", bg: "bg-teal-100" },
   { title: "Staff", id: "staff", icon: Users, color: "text-indigo-600", bg: "bg-indigo-100" },
-  { title: "Catalog", id: "catalog/products", icon: Package, color: "text-purple-600", bg: "bg-purple-100" },
+  { title: "Products", id: "catalog/products", icon: Package, color: "text-purple-600", bg: "bg-purple-100" },
+  { title: "Categories", id: "catalog/categories", icon: FolderTree, color: "text-pink-600", bg: "bg-pink-100" },
+  { title: "Brands", id: "catalog/brands", icon: Tag, color: "text-orange-600", bg: "bg-orange-100" },
+  { title: "Units", id: "catalog/units", icon: Ruler, color: "text-cyan-600", bg: "bg-cyan-100" },
   { title: "Sales", id: "sales", icon: ShoppingCart, color: "text-emerald-600", bg: "bg-emerald-100" },
   { title: "Purchases", id: "purchases", icon: Truck, color: "text-orange-600", bg: "bg-orange-100" },
   { title: "Inventory", id: "inventory", icon: ClipboardList, color: "text-cyan-600", bg: "bg-cyan-100" },
