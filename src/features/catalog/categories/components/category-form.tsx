@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo } from "react";
+import { useState, useActionState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
 import { ImageUploader } from "@/components/upload/image-uploader";
 import { createCategoryAction, updateCategoryAction } from "../actions";
-import { FolderTree, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { FolderTree, FileText, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import type { ActionResponse } from "@/types/relationships";
 import type { UploadedFile } from "@/types/upload";
 
@@ -31,11 +31,13 @@ interface CategoryFormProps {
     imageUrl: string | null;
     sortOrder: number;
   };
+  onSuccess?: () => void;
 }
 
-export function CategoryForm({ mode, businessId, categories, initialData }: CategoryFormProps) {
+export function CategoryForm({ mode, businessId, categories, initialData, onSuccess }: CategoryFormProps) {
   const [step, setStep] = useState(0);
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
+  const [showSuccess, setShowSuccess] = useState(false);
   const formActionRef = useMemo(
     () => (mode === "create"
       ? createCategoryAction.bind(null, businessId)
@@ -43,6 +45,17 @@ export function CategoryForm({ mode, businessId, categories, initialData }: Cate
     [mode, businessId, initialData?.id],
   );
   const [state, formAction, pending] = useActionState<ActionResponse | null, FormData>(formActionRef, null);
+
+  const isSuccess = state?.success === true;
+  useEffect(() => {
+    if (isSuccess) {
+      setShowSuccess(true);
+      const timer = setTimeout(() => {
+        onSuccess?.();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess, onSuccess]);
 
   const availableParents = (categories ?? []).filter(
     (c) => c.id !== initialData?.id,
@@ -133,6 +146,13 @@ export function CategoryForm({ mode, businessId, categories, initialData }: Cate
               </div>
             </div>
           </div>
+
+          {showSuccess && (
+            <div className="rounded-xl bg-green-50 p-4 text-sm text-green-700 border border-green-200 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              {state?.message ?? "Saved successfully"}
+            </div>
+          )}
 
           {state?.errors && (
             <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
