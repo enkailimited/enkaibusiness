@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,8 @@ interface DepositFormProps {
 }
 
 export function DepositForm({ businessId }: DepositFormProps) {
-  const [state, formAction, pending] = useActionState(
-    recordDepositAction.bind(null, businessId),
-    null,
-  );
+  const depositAction = useMemo(() => recordDepositAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(depositAction, null);
 
   return (
     <Card>

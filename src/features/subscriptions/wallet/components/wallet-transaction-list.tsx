@@ -1,5 +1,7 @@
-import { requireAuth } from "@/server/auth";
-import { getTransactions } from "../services/wallet-service";
+"use client";
+
+import { useEffect, useState } from "react";
+import { getTransactionsAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { WALLET_TRANSACTION_TYPE_LABELS } from "../../constants";
@@ -35,11 +37,20 @@ const transactionVariants: Record<string, "default" | "secondary" | "destructive
   expiry: "secondary",
 };
 
-export async function WalletTransactionList({
+export function WalletTransactionList({
   businessId,
 }: WalletTransactionListProps) {
-  await requireAuth();
-  const { data: transactions } = await getTransactions(businessId);
+  const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTransactionsAction(businessId).then((result) => {
+      if (result.data) {
+        setTransactions(result.data as TransactionListItem[]);
+      }
+      setLoading(false);
+    });
+  }, [businessId]);
 
   const columns = [
     {
@@ -102,6 +113,7 @@ export async function WalletTransactionList({
     <DataTable
       columns={columns}
       data={transactions}
+      isLoading={loading}
       emptyTitle="No transactions"
       emptyDescription="Wallet transactions will appear here."
     />
