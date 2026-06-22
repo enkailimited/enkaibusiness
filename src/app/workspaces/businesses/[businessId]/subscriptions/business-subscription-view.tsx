@@ -31,8 +31,8 @@ export function BusinessSubscriptionView({ businessId }: Props) {
 
   useEffect(() => {
     listSubscriptionsAction({ businessId }).then((result) => {
-      if (result.data && result.data.length > 0) {
-        setSubscription(result.data[0]);
+      if (result && result.length > 0) {
+        setSubscription(result[0]);
       }
       setLoading(false);
     });
