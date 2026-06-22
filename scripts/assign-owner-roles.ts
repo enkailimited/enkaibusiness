@@ -12,21 +12,30 @@ async function main() {
   }
 
   const businesses = await prisma.business.findMany({
-    select: { id: true, name: true, createdById: true },
+    select: { id: true, name: true, createdById: true, workspaceId: true },
   });
 
   let assigned = 0;
   let skipped = 0;
 
   for (const business of businesses) {
-    if (!business.createdById) {
-      skipped++;
-      continue;
+    let targetUserId = business.createdById;
+
+    if (!targetUserId) {
+      const workspaceOwner = await prisma.workspaceMember.findFirst({
+        where: { workspaceId: business.workspaceId, role: "OWNER" },
+        select: { userId: true },
+      });
+      if (!workspaceOwner) {
+        skipped++;
+        continue;
+      }
+      targetUserId = workspaceOwner.userId;
     }
 
     const existing = await prisma.userRole.findFirst({
       where: {
-        userId: business.createdById,
+        userId: targetUserId,
         roleId: ownerRole.id,
         businessId: business.id,
       },
@@ -39,13 +48,13 @@ async function main() {
 
     await prisma.userRole.create({
       data: {
-        userId: business.createdById,
+        userId: targetUserId,
         roleId: ownerRole.id,
         businessId: business.id,
       },
     });
 
-    console.log(`  ✔ ${business.name} — Owner role assigned to creator`);
+    console.log(`  ✔ ${business.name} — Owner role assigned`);
     assigned++;
   }
 
