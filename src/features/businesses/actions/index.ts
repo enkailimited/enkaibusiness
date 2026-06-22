@@ -12,7 +12,8 @@ import {
 } from "../services/business-service";
 import { createBusinessSchema, updateBusinessSchema } from "../schemas";
 import { calculateDailyPrice, calculateSetupFee, QR_CODE_STICKER_COUNT, QR_CODE_STICKER_PRICE } from "@/features/subscriptions/constants/pricing";
-import { setBusinessSetting } from "@/features/businesses/services/setting-service";
+import { setBusinessSetting, getBusinessSettingsMap } from "@/features/businesses/services/setting-service";
+import { recordTransaction } from "@/features/subscriptions/wallet/services/wallet-service";
 import type { ActionResponse } from "@/types/relationships";
 
 export async function createBusinessAction(
@@ -216,6 +217,78 @@ export async function deleteBusinessAction(businessId: string, workspaceId: stri
     revalidatePath(`/workspaces/${workspaceId}`);
   }
   return result;
+}
+
+export async function toggleQrOrderingAction(
+  businessId: string,
+  enable: boolean,
+): Promise<ActionResponse & { data?: { dailyPrice: number; setupFee: number; qrPrintingFee: number } }> {
+  const user = await requireAuth();
+
+  try {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      include: {
+        modes: { select: { mode: true } },
+        subscriptions: {
+          where: { status: "ACTIVE" },
+          include: { plan: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!business) return { success: false, message: "Business not found" };
+    if (business.subscriptions.length === 0) {
+      return { success: false, message: "No active subscription found" };
+    }
+
+    const plan = business.subscriptions[0].plan;
+    const businessSize = await getBusinessSetting(businessId, "business_size") ?? "small";
+    const modes = business.modes.map((m) => m.mode);
+
+    const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
+    const dailyPrice = calculateDailyPrice(dailyRate, businessSize, enable);
+    const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(enable, modes);
+
+    await setBusinessSetting(businessId, "qr_ordering_enabled", enable ? "true" : "false", "boolean", "Whether QR ordering is enabled for this business");
+    await setBusinessSetting(businessId, "daily_price", String(dailyPrice), "number", "Calculated daily subscription price");
+    await setBusinessSetting(businessId, "setup_fee", String(totalSetupFee), "number", "One-time setup fee");
+
+    if (enable && qrPrintingFee > 0) {
+      await recordTransaction(businessId, {
+        type: "deposit",
+        amount: qrPrintingFee,
+        reference: "QR_SETUP",
+        description: `QR sticker printing ${QR_CODE_STICKER_COUNT} × ${QR_CODE_STICKER_PRICE} (${qrPrintingFee} TZS)`,
+      });
+    }
+
+    revalidatePath(`/workspaces/businesses/${businessId}/qr-ordering`);
+    revalidatePath(`/workspaces/businesses/${businessId}/subscriptions`);
+
+    return {
+      success: true,
+      message: enable
+        ? `QR ordering enabled. Daily price: ${dailyPrice} TZS/day. Setup fee: ${totalSetupFee} TZS.`
+        : `QR ordering disabled. Daily price: ${dailyPrice} TZS/day.`,
+      data: { dailyPrice, setupFee, qrPrintingFee },
+    };
+  } catch (error) {
+    console.error("Toggle QR ordering error:", error);
+    return { success: false, message: "Failed to update QR ordering setting" };
+  }
+}
+
+export async function getBusinessPricingSettingsAction(businessId: string) {
+  await requireAuth();
+  const settings = await getBusinessSettingsMap(businessId);
+  return {
+    qrOrderingEnabled: settings.qr_ordering_enabled === "true",
+    dailyPrice: settings.daily_price ? Number(settings.daily_price) : null,
+    setupFee: settings.setup_fee ? Number(settings.setup_fee) : null,
+    businessSize: settings.business_size ?? null,
+  };
 }
 
 export async function getBusinessesAction() {
