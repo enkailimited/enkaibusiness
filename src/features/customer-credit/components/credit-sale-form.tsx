@@ -37,7 +37,7 @@ export function CreditSaleForm({ businessId, account }: CreditSaleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="description" name="description" />
           </div>
 

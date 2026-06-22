@@ -49,7 +49,7 @@ export function TransferForm({ businessId }: TransferFormProps) {
               <Input id="transferDate" name="transferDate" type="date" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">Notes <span className="text-muted-foreground font-normal">(optional)</span></Label>
               <Input id="notes" name="notes" />
             </div>
           </div>

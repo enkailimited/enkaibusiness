@@ -34,7 +34,7 @@ export function RoleForm({ role }: RoleFormProps) {
             <Input id="slug" name="slug" defaultValue={role?.slug} placeholder="e.g. store-manager" required pattern="^[a-z0-9-]+$" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="description" name="description" defaultValue={role?.description || ""} placeholder="Optional description" />
           </div>
           <div className="space-y-2">

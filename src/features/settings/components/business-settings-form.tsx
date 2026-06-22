@@ -51,14 +51,14 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsFormProps) 
           <Input id="businessName" name="businessName" defaultValue={settings?.businessName ?? ""} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="businessPhone">Phone</Label>
+          <Label htmlFor="businessPhone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
           <Input id="businessPhone" name="businessPhone" defaultValue={settings?.businessPhone ?? ""} />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="businessEmail">Email</Label>
+          <Label htmlFor="businessEmail">Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
           <Input id="businessEmail" name="businessEmail" type="email" defaultValue={settings?.businessEmail ?? ""} />
         </div>
         <div className="space-y-2">
@@ -68,7 +68,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsFormProps) 
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="businessAddress">Address</Label>
+        <Label htmlFor="businessAddress">Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
         <Input id="businessAddress" name="businessAddress" defaultValue={settings?.businessAddress ?? ""} />
       </div>
 

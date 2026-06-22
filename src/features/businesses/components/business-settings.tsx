@@ -36,22 +36,22 @@ export function BusinessSettings({ business, workspaceId }: BusinessSettingsProp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="email" name="email" type="email" defaultValue={business.email ?? ""} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="phone" name="phone" defaultValue={business.phone ?? ""} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="address" name="address" defaultValue={business.address ?? ""} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="taxId">Tax ID</Label>
+            <Label htmlFor="taxId">Tax ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
             <Input id="taxId" name="taxId" defaultValue={business.taxId ?? ""} />
           </div>
 

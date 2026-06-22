@@ -147,7 +147,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Input
                     id="email"
                     name="email"
@@ -157,7 +157,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
                   <Input
                     id="phone"
                     name="phone"
@@ -167,7 +167,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="address">Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <Input
                   id="address"
                   name="address"
@@ -176,7 +176,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="taxId">Tax ID</Label>
+                <Label htmlFor="taxId">Tax ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <Input
                   id="taxId"
                   name="taxId"
