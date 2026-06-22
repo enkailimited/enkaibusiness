@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   
   // Public routes that don't need auth
-  const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/privacy", "/terms"];
+  const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/privacy", "/terms", "/menu"];
   const isPublic = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
   
   // Static assets and internal routes
