@@ -3,7 +3,7 @@
 import { QuickActionCard } from "@/components/ui/quick-action-card";
 import {
   GitBranch, Store, Users, Package, ShoppingCart, Truck,
-  ClipboardList, Wallet, CircleUser, FileText,
+  ClipboardList, Wallet, CircleUser, FileText, CreditCard, PiggyBank,
 } from "lucide-react";
 
 const actions = [
@@ -19,6 +19,8 @@ const actions = [
   { title: "Suppliers", id: "suppliers", icon: Truck, color: "text-amber-600", bg: "bg-amber-100" },
   { title: "Invoices", id: "invoices", icon: FileText, color: "text-slate-600", bg: "bg-slate-100" },
   { title: "Quotations", id: "quotations", icon: FileText, color: "text-pink-600", bg: "bg-pink-100" },
+  { title: "Subscription", id: "subscriptions", icon: CreditCard, color: "text-green-600", bg: "bg-green-100" },
+  { title: "Wallet", id: "wallet", icon: PiggyBank, color: "text-yellow-600", bg: "bg-yellow-100" },
 ];
 
 export function BusinessActions({ businessId }: { businessId: string }) {

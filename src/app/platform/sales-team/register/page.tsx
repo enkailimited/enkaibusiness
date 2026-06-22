@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { FormStepper } from "@/components/ui/form-stepper";
 import { registerCustomerBusinessAction, listPlansForRegistrationAction, getReadyToRegisterLeadsAction } from "./actions";
 import {
-  BUSINESS_SIZE_LABELS_SW,
+  BUSINESS_SIZE_LABELS,
   COMMERCE_BASE_PRICE_PER_DAY,
   QR_CODE_STICKER_COUNT,
   QR_CODE_STICKER_PRICE,
@@ -23,25 +23,25 @@ import {
 } from "lucide-react";
 
 const STEPS = [
-  { title: "Mteja", description: "Chagua mteja aliyetengenezwa" },
-  { title: "Biashara", description: "Taarifa za biashara" },
-  { title: "Mpango", description: "Chagua mpango wa bei" },
-  { title: "QR & Kukamilisha", description: "Panga na malipo" },
+  { title: "Customer", description: "Select a converted customer" },
+  { title: "Business", description: "Business details" },
+  { title: "Plan", description: "Choose a pricing plan" },
+  { title: "QR & Finish", description: "Setup and payment" },
 ];
 
 const BUSINESS_MODES = [
-  { value: "retail", label: "Rejareja" },
-  { value: "wholesale", label: "Jumla" },
-  { value: "both", label: "Vyote" },
+  { value: "retail", label: "Retail" },
+  { value: "wholesale", label: "Wholesale" },
+  { value: "both", label: "Both" },
 ];
 
 const INDUSTRIES = [
-  { value: "COMMERCE", label: "Biashara" },
-  { value: "RESTAURANT", label: "Mkahawa" },
-  { value: "HEALTHCARE", label: "Afya" },
-  { value: "MANUFACTURING", label: "Uzalishaji" },
-  { value: "AGRICULTURE", label: "Kilimo" },
-  { value: "SERVICES", label: "Huduma" },
+  { value: "COMMERCE", label: "Commerce" },
+  { value: "RESTAURANT", label: "Restaurant" },
+  { value: "HEALTHCARE", label: "Healthcare" },
+  { value: "MANUFACTURING", label: "Manufacturing" },
+  { value: "AGRICULTURE", label: "Agriculture" },
+  { value: "SERVICES", label: "Services" },
 ];
 
 interface LeadItem {
@@ -172,7 +172,7 @@ export default function RegisterPage() {
   if (loading) {
     return (
       <div className="space-y-6 pb-10">
-        <PageHeader title="Sajili Mteja" description="Sajili biashara kwa mteja" />
+        <PageHeader title="Register Customer" description="Register a business for a customer" />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -183,18 +183,18 @@ export default function RegisterPage() {
   if (success && selectedLead) {
     return (
       <div className="space-y-6 pb-10">
-        <PageHeader title="Sajili Mteja" description="Sajili biashara kwa mteja" />
+        <PageHeader title="Register Customer" description="Register a business for a customer" />
         <Card className="border-0 shadow-none">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
               <CheckCircle2 className="h-10 w-10 text-emerald-600" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-gray-900">Usajili Umekamilika!</h2>
+            <h2 className="mb-2 text-2xl font-bold text-gray-900">Registration Complete!</h2>
             <p className="mb-2 text-gray-500">
-              Biashara ya <strong>{form.businessName}</strong> imesajiliwa kwa mafanikio.
+              Business <strong>{form.businessName}</strong> has been registered successfully.
             </p>
             <p className="mb-8 text-sm text-gray-400">
-              Mteja {selectedLead.firstName} {selectedLead.lastName} anaweza kuanza kutumia mfumo sasa.
+              Customer {selectedLead.firstName} {selectedLead.lastName} can now start using the system.
             </p>
             <div className="flex gap-4">
               <Button
@@ -202,7 +202,7 @@ export default function RegisterPage() {
                 onClick={() => router.push("/platform/sales-team/clients")}
                 className="rounded-xl"
               >
-                Angalia Wateja
+                View Clients
               </Button>
               <Button
                 onClick={() => {
@@ -217,7 +217,7 @@ export default function RegisterPage() {
                 }}
                 className="rounded-xl bg-blue-600"
               >
-                Sajili Mwingine
+                Register Another
               </Button>
             </div>
           </CardContent>
@@ -231,7 +231,7 @@ export default function RegisterPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader title="Sajili Mteja" description="Sajili biashara mpya kwa mteja aliyobadilishwa" />
+      <PageHeader title="Register Customer" description="Register a new business for a converted customer" />
 
       <Card className="border-0 shadow-none">
         <CardContent className="p-0">
@@ -245,15 +245,15 @@ export default function RegisterPage() {
                   <UserPlus className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Chagua Mteja</h3>
-                  <p className="text-sm text-gray-500">Wateja waliotengenezwa na hawajasajiliwa bado</p>
+                  <h3 className="font-semibold text-gray-900">Select Customer</h3>
+                  <p className="text-sm text-gray-500">Converted customers not yet registered</p>
                 </div>
               </div>
 
               {leads.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-gray-200 p-10 text-center">
-                  <p className="text-gray-500">Hakuna wateja waliotengenezwa tayari kusajiliwa.</p>
-                  <p className="mt-1 text-sm text-gray-400">Badilisha lead kuwa "CONVERTED" kwenye ukurasa wa leads kwanza.</p>
+                  <p className="text-gray-500">No converted customers ready to register.</p>
+                  <p className="mt-1 text-sm text-gray-400">Change a lead to "CONVERTED" on the leads page first.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -320,40 +320,40 @@ export default function RegisterPage() {
                   <Building2 className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Biashara</h3>
-                  <p className="text-sm text-gray-500">Jaza taarifa za biashara ya mteja</p>
+                  <h3 className="font-semibold text-gray-900">Business Info</h3>
+                  <p className="text-sm text-gray-500">Fill in the customer's business details</p>
                 </div>
               </div>
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
                 <p className="text-sm font-medium text-blue-800">
-                  Mteja: {selectedLead?.firstName} {selectedLead?.lastName} ({selectedLead?.convertedToUser?.email})
+                  Customer: {selectedLead?.firstName} {selectedLead?.lastName} ({selectedLead?.convertedToUser?.email})
                 </p>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Jina la Biashara <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium">Business Name <span className="text-red-500">*</span></Label>
                 <Input
                   value={form.businessName}
                   onChange={(e) => {
                     update("businessName", e.target.value);
                     update("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
                   }}
-                  placeholder="Mf. Duka la Juma"
+                  placeholder="e.g. Juma's Store"
                   className={inputClass}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Kitambulisho cha Biashara <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium">Business Slug <span className="text-red-500">*</span></Label>
                 <Input
                   value={form.businessSlug}
                   onChange={(e) => update("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""))}
                   placeholder="duka-la-juma"
                   className={inputClass}
                 />
-                <p className="text-xs text-gray-400">Kitambulisho cha kipekee kitakachotumika kwenye URL na mfumo</p>
+                <p className="text-xs text-gray-400">Unique identifier used in URLs and the system</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Sekta <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">Industry <span className="text-red-500">*</span></Label>
                   <select
                     value={form.businessIndustry}
                     onChange={(e) => update("businessIndustry", e.target.value)}
@@ -365,20 +365,20 @@ export default function RegisterPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Ukubwa wa Biashara <span className="text-red-500">*</span></Label>
+                  <Label className="text-sm font-medium">Business Size <span className="text-red-500">*</span></Label>
                   <select
                     value={form.businessSize}
                     onChange={(e) => update("businessSize", e.target.value)}
                     className={selectClass}
                   >
-                    {Object.entries(BUSINESS_SIZE_LABELS_SW).map(([key, label]) => (
+                    {Object.entries(BUSINESS_SIZE_LABELS).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Aina ya Biashara <span className="text-red-500">*</span></Label>
+                <Label className="text-sm font-medium">Business Type <span className="text-red-500">*</span></Label>
                 <div className="flex flex-wrap gap-2">
                   {BUSINESS_MODES.map((mode) => (
                     <label
@@ -406,11 +406,11 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Anwani <span className="text-gray-400">(Hiari)</span></Label>
+                <Label className="text-sm font-medium">Address <span className="text-gray-400">(Optional)</span></Label>
                 <Input
                   value={form.businessAddress}
                   onChange={(e) => update("businessAddress", e.target.value)}
-                  placeholder="Mf. Mtaa wa Samora, Dar es Salaam"
+                  placeholder="e.g. Samora Avenue, Dar es Salaam"
                   className={inputClass}
                 />
               </div>
@@ -425,8 +425,8 @@ export default function RegisterPage() {
                   <CreditCard className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Chagua Mpango wa Bei</h3>
-                  <p className="text-sm text-gray-500">Chagua mpango unaofaa biashara ya mteja</p>
+                  <h3 className="font-semibold text-gray-900">Choose Pricing Plan</h3>
+                  <p className="text-sm text-gray-500">Select a plan that fits the customer's business</p>
                 </div>
               </div>
               <div className="grid gap-4">
@@ -460,13 +460,13 @@ export default function RegisterPage() {
                           <p className="text-2xl font-bold text-gray-900">
                             {formatCurrency(planDailyPrice)}
                           </p>
-                          <p className="text-xs text-gray-400">kwa siku</p>
+                          <p className="text-xs text-gray-400">per day</p>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
-                        <span>Bei ya msingi: {formatCurrency(planDailyRate)}/siku</span>
-                        <span>Muda: {plan.interval.toLowerCase()}</span>
-                        <span>Jumla: {formatCurrency(Number(plan.amount))}/{plan.interval.toLowerCase()}</span>
+                        <span>Base price: {formatCurrency(planDailyRate)}/day</span>
+                        <span>Period: {plan.interval.toLowerCase()}</span>
+                        <span>Total: {formatCurrency(Number(plan.amount))}/{plan.interval.toLowerCase()}</span>
                       </div>
                       {isSelected && (
                         <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600">
@@ -488,8 +488,8 @@ export default function RegisterPage() {
                   <QrCode className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">QR Ordering & Malipo</h3>
-                  <p className="text-sm text-gray-500">Panga na kamilisha usajili</p>
+                  <h3 className="font-semibold text-gray-900">QR Ordering & Payment</h3>
+                  <p className="text-sm text-gray-500">Setup and complete registration</p>
                 </div>
               </div>
 
@@ -511,25 +511,25 @@ export default function RegisterPage() {
                     <span className="font-medium text-gray-900">QR Ordering</span>
                     {!form.qrOrderingEnabled && (
                       <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
-                        Sio hai
+                        Off
                       </span>
                     )}
                     {form.qrOrderingEnabled && (
                       <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
-                        Inatumika
+                        Active
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-sm text-gray-500">
-                    Washa ili wateja waweze kuagiza bidhaa kwa kuchanganua QR code kwenye meza au dukani.
+                    Enable so customers can order products by scanning QR codes on tables or in-store.
                   </p>
                   <div className="mt-2 space-y-1 text-sm">
                     <p className="text-gray-600">
-                      <span className="font-medium">QR kuchapisha:</span> {formatCurrency(QR_CODE_STICKER_PRICE)} kwa kila sticker × {QR_CODE_STICKER_COUNT} = {formatCurrency(QR_CODE_STICKER_PRICE * QR_CODE_STICKER_COUNT)}
+                      <span className="font-medium">QR printing:</span> {formatCurrency(QR_CODE_STICKER_PRICE)} per sticker × {QR_CODE_STICKER_COUNT} = {formatCurrency(QR_CODE_STICKER_PRICE * QR_CODE_STICKER_COUNT)}
                     </p>
                     {form.qrOrderingEnabled && (
                       <p className="text-orange-600">
-                        Bei ya siku itaongezeka kwa 20% kutokana na kutumia QR ordering
+                        Daily price will increase by 20% due to QR ordering
                       </p>
                     )}
                   </div>
@@ -538,23 +538,23 @@ export default function RegisterPage() {
 
               {/* Summary Card */}
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                <h4 className="mb-3 font-semibold text-gray-900">Muhtasari wa Gharama</h4>
+                <h4 className="mb-3 font-semibold text-gray-900">Cost Summary</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Bei ya mpango kwa siku</span>
+                    <span className="text-gray-600">Plan price per day</span>
                     <span className="font-medium text-gray-900">{formatCurrency(dailyPrice)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Kwa wiki (×7)</span>
+                    <span className="text-gray-600">Per week (×7)</span>
                     <span className="font-medium text-gray-900">{formatCurrency(weeklyEstimate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Kwa mwezi (×30)</span>
+                    <span className="text-gray-600">Per month (×30)</span>
                     <span className="font-medium text-gray-900">{formatCurrency(monthlyEstimate)}</span>
                   </div>
                   {setupFee > 0 && (
                     <div className="flex justify-between border-t border-gray-200 pt-2">
-                      <span className="text-gray-600">Ada ya usajili</span>
+                      <span className="text-gray-600">Setup fee</span>
                       <span className="font-medium text-blue-600">+{formatCurrency(setupFee)}</span>
                     </div>
                   )}
@@ -566,7 +566,7 @@ export default function RegisterPage() {
                   )}
                   {(setupFee > 0 || qrPrintingFee > 0) && (
                     <div className="flex justify-between border-t border-gray-200 pt-2 text-base">
-                      <span className="font-semibold text-gray-900">Jumla ya awali (malipo ya mara moja)</span>
+                      <span className="font-semibold text-gray-900">Initial total (one-time payment)</span>
                       <span className="font-bold text-gray-900">{formatCurrency(totalSetupFee)}</span>
                     </div>
                   )}
@@ -591,7 +591,7 @@ export default function RegisterPage() {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -601,7 +601,7 @@ export default function RegisterPage() {
                 disabled={!canProceed()}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -614,12 +614,12 @@ export default function RegisterPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Inahifadhi...
+                    Saving...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Sajili Biashara
+                    Register Business
                   </>
                 )}
               </Button>

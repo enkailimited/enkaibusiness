@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,16 +20,19 @@ interface ProductFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Jina, SKU, na kategoria ya bidhaa" },
-  { title: "Bei", description: "Bei ya kuuza na kununua" },
-  { title: "Maelezo", description: "Maelezo, picha na lahaja" },
+  { title: "Basic Info", description: "Name, SKU, and product category" },
+  { title: "Pricing", description: "Selling and cost price" },
+  { title: "Details", description: "Description, image and variants" },
 ];
 
 export function ProductForm({ businessId, product, onSuccess }: ProductFormProps) {
   const [step, setStep] = useState(0);
   const [variantCount, setVariantCount] = useState(product?.variants?.length ?? 0);
-  const action = product ? updateProductAction.bind(null, product.id) : createProductAction;
-  const [state, formAction, pending] = useActionState(action, null);
+  const formActionRef = useMemo(
+    () => (product ? updateProductAction.bind(null, product.id) : createProductAction),
+    [product],
+  );
+  const [state, formAction, pending] = useActionState(formActionRef, null);
 
   if (state?.success && onSuccess) {
     onSuccess();
@@ -42,7 +45,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
           <input type="hidden" name="itemType" value="PRODUCT" />
           <input type="hidden" name="isService" value="false" />
@@ -54,20 +57,20 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <Package className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Jina, SKU, na kategoria ya bidhaa</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Name, SKU, and product category</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Jina la Bidhaa <span className="text-red-500">*</span>
+                    Product Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="name"
                     name="name"
                     defaultValue={product?.name ?? ""}
-                    placeholder="Mf. Mkate wa Unga"
+                    placeholder="e.g. Wheat Bread"
                     required
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
@@ -78,25 +81,25 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="sku" className="text-sm font-medium">
-                      SKU <span className="text-gray-400">(Hiari)</span>
+                      SKU <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="sku"
                       name="sku"
                       defaultValue={product?.sku ?? ""}
-                      placeholder="Mf. SKU-001"
+                      placeholder="e.g. SKU-001"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="barcode" className="text-sm font-medium">
-                      Barcode <span className="text-gray-400">(Hiari)</span>
+                      Barcode <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="barcode"
                       name="barcode"
                       defaultValue={product?.barcode ?? ""}
-                      placeholder="Mf. 1234567890"
+                      placeholder="e.g. 1234567890"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
@@ -104,19 +107,19 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category" className="text-sm font-medium">
-                      Kategoria <span className="text-gray-400">(Hiari)</span>
+                      Category <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="category"
                       name="category"
                       defaultValue={product?.category ?? ""}
-                      placeholder="Mf. Vinywaji"
+                      placeholder="e.g. Beverages"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="unit" className="text-sm font-medium">
-                      Kipimo <span className="text-gray-400">(Hiari)</span>
+                      Unit <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="unit"
@@ -138,15 +141,15 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <DollarSign className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Bei</h3>
-                  <p className="text-sm text-gray-500">Bei ya kuuza na kununua</p>
+                  <h3 className="font-semibold text-gray-900">Pricing</h3>
+                  <p className="text-sm text-gray-500">Selling and cost price</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="price" className="text-sm font-medium">
-                      Bei ya Kuuza <span className="text-red-500">*</span>
+                      Selling Price <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="price"
@@ -165,7 +168,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="costPrice" className="text-sm font-medium">
-                      Bei ya Kununua <span className="text-gray-400">(Hiari)</span>
+                      Cost Price <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="costPrice"
@@ -190,32 +193,32 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <FileText className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Maelezo</h3>
-                  <p className="text-sm text-gray-500">Maelezo, picha na lahaja</p>
+                  <h3 className="font-semibold text-gray-900">Details</h3>
+                  <p className="text-sm text-gray-500">Description, image and variants</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Maelezo <span className="text-gray-400">(Hiari)</span>
+                    Description <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <textarea
                     id="description"
                     name="description"
                     defaultValue={product?.description ?? ""}
                     className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Maelezo ya bidhaa..."
+                    placeholder="Product description..."
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="imageUrl" className="text-sm font-medium">
-                    URL ya Picha <span className="text-gray-400">(Hiari)</span>
+                    Image URL <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="imageUrl"
                     name="imageUrl"
                     defaultValue={product?.imageUrl ?? ""}
-                    placeholder="https://example.com/picha.jpg"
+                    placeholder="https://example.com/image.jpg"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
@@ -227,16 +230,16 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                     value="true"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Fuatilia Hisa</span>
-                    <p className="text-xs text-gray-500">Washa ili kufuatilia kiasi cha bidhaa kwenye hisa</p>
+                    <span className="text-sm font-medium text-gray-900">Track Stock</span>
+                    <p className="text-xs text-gray-500">Enable to track product stock quantities</p>
                   </div>
                 </label>
                 {!product && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">Lahaja</h3>
+                      <h3 className="text-sm font-medium text-gray-900">Variants</h3>
                       <Button type="button" variant="outline" size="sm" onClick={addVariant}>
-                        Ongeza Lahaja
+                        Add Variant
                       </Button>
                     </div>
                     {Array.from({ length: variantCount }).map((_, i) => (
@@ -276,7 +279,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -285,7 +288,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -294,7 +297,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : product ? "Badilisha Bidhaa" : "Hifadhi Bidhaa"}
+                {pending ? "Saving..." : product ? "Update Product" : "Save Product"}
               </Button>
             )}
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,9 +30,9 @@ interface LineItem {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Mteja, tarehe na hali ya nukuu" },
-  { title: "Bidhaa", description: "Bidhaa kwenye nukuu" },
-  { title: "Malipo", description: "Maelezo na jumla" },
+  { title: "Basic Info", description: "Customer, date and quotation status" },
+  { title: "Products", description: "Products in this quotation" },
+  { title: "Payment", description: "Notes and totals" },
 ];
 
 let nextKey = 1;
@@ -42,10 +42,8 @@ function newLineItem(): LineItem {
 
 export function QuotationForm({ businessId, workspaceId, customers, catalogItems }: QuotationFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(
-    createQuotationAction.bind(null, businessId, workspaceId),
-    null,
-  );
+  const createAction = useMemo(() => createQuotationAction.bind(null, businessId, workspaceId), [businessId, workspaceId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
   const [items, setItems] = useState<LineItem[]>([newLineItem()]);
   const [tax, setTax] = useState(0);
 
@@ -82,7 +80,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="itemCount" value={items.length} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -92,22 +90,22 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Mteja, tarehe na hali ya nukuu</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Customer, date and quotation status</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="customerId" className="text-sm font-medium">
-                      Mteja <span className="text-gray-400">(Hiari)</span>
+                      Customer <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <select
                       id="customerId"
                       name="customerId"
                       className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
-                      <option value="">Chagua mteja</option>
+                      <option value="">Select a customer</option>
                       {customers.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.firstName}{c.lastName ? ` ${c.lastName}` : ""}
@@ -117,7 +115,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="quoteDate" className="text-sm font-medium">
-                      Tarehe ya Nukuu <span className="text-red-500">*</span>
+                      Quotation Date <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="quoteDate"
@@ -131,7 +129,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="expiryDate" className="text-sm font-medium">
-                      Tarehe ya Kuisha <span className="text-gray-400">(Hiari)</span>
+                      Expiry Date <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="expiryDate"
@@ -142,7 +140,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status" className="text-sm font-medium">
-                      Hali <span className="text-red-500">*</span>
+                      Status <span className="text-red-500">*</span>
                     </Label>
                     <select
                       id="status"
@@ -166,15 +164,15 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Bidhaa</h3>
-                  <p className="text-sm text-gray-500">Bidhaa kwenye nukuu</p>
+                  <h3 className="font-semibold text-gray-900">Products</h3>
+                  <p className="text-sm text-gray-500">Products in this quotation</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900">Bidhaa</span>
+                  <span className="text-sm font-medium text-gray-900">Products</span>
                   <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                    Ongeza Bidhaa
+                    Add Product
                   </Button>
                 </div>
                 {items.map((item, idx) => (
@@ -185,13 +183,13 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                     <input type="hidden" name={`items.${idx}.discount`} value={item.discount} />
                     <input type="hidden" name={`items.${idx}.subtotal`} value={item.subtotal} />
                     <div className="col-span-4 space-y-1">
-                      <Label className="text-xs text-gray-500">Bidhaa</Label>
+                      <Label className="text-xs text-gray-500">Product</Label>
                       <select
                         value={item.catalogItemId}
                         onChange={(e) => updateItem(item.key, "catalogItemId", e.target.value)}
                         className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
-                        <option value="">Chagua bidhaa</option>
+                        <option value="">Select a product</option>
                         {catalogItems.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}{c.sku ? ` (${c.sku})` : ""}
@@ -200,7 +198,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                       </select>
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Idadi</Label>
+                      <Label className="text-xs text-gray-500">Qty</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -211,7 +209,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Bei</Label>
+                      <Label className="text-xs text-gray-500">Price</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -222,7 +220,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Punguzo</Label>
+                      <Label className="text-xs text-gray-500">Discount</Label>
                       <Input
                         type="number"
                         step="0.01"
@@ -233,7 +231,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
-                      <Label className="text-xs text-gray-500">Jumla</Label>
+                      <Label className="text-xs text-gray-500">Total</Label>
                       <span className="flex h-11 items-center text-sm font-medium">{item.subtotal.toFixed(2)}</span>
                     </div>
                     <div className="col-span-1 flex items-end">
@@ -254,25 +252,25 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                   <CreditCard className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Malipo</h3>
-                  <p className="text-sm text-gray-500">Maelezo na jumla ya nukuu</p>
+                  <h3 className="font-semibold text-gray-900">Payment</h3>
+                  <p className="text-sm text-gray-500">Notes and quotation totals</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-sm font-medium">
-                    Maelezo <span className="text-gray-400">(Hiari)</span>
+                    Notes <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <textarea
                     id="notes"
                     name="notes"
                     className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Maelezo ya ziada..."
+                    placeholder="Additional notes..."
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tax" className="text-sm font-medium">
-                    Kodi <span className="text-gray-400">(Hiari)</span>
+                    Tax <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="tax"
@@ -287,15 +285,15 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Jumla ndogo</span>
+                    <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium">{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Kodi</span>
+                    <span className="text-gray-600">Tax</span>
                     <span className="font-medium">{tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-2 flex justify-between text-lg font-bold">
-                    <span>Jumla</span>
+                    <span>Total</span>
                     <span className="text-emerald-600">{total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -305,7 +303,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
 
           {state?.errors && (
             <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
-              <p className="font-medium">Kuna hitilafu</p>
+              <p className="font-medium">There was an error</p>
               <ul className="mt-2 list-inside list-disc text-xs">
                 {Object.entries(state.errors).map(([field, msgs]) => (
                   Array.isArray(msgs) ? msgs.map((msg, i) => <li key={`${field}-${i}`}>{field}: {msg}</li>) : null
@@ -333,7 +331,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -342,7 +340,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -351,7 +349,7 @@ export function QuotationForm({ businessId, workspaceId, customers, catalogItems
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Nukuu"}
+                {pending ? "Saving..." : "Save Quotation"}
               </Button>
             )}
           </div>

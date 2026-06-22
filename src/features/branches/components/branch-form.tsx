@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,21 +15,22 @@ interface BranchFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Jina na msimbo wa tawi" },
-  { title: "Mawasiliano", description: "Anwani, simu na barua pepe" },
-  { title: "Eneo", description: "Mji, mkoa na nchi" },
-  { title: "Mipangilio", description: "Muda na makao makuu" },
+  { title: "Basic Info", description: "Branch name and code" },
+  { title: "Contact", description: "Address, phone and email" },
+  { title: "Location", description: "City, region and country" },
+  { title: "Settings", description: "Working hours and headquarters" },
 ];
 
 export function BranchForm({ businessId }: BranchFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(createBranchAction.bind(null, businessId), null);
+  const createAction = useMemo(() => createBranchAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <div className={cn(step !== 0 && "hidden")}>
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-2">
@@ -37,20 +38,20 @@ export function BranchForm({ businessId }: BranchFormProps) {
                   <Building2 className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Jina na msimbo wa tawi lako</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Branch name and code</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Jina la Tawi <span className="text-red-500">*</span>
+                    Branch Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="name"
                     name="name"
                     required
-                    placeholder="Mf. Tawi la Dar es Salaam"
+                    placeholder="e.g. Dar es Salaam Branch"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.name && (
@@ -59,12 +60,12 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="code" className="text-sm font-medium">
-                    Msimbo wa Tawi <span className="text-gray-400">(Hiari)</span>
+                    Branch Code <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="code"
                     name="code"
-                    placeholder="Mf. DSM-001"
+                    placeholder="e.g. DSM-001"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
@@ -79,26 +80,26 @@ export function BranchForm({ businessId }: BranchFormProps) {
                   <Mail className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Mawasiliano</h3>
-                  <p className="text-sm text-gray-500">Taarifa za mawasiliano ya tawi</p>
+                  <h3 className="font-semibold text-gray-900">Contact</h3>
+                  <p className="text-sm text-gray-500">Branch contact information</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium">
-                    Barua Pepe <span className="text-gray-400">(Hiari)</span>
+                    Email <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="tawi@biashara.co.tz"
+                    placeholder="branch@business.co.tz"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-sm font-medium">
-                    Nambari ya Simu <span className="text-gray-400">(Hiari)</span>
+                    Phone Number <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="phone"
@@ -109,12 +110,12 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address" className="text-sm font-medium">
-                    Anwani <span className="text-gray-400">(Hiari)</span>
+                    Address <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="address"
                     name="address"
-                    placeholder="Mtaa wa Samora, Jengo la ABC"
+                    placeholder="Samora Avenue, ABC Building"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
@@ -129,14 +130,14 @@ export function BranchForm({ businessId }: BranchFormProps) {
                   <MapPin className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Eneo</h3>
-                  <p className="text-sm text-gray-500">Mahali ulipo tawi lako</p>
+                  <h3 className="font-semibold text-gray-900">Location</h3>
+                  <p className="text-sm text-gray-500">Where your branch is located</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city" className="text-sm font-medium">
-                    Jiji / Mji <span className="text-gray-400">(Hiari)</span>
+                    City <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="city"
@@ -147,7 +148,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="state" className="text-sm font-medium">
-                    Mkoa <span className="text-gray-400">(Hiari)</span>
+                    Region <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="state"
@@ -160,7 +161,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="country" className="text-sm font-medium">
-                    Nchi <span className="text-gray-400">(Hiari)</span>
+                    Country <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="country"
@@ -171,12 +172,12 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="postalCode" className="text-sm font-medium">
-                    Msimbo wa Posta <span className="text-gray-400">(Hiari)</span>
+                    Postal Code <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="postalCode"
                     name="postalCode"
-                    placeholder="Mf. 14111"
+                    placeholder="e.g. 14111"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
@@ -191,15 +192,15 @@ export function BranchForm({ businessId }: BranchFormProps) {
                   <Settings2 className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Mipangilio</h3>
-                  <p className="text-sm text-gray-500">Muda wa kazi na makao makuu</p>
+                  <h3 className="font-semibold text-gray-900">Settings</h3>
+                  <p className="text-sm text-gray-500">Working hours and headquarters</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="openingTime" className="text-sm font-medium">
-                      Saa ya Kufungua <span className="text-gray-400">(Hiari)</span>
+                      Opening Time <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="openingTime"
@@ -211,7 +212,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="closingTime" className="text-sm font-medium">
-                      Saa ya Kufunga <span className="text-gray-400">(Hiari)</span>
+                      Closing Time <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="closingTime"
@@ -231,8 +232,8 @@ export function BranchForm({ businessId }: BranchFormProps) {
                     className="h-5 w-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Makao Makuu</span>
-                    <p className="text-xs text-gray-500">Tawi hili ndio makao makuu ya biashara yako</p>
+                    <span className="text-sm font-medium text-gray-900">Head Office</span>
+                    <p className="text-xs text-gray-500">This branch is the head office of your business</p>
                   </div>
                 </label>
               </div>
@@ -267,7 +268,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -276,7 +277,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -285,7 +286,7 @@ export function BranchForm({ businessId }: BranchFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Tawi"}
+                {pending ? "Saving..." : "Save Branch"}
               </Button>
             )}
           </div>

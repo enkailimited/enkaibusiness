@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,19 +17,20 @@ interface ExpenseFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Aina ya gharama na kiasi" },
-  { title: "Maelezo", description: "Tarehe, maelezo na mlipwaji" },
+  { title: "Basic Info", description: "Expense type and amount" },
+  { title: "Details", description: "Date, description and payee" },
 ];
 
 export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(createExpenseAction.bind(null, businessId), null);
+  const createAction = useMemo(() => createExpenseAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -39,14 +40,14 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                   <Receipt className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Aina ya gharama na kiasi</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Expense type and amount</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="categoryId" className="text-sm font-medium">
-                    Aina ya Gharama <span className="text-red-500">*</span>
+                    Expense Type <span className="text-red-500">*</span>
                   </Label>
                   <select
                     id="categoryId"
@@ -54,7 +55,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                     required
                     className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Chagua aina</option>
+                    <option value="">Select a type</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
@@ -65,7 +66,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="amount" className="text-sm font-medium">
-                    Kiasi <span className="text-red-500">*</span>
+                    Amount <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="amount"
@@ -74,7 +75,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                     step="0.01"
                     min="0.01"
                     required
-                    placeholder="Mf. 50000"
+                    placeholder="e.g. 50000"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.amount && (
@@ -92,14 +93,14 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                   <FileText className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Maelezo</h3>
-                  <p className="text-sm text-gray-500">Tarehe, maelezo na mlipwaji</p>
+                  <h3 className="font-semibold text-gray-900">Details</h3>
+                  <p className="text-sm text-gray-500">Date, description and payee</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="expenseDate" className="text-sm font-medium">
-                    Tarehe <span className="text-gray-400">(Hiari)</span>
+                    Date <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="expenseDate"
@@ -110,23 +111,23 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Maelezo <span className="text-gray-400">(Hiari)</span>
+                    Description <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <textarea
                     id="description"
                     name="description"
-                    placeholder="Maelezo ya ziada kuhusu gharama hii"
+                    placeholder="Additional info about this expense"
                     className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="paidTo" className="text-sm font-medium">
-                    Imelipwa Kwa <span className="text-gray-400">(Hiari)</span>
+                    Paid To <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="paidTo"
                     name="paidTo"
-                    placeholder="Jina la muuzaji au mpokeaji"
+                    placeholder="Vendor or recipient name"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
@@ -162,7 +163,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -171,7 +172,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -180,7 +181,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Gharama"}
+                {pending ? "Saving..." : "Save Expense"}
               </Button>
             )}
           </div>

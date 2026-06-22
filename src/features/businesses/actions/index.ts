@@ -129,6 +129,7 @@ export async function createBusinessAction(
 
   await setBusinessSetting(business.id, "business_size", businessSize, "string", "Business size category");
   await setBusinessSetting(business.id, "daily_price", String(dailyPrice), "number", "Calculated daily subscription price");
+  await setBusinessSetting(business.id, "setup_fee", String(totalSetupFee), "number", "One-time setup fee");
 
   revalidatePath(`/workspaces/${workspaceId}`);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,20 +17,21 @@ interface InvoiceFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Mteja na tarehe ya ankara" },
-  { title: "Bidhaa", description: "Bidhaa kwenye ankara" },
-  { title: "Malipo", description: "Maelezo na jumla" },
+  { title: "Basic Info", description: "Customer and invoice date" },
+  { title: "Products", description: "Products in this invoice" },
+  { title: "Payment", description: "Notes and totals" },
 ];
 
 export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(createInvoiceAction.bind(null, businessId), null);
+  const createAction = useMemo(() => createInvoiceAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <div className={cn(step !== 0 && "hidden")}>
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-2">
@@ -38,14 +39,14 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Mteja na tarehe ya ankara</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Customer and invoice date</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="customerId" className="text-sm font-medium">
-                    Mteja <span className="text-red-500">*</span>
+                    Customer <span className="text-red-500">*</span>
                   </Label>
                   <select
                     id="customerId"
@@ -53,7 +54,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                     required
                     className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Chagua mteja</option>
+                    <option value="">Select a customer</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.firstName}{c.lastName ? ` ${c.lastName}` : ""}
@@ -63,18 +64,18 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="saleId" className="text-sm font-medium">
-                    Unganisha na Mauzo <span className="text-gray-400">(Hiari)</span>
+                    Link to Sale <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="saleId"
                     name="saleId"
-                    placeholder="Mf. SALE-001"
+                    placeholder="e.g. SALE-001"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dueDate" className="text-sm font-medium">
-                    Tarehe ya Kukamilisha <span className="text-red-500">*</span>
+                    Due Date <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="dueDate"
@@ -94,16 +95,16 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Bidhaa</h3>
-                  <p className="text-sm text-gray-500">Bidhaa kwenye ankara</p>
+                  <h3 className="font-semibold text-gray-900">Products</h3>
+                  <p className="text-sm text-gray-500">Products in this invoice</p>
                 </div>
               </div>
               <div className="space-y-4">
-                <span className="text-sm font-medium text-gray-900">Bidhaa</span>
+                  <span className="text-sm font-medium text-gray-900">Products</span>
                 <div id="items-container" className="space-y-2">
                   <div className="flex gap-2 items-start">
                     <div className="flex-1 space-y-2">
-                      <Label className="text-xs text-gray-500">Kitambulisho cha Bidhaa</Label>
+                      <Label className="text-xs text-gray-500">Product ID</Label>
                       <Input
                         name="items[0][catalogItemId]"
                         placeholder="Catalog item ID"
@@ -111,7 +112,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                       />
                     </div>
                     <div className="w-20 space-y-2">
-                      <Label className="text-xs text-gray-500">Idadi</Label>
+                      <Label className="text-xs text-gray-500">Qty</Label>
                       <Input
                         name="items[0][quantity]"
                         type="number"
@@ -122,7 +123,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                       />
                     </div>
                     <div className="w-24 space-y-2">
-                      <Label className="text-xs text-gray-500">Bei</Label>
+                      <Label className="text-xs text-gray-500">Price</Label>
                       <Input
                         name="items[0][unitPrice]"
                         type="number"
@@ -145,20 +146,20 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <CreditCard className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Malipo</h3>
-                  <p className="text-sm text-gray-500">Maelezo ya ankara</p>
+                  <h3 className="font-semibold text-gray-900">Payment</h3>
+                  <p className="text-sm text-gray-500">Invoice notes</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-sm font-medium">
-                    Maelezo <span className="text-gray-400">(Hiari)</span>
+                    Notes <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <textarea
                     id="notes"
                     name="notes"
                     className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Maelezo ya ziada..."
+                    placeholder="Additional notes..."
                   />
                 </div>
               </div>
@@ -167,7 +168,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
 
           {state?.errors && (
             <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
-              <p className="font-medium">Kuna hitilafu</p>
+              <p className="font-medium">There was an error</p>
               <ul className="mt-2 list-inside list-disc text-xs">
                 {Object.entries(state.errors).map(([field, msgs]) => (
                   Array.isArray(msgs) ? msgs.map((msg, i) => <li key={`${field}-${i}`}>{field}: {msg}</li>) : null
@@ -195,7 +196,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -204,7 +205,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -213,7 +214,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Ankara"}
+                {pending ? "Saving..." : "Save Invoice"}
               </Button>
             )}
           </div>

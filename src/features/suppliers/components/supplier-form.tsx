@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,20 +16,21 @@ interface SupplierFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Jina na aina ya msambazaji" },
-  { title: "Mawasiliano", description: "Anwani, simu na barua pepe" },
-  { title: "Maswali", description: "Nchi, sarafu na masharti ya malipo" },
+  { title: "Basic Info", description: "Name and supplier type" },
+  { title: "Contact", description: "Address, phone and email" },
+  { title: "More Info", description: "Country, currency and payment terms" },
 ];
 
 export function SupplierForm({ businessId }: SupplierFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(createSupplierAction.bind(null, businessId), null);
+  const createAction = useMemo(() => createSupplierAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -39,20 +40,20 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                   <Truck className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Jina na aina ya msambazaji</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Name and supplier type</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Jina la Msambazaji <span className="text-red-500">*</span>
+                    Supplier Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="name"
                     name="name"
                     required
-                    placeholder="Mf. Kampuni ya Bidhaa"
+                    placeholder="e.g. Product Company"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.name && (
@@ -61,14 +62,14 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="supplierType" className="text-sm font-medium">
-                    Aina <span className="text-gray-400">(Hiari)</span>
+                    Type <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <select
                     id="supplierType"
                     name="supplierType"
                     className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Chagua aina</option>
+                    <option value="">Select a type</option>
                     {SUPPLIER_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
@@ -85,27 +86,27 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                   <Phone className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Mawasiliano</h3>
-                  <p className="text-sm text-gray-500">Anwani, simu na barua pepe</p>
+                  <h3 className="font-semibold text-gray-900">Contact</h3>
+                  <p className="text-sm text-gray-500">Address, phone and email</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      Barua Pepe <span className="text-gray-400">(Hiari)</span>
+                      Email <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="msambazaji@biashara.co.tz"
+                      placeholder="supplier@business.co.tz"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-sm font-medium">
-                      Simu <span className="text-gray-400">(Hiari)</span>
+                      Phone <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="phone"
@@ -118,18 +119,18 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-sm font-medium">
-                      Anwani <span className="text-gray-400">(Hiari)</span>
+                      Address <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="address"
                       name="address"
-                      placeholder="Mtaa wa Samora, Jengo la ABC"
+                      placeholder="Samora Avenue, ABC Building"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-sm font-medium">
-                      Mji <span className="text-gray-400">(Hiari)</span>
+                      City <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="city"
@@ -150,15 +151,15 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                   <FileText className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Maswali</h3>
-                  <p className="text-sm text-gray-500">Nchi, sarafu na masharti ya malipo</p>
+                  <h3 className="font-semibold text-gray-900">More Info</h3>
+                  <p className="text-sm text-gray-500">Country, currency and payment terms</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="country" className="text-sm font-medium">
-                      Nchi <span className="text-gray-400">(Hiari)</span>
+                      Country <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <select
                       id="country"
@@ -172,7 +173,7 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency" className="text-sm font-medium">
-                      Sarafu <span className="text-gray-400">(Hiari)</span>
+                      Currency <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <select
                       id="currency"
@@ -187,25 +188,25 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="taxId" className="text-sm font-medium">
-                    Namba ya Kodi <span className="text-gray-400">(Hiari)</span>
+                    Tax ID <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="taxId"
                     name="taxId"
-                    placeholder="Mf. TIN-123-456"
+                    placeholder="e.g. TIN-123-456"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="paymentTerms" className="text-sm font-medium">
-                    Masharti ya Malipo <span className="text-gray-400">(Hiari)</span>
+                    Payment Terms <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <select
                     id="paymentTerms"
                     name="paymentTerms"
                     className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Chagua masharti</option>
+                    <option value="">Select terms</option>
                     {PAYMENT_TERMS.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
@@ -221,8 +222,8 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                     className="h-5 w-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Inatumika</span>
-                    <p className="text-xs text-gray-500">Msambazaji huyu anapatikana kwa matumizi</p>
+                    <span className="text-sm font-medium text-gray-900">Active</span>
+                    <p className="text-xs text-gray-500">This supplier is available for use</p>
                   </div>
                 </label>
               </div>
@@ -257,7 +258,7 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -266,7 +267,7 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -275,7 +276,7 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Msambazaji"}
+                {pending ? "Saving..." : "Save Supplier"}
               </Button>
             )}
           </div>

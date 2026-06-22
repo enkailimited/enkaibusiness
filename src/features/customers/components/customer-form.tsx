@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,20 +18,21 @@ interface CustomerFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Jina la kwanza, mwisho na mawasiliano" },
-  { title: "Maelezo", description: "Anwani, mji na aina ya mteja" },
-  { title: "Mipangilio", description: "Kikundi, kikomo cha mikopo na hali" },
+  { title: "Basic Info", description: "First name, last name and contact" },
+  { title: "Details", description: "Address, city and customer type" },
+  { title: "Settings", description: "Group, credit limit and status" },
 ];
 
 export function CustomerForm({ businessId, groups }: CustomerFormProps) {
   const [step, setStep] = useState(0);
-  const [state, formAction, pending] = useActionState(createCustomerAction.bind(null, businessId), null);
+  const createAction = useMemo(() => createCustomerAction.bind(null, businessId), [businessId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -41,21 +42,21 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                   <UserPlus className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Jina la kwanza, mwisho na mawasiliano</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">First name, last name and contact</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-sm font-medium">
-                      Jina la Kwanza <span className="text-red-500">*</span>
+                      First Name <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="firstName"
                       name="firstName"
                       required
-                      placeholder="Mf. Juma"
+                      placeholder="e.g. Juma"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                     {state?.errors?.firstName && (
@@ -64,12 +65,12 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName" className="text-sm font-medium">
-                      Jina la Mwisho <span className="text-gray-400">(Hiari)</span>
+                      Last Name <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="lastName"
                       name="lastName"
-                      placeholder="Mf. Mohamed"
+                      placeholder="e.g. Mohamed"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
@@ -77,19 +78,19 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      Barua Pepe <span className="text-gray-400">(Hiari)</span>
+                      Email <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="mteja@biashara.co.tz"
+                      placeholder="customer@business.co.tz"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-sm font-medium">
-                      Simu <span className="text-gray-400">(Hiari)</span>
+                      Phone <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="phone"
@@ -110,26 +111,26 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                   <MapPin className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Maelezo</h3>
-                  <p className="text-sm text-gray-500">Anwani, mji na aina ya mteja</p>
+                  <h3 className="font-semibold text-gray-900">Details</h3>
+                  <p className="text-sm text-gray-500">Address, city and customer type</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="address" className="text-sm font-medium">
-                    Anwani <span className="text-gray-400">(Hiari)</span>
+                    Address <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="address"
                     name="address"
-                    placeholder="Mtaa wa Samora, Jengo la ABC"
+                    placeholder="Samora Avenue, ABC Building"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-sm font-medium">
-                      Mji <span className="text-gray-400">(Hiari)</span>
+                      City <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <Input
                       id="city"
@@ -140,14 +141,14 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="customerType" className="text-sm font-medium">
-                      Aina ya Mteja <span className="text-gray-400">(Hiari)</span>
+                      Customer Type <span className="text-gray-400">(Optional)</span>
                     </Label>
                     <select
                       id="customerType"
                       name="customerType"
                       className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
-                      <option value="">Chagua aina</option>
+                      <option value="">Select a type</option>
                       {CUSTOMER_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
@@ -165,21 +166,21 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                   <Settings2 className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Mipangilio</h3>
-                  <p className="text-sm text-gray-500">Kikundi, kikomo cha mikopo na hali</p>
+                  <h3 className="font-semibold text-gray-900">Settings</h3>
+                  <p className="text-sm text-gray-500">Group, credit limit and status</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="customerGroupId" className="text-sm font-medium">
-                    Kikundi <span className="text-gray-400">(Hiari)</span>
+                    Group <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <select
                     id="customerGroupId"
                     name="customerGroupId"
                     className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
-                    <option value="">Hakuna kikundi</option>
+                    <option value="">No group</option>
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
@@ -187,7 +188,7 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="creditLimit" className="text-sm font-medium">
-                    Kikomo cha Mikopo <span className="text-gray-400">(Hiari)</span>
+                    Credit Limit <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="creditLimit"
@@ -210,8 +211,8 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                     className="h-5 w-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Inatumika</span>
-                    <p className="text-xs text-gray-500">Mteja huyu anapatikana kwa matumizi</p>
+                    <span className="text-sm font-medium text-gray-900">Active</span>
+                    <p className="text-xs text-gray-500">This customer is available for use</p>
                   </div>
                 </label>
               </div>
@@ -246,7 +247,7 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -255,7 +256,7 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -264,7 +265,7 @@ export function CustomerForm({ businessId, groups }: CustomerFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : "Hifadhi Mteja"}
+                {pending ? "Saving..." : "Save Customer"}
               </Button>
             )}
           </div>

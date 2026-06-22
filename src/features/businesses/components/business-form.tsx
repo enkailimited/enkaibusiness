@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState, useEffect, useCallback } from "react";
+import { useActionState, useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createBusinessAction, listActivePlansAction } from "../actions";
-import { BUSINESS_SIZE_LABELS } from "@/features/subscriptions/constants/pricing";
+import { BUSINESS_SIZE_LABELS, calculateSetupFee, calculateDailyPrice, calculateWeeklyPrice, calculateMonthlyPrice } from "@/features/subscriptions/constants/pricing";
 import { INDUSTRIES, INDUSTRY_LABELS, BUSINESS_MODES } from "../constants";
 import { Check, ChevronLeft, ChevronRight, Building2, Settings, CreditCard, Loader2, UserPlus } from "lucide-react";
 
@@ -37,7 +37,8 @@ const initialFormData = {
 };
 
 export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
-  const [state, formAction, pending] = useActionState(createBusinessAction.bind(null, workspaceId), null);
+  const createAction = useMemo(() => createBusinessAction.bind(null, workspaceId), [workspaceId]);
+  const [state, formAction, pending] = useActionState(createAction, null);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -120,7 +121,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-0">
-        <form action={formAction}>
+        <form action={formAction} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="name" value={formData.name} />
           <input type="hidden" name="slug" value={formData.slug} />
           <input type="hidden" name="email" value={formData.email} />
@@ -319,6 +320,51 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
                   </>
                 )}
               </div>
+
+              {selectedPlan && (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
+                  <h4 className="font-semibold text-base">Pricing Summary</h4>
+                  {(() => {
+                    const basePrice = Number(selectedPlan.amount);
+                    const dailyRate = basePrice / (selectedPlan.interval === "WEEKLY" ? 7 : selectedPlan.interval === "MONTHLY" ? 30 : 1);
+                    const dailyPrice = calculateDailyPrice(dailyRate, formData.businessSize, false);
+                    const weeklyPrice = calculateWeeklyPrice(dailyPrice);
+                    const monthlyPrice = calculateMonthlyPrice(dailyPrice);
+                    const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(false, formData.modes);
+                    return (
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Daily price</span>
+                          <span className="font-medium">{new Intl.NumberFormat().format(dailyPrice)} TZS</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Weekly price</span>
+                          <span className="font-medium">{new Intl.NumberFormat().format(weeklyPrice)} TZS</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Monthly price</span>
+                          <span className="font-medium">{new Intl.NumberFormat().format(monthlyPrice)} TZS</span>
+                        </div>
+                        <hr />
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Setup fee</span>
+                          <span className="font-medium">{new Intl.NumberFormat().format(setupFee)} TZS</span>
+                        </div>
+                        {qrPrintingFee > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">QR sticker printing</span>
+                            <span className="font-medium">{new Intl.NumberFormat().format(qrPrintingFee)} TZS</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-semibold border-t pt-1">
+                          <span>Total setup cost</span>
+                          <span>{new Intl.NumberFormat().format(totalSetupFee)} TZS</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
 
               <Button type="submit" className="w-full gap-2" size="lg" disabled={pending}>
                 {pending ? (

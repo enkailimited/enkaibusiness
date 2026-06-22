@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,14 +18,17 @@ interface StaffFormProps {
 }
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Mtumiaji na msimbo wa mfanyakazi" },
-  { title: "Kazi", description: "Wadhifa na tarehe ya kuajiriwa" },
+  { title: "Basic Info", description: "User and employee code" },
+  { title: "Job", description: "Position and hire date" },
 ];
 
 export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
   const [step, setStep] = useState(0);
-  const action = staff ? updateStaffAction.bind(null, staff.id) : createStaffAction;
-  const [state, formAction, pending] = useActionState(action, null);
+  const formActionRef = useMemo(
+    () => (staff ? updateStaffAction.bind(null, staff.id) : createStaffAction),
+    [staff],
+  );
+  const [state, formAction, pending] = useActionState(formActionRef, null);
 
   if (state?.success && onSuccess) {
     onSuccess();
@@ -35,7 +38,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           {!staff && <input type="hidden" name="businessId" value={businessId} />}
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -45,21 +48,21 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Mtumiaji na msimbo wa mfanyakazi</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">User and employee code</p>
                 </div>
               </div>
               <div className="space-y-4">
                 {!staff && (
                   <div className="space-y-2">
                     <Label htmlFor="userId" className="text-sm font-medium">
-                      Mtumiaji <span className="text-red-500">*</span>
+                      User <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="userId"
                       name="userId"
                       required
-                      placeholder="Ingiza kitambulisho cha mtumiaji"
+                      placeholder="Enter user ID"
                       className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                     {state?.errors?.userId && (
@@ -69,13 +72,13 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="employeeCode" className="text-sm font-medium">
-                    Msimbo wa Mfanyakazi <span className="text-gray-400">(Hiari)</span>
+                    Employee Code <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="employeeCode"
                     name="employeeCode"
                     defaultValue={staff?.employeeCode ?? ""}
-                    placeholder="Mf. EMP-001"
+                    placeholder="e.g. EMP-001"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.employeeCode && (
@@ -93,20 +96,20 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <Briefcase className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Kazi</h3>
-                  <p className="text-sm text-gray-500">Wadhifa na tarehe ya kuajiriwa</p>
+                  <h3 className="font-semibold text-gray-900">Job</h3>
+                  <p className="text-sm text-gray-500">Position and hire date</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="position" className="text-sm font-medium">
-                    Wadhifa <span className="text-gray-400">(Hiari)</span>
+                    Position <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="position"
                     name="position"
                     defaultValue={staff?.position ?? ""}
-                    placeholder="Mf. Cashier"
+                    placeholder="e.g. Cashier"
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.position && (
@@ -115,7 +118,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="hireDate" className="text-sm font-medium">
-                    Tarehe ya Kuajiriwa <span className="text-gray-400">(Hiari)</span>
+                    Hire Date <span className="text-gray-400">(Optional)</span>
                   </Label>
                   <Input
                     id="hireDate"
@@ -160,7 +163,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
               className="h-11 rounded-xl border-gray-200 px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Nyuma
+              Back
             </Button>
 
             {step < STEPS.length - 1 ? (
@@ -169,7 +172,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 onClick={() => setStep((s) => s + 1)}
                 className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
               >
-                Endelea
+                Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
@@ -178,7 +181,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >
-                {pending ? "Inahifadhi..." : staff ? "Badilisha Mfanyakazi" : "Hifadhi Mfanyakazi"}
+                {pending ? "Saving..." : staff ? "Update Staff" : "Save Staff"}
               </Button>
             )}
           </div>

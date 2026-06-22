@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState } from "react";
+import { useState, useActionState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +12,8 @@ import { MapPin, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LocationWithBalances } from "../types";
 
 const STEPS = [
-  { title: "Taarifa za Msingi", description: "Jina la eneo" },
-  { title: "Mahali", description: "Tawi na duka" },
+  { title: "Basic Info", description: "Location name" },
+  { title: "Location", description: "Branch and store" },
 ];
 
 interface LocationFormProps {
@@ -24,8 +24,11 @@ interface LocationFormProps {
 
 export function LocationForm({ businessId, location, onSuccess }: LocationFormProps) {
   const [step, setStep] = useState(0);
-  const action = location ? updateLocationAction.bind(null, location.id) : createLocationAction;
-  const [state, formAction, pending] = useActionState(action, null);
+  const formActionRef = useMemo(
+    () => (location ? updateLocationAction.bind(null, location.id) : createLocationAction),
+    [location],
+  );
+  const [state, formAction, pending] = useActionState(formActionRef, null);
 
   if (state?.success && onSuccess) {
     onSuccess();
@@ -35,7 +38,7 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6">
+        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -45,16 +48,16 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
                   <MapPin className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
-                  <p className="text-sm text-gray-500">Jina la eneo</p>
+                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
+                  <p className="text-sm text-gray-500">Location name</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium">
-                    Jina la Eneo <span className="text-red-500">*</span>
+                    Location Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" defaultValue={location?.name ?? ""} placeholder="Bohari Kuu" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" defaultValue={location?.name ?? ""}                     placeholder="Main Warehouse" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                   {state?.errors?.name && (
                     <p className="text-sm text-destructive">{state.errors.name[0]}</p>
                   )}
@@ -70,22 +73,22 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
                   <Navigation className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Mahali</h3>
-                  <p className="text-sm text-gray-500">Tawi na duka</p>
+                  <h3 className="font-semibold text-gray-900">Location</h3>
+                  <p className="text-sm text-gray-500">Branch and store</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="branchId" className="text-sm font-medium">
-                    Tawi <span className="text-gray-400">(Hiari)</span>
+                    Branch <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input id="branchId" name="branchId" defaultValue={location?.branchId ?? ""} placeholder="Kwa maeneo ya tawi" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="branchId" name="branchId" defaultValue={location?.branchId ?? ""}                     placeholder="For branch locations" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="storeId" className="text-sm font-medium">
-                    Duka <span className="text-gray-400">(Hiari)</span>
+                    Store <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input id="storeId" name="storeId" defaultValue={location?.storeId ?? ""} placeholder="Kwa maeneo ya duka" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="storeId" name="storeId" defaultValue={location?.storeId ?? ""}                     placeholder="For store locations" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -99,15 +102,15 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
 
           <div className="flex items-center justify-between border-t border-gray-100 pt-6">
             <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
-              <ChevronLeft className="mr-2 h-4 w-4" /> Nyuma
+              <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (
               <Button type="button" onClick={() => setStep((s) => s + 1)} className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700">
-                Endelea <ChevronRight className="ml-2 h-4 w-4" />
+                Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
               <Button type="submit" disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
-                {pending ? "Inahifadhi..." : "Hifadhi"}
+                {pending ? "Saving..." : "Save"}
               </Button>
             )}
           </div>
