@@ -200,7 +200,9 @@ model User {
   accounts                          Account[]
   firdausWorkflows                  FirdausWorkflow[]
 
-  invites UserInvite[]
+  invites                          UserInvite[]
+  depositRequestsRequested         WalletDepositRequest[] @relation("DepositRequestRequestedBy")
+  depositRequestsReviewed          WalletDepositRequest[] @relation("DepositRequestReviewedBy")
 
   @@map("users")
 }
@@ -364,6 +366,7 @@ model Business {
   stockTransfersTo        StockTransfer[]          @relation("StockTransferTo")
   cashRegisters           CashRegister[]
   subscriptionWallets     SubscriptionWallet[]
+  walletDepositRequests   WalletDepositRequest[]
   subscriptions           Subscription[]
   qrCodes                 QRCode[]                 @relation("BusinessQRCodes")
   qrInstallations         QRCodeInstallation[]     @relation("BusinessQRInstallations")
@@ -1856,6 +1859,30 @@ model SubscriptionTransaction {
   @@index([walletId])
   @@index([createdAt])
   @@map("subscription_transactions")
+}
+
+// ─── WalletDepositRequest ──────────────────────────────────────────────────────
+
+model WalletDepositRequest {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @map("business_id") @db.Uuid
+  amount        Decimal  @db.Decimal(15, 2)
+  reference     String?
+  description   String?
+  status        String   @default("pending") // pending, approved, rejected
+  requestedById String   @map("requested_by") @db.Uuid
+  reviewedById  String?  @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime? @map("reviewed_at")
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business    Business @relation(fields: [businessId], references: [id])
+  requestedBy User     @relation("DepositRequestRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?    @relation("DepositRequestReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([businessId, status])
+  @@map("wallet_deposit_requests")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

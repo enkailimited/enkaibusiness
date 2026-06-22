@@ -293,30 +293,113 @@ export async function getSubscriptionPayments(subscriptionId: string) {
   });
 }
 
+export async function processSubscriptionRenewals(): Promise<ActionResponse> {
+  const now = new Date();
+
+  const expiringSubs = await prisma.subscription.findMany({
+    where: { status: "ACTIVE", endDate: { lte: now } },
+    include: { plan: { select: { id: true, name: true, amount: true, interval: true } } },
+    take: 100,
+  });
+
+  let renewed = 0;
+  let gracePeriod = 0;
+
+  for (const sub of expiringSubs) {
+    const businessId = sub.businessId;
+
+    const setting = await prisma.setting.findUnique({
+      where: { businessId_key: { businessId, key: "daily_price" } },
+    });
+    const dailyPrice = setting ? Number(setting.value) : Number(sub.plan.amount);
+
+    const wallet = await prisma.subscriptionWallet.findUnique({
+      where: { businessId },
+    });
+
+    const balance = wallet ? Number(wallet.balance) : 0;
+
+    if (balance >= dailyPrice) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          const w = await tx.subscriptionWallet.findUnique({
+            where: { businessId },
+          });
+          if (!w) return;
+
+          const balBefore = Number(w.balance);
+          const balAfter = Math.max(0, balBefore - dailyPrice);
+
+          await tx.subscriptionWallet.update({
+            where: { businessId },
+            data: {
+              balance: new Prisma.Decimal(balAfter),
+              totalConsumed: new Prisma.Decimal(Number(w.totalConsumed) + dailyPrice),
+            },
+          });
+
+          await tx.subscriptionTransaction.create({
+            data: {
+              walletId: w.id,
+              type: "consumption",
+              amount: new Prisma.Decimal(dailyPrice),
+              balanceBefore: new Prisma.Decimal(balBefore),
+              balanceAfter: new Prisma.Decimal(balAfter),
+              reference: "AUTO_RENEW",
+              description: `Auto-renewal - ${sub.plan.name}`,
+            },
+          });
+
+          let newEndDate: Date;
+          switch (sub.plan.interval) {
+            case "DAILY": newEndDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); break;
+            case "WEEKLY": newEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); break;
+            case "MONTHLY": newEndDate = new Date(now); newEndDate.setMonth(newEndDate.getMonth() + 1); break;
+            case "YEARLY": newEndDate = new Date(now); newEndDate.setFullYear(newEndDate.getFullYear() + 1); break;
+            default: newEndDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          }
+
+          const newGraceEnd = new Date(newEndDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+          await tx.subscription.update({
+            where: { id: sub.id },
+            data: { endDate: newEndDate, graceEndDate: newGraceEnd },
+          });
+        });
+        renewed++;
+      } catch (error) {
+        console.error(`Renewal failed for ${sub.id}:`, error);
+      }
+    } else {
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: "GRACE_PERIOD" },
+      });
+      gracePeriod++;
+    }
+  }
+
+  return {
+    success: true,
+    message: `Renewed ${renewed}, moved ${gracePeriod} to grace period`,
+  };
+}
+
 export async function checkExpiringSubscriptions(): Promise<ActionResponse> {
   try {
     const now = new Date();
-    const graceThreshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    const expiring = await prisma.subscription.updateMany({
-      where: {
-        status: "ACTIVE",
-        endDate: { lte: graceThreshold, gte: now },
-      },
-      data: { status: "GRACE_PERIOD" },
-    });
-
-    const expired = await prisma.subscription.updateMany({
+    const suspended = await prisma.subscription.updateMany({
       where: {
         status: "GRACE_PERIOD",
         graceEndDate: { lte: now },
       },
-      data: { status: "EXPIRED" },
+      data: { status: "SUSPENDED", suspendedAt: now },
     });
 
     return {
       success: true,
-      message: `Moved ${expiring.count} to grace period, ${expired.count} expired`,
+      message: `Suspended ${suspended.count} expired subscriptions`,
     };
   } catch (error) {
     console.error("Check expiring subscriptions error:", error);

@@ -11,21 +11,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { recordDepositAction } from "../actions";
+import { Badge } from "@/components/ui/badge";
+import { submitDepositRequestAction } from "../../wallet-deposits/actions";
 
 interface DepositFormProps {
   businessId: string;
 }
 
 export function DepositForm({ businessId }: DepositFormProps) {
-  const depositAction = useMemo(() => recordDepositAction.bind(null, businessId), [businessId]);
+  const depositAction = useMemo(() => submitDepositRequestAction.bind(null, businessId), [businessId]);
   const [state, formAction, pending] = useActionState(depositAction, null);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Add Funds</CardTitle>
-        <CardDescription>Deposit funds to subscription wallet</CardDescription>
+        <CardDescription>Submit a deposit request for approval</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
@@ -47,7 +48,7 @@ export function DepositForm({ businessId }: DepositFormProps) {
             <Input
               id="reference"
               name="reference"
-              placeholder="Payment reference (optional)"
+              placeholder="M-Pesa / Bank transaction ID"
             />
           </div>
 
@@ -56,8 +57,13 @@ export function DepositForm({ businessId }: DepositFormProps) {
             <Input
               id="description"
               name="description"
-              placeholder="Optional description"
+              placeholder="e.g. M-Pesa payment"
             />
+          </div>
+
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+            <p className="font-medium">Pending Approval</p>
+            <p className="mt-1">Your deposit will need to be reviewed and approved by the platform team before funds are added to your wallet.</p>
           </div>
 
           {state?.errors && (
@@ -82,8 +88,8 @@ export function DepositForm({ businessId }: DepositFormProps) {
             </p>
           )}
 
-          <Button type="submit" disabled={pending}>
-            {pending ? "Processing..." : "Deposit"}
+          <Button type="submit" disabled={pending} className="w-full">
+            {pending ? "Submitting..." : "Submit Deposit Request"}
           </Button>
         </form>
       </CardContent>

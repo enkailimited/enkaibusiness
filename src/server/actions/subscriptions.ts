@@ -14,6 +14,7 @@ import {
   updateSubscriptionStatus,
   recordPayment,
   getSubscriptionPayments,
+  processSubscriptionRenewals,
   checkExpiringSubscriptions,
   getSubscriptionMetrics,
 } from "@/server/services/subscription-service";
@@ -196,6 +197,17 @@ export async function getSubscriptionPaymentsAction(subscriptionId: string) {
   await requireAuth();
   const data = await getSubscriptionPayments(subscriptionId);
   return serialize(data);
+}
+
+export async function processSubscriptionRenewalsAction() {
+  await requireAuth();
+  const result = await processSubscriptionRenewals();
+
+  if (result.success) {
+    revalidatePath("/subscriptions");
+  }
+
+  return result;
 }
 
 export async function checkExpiringSubscriptionsAction() {
