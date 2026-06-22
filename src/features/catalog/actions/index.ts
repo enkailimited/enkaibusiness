@@ -43,7 +43,7 @@ export async function createCatalogItemAction(
   const result = await createCatalogItem(businessId, user.id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
   }
 
   return result;
@@ -88,7 +88,7 @@ export async function updateCatalogItemAction(
   if (result.success) {
     const item = await import("../services/catalog-service").then((m) => m.getCatalogItem(itemId));
     if (item) {
-      revalidatePath(`/businesses/${item.businessId}/catalog`);
+      revalidatePath(`/workspaces/businesses/${item.businessId}/catalog`);
     }
   }
 
@@ -116,7 +116,7 @@ export async function deleteCatalogItemAction(
   const result = await deleteCatalogItem(itemId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
   }
 
   return result;

@@ -38,7 +38,7 @@ export async function createStaffAction(
   const result = await createStaff(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${parsed.data.businessId}/staff`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/staff`);
   }
 
   return result;
@@ -74,7 +74,7 @@ export async function updateStaffAction(
   const result = await updateStaff(staffId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${staff.businessId}/staff`);
+    revalidatePath(`/workspaces/businesses/${staff.businessId}/staff`);
   }
 
   return result;
@@ -116,7 +116,7 @@ export async function removeStaffAssignmentAction(
   const result = await removeAssignment(assignmentId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/staff`);
+    revalidatePath(`/workspaces/businesses/${businessId}/staff`);
   }
 
   return result;
@@ -131,7 +131,7 @@ export async function deleteStaffAction(
   const result = await deleteStaff(staffId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/staff`);
+    revalidatePath(`/workspaces/businesses/${businessId}/staff`);
   }
 
   return result;

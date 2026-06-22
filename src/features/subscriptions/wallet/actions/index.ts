@@ -47,7 +47,7 @@ export async function recordDepositAction(
   const result = await recordTransaction(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/subscriptions/wallet`);
+    revalidatePath(`/workspaces/businesses/${businessId}/subscriptions/wallet`);
   }
 
   return result;
@@ -78,7 +78,7 @@ export async function recordTransactionAction(
   const result = await recordTransaction(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/subscriptions/wallet`);
+    revalidatePath(`/workspaces/businesses/${businessId}/subscriptions/wallet`);
   }
 
   return result;
@@ -102,7 +102,7 @@ export async function addBonusAction(
   const result = await addBonus(businessId, amount, description);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/subscriptions/wallet`);
+    revalidatePath(`/workspaces/businesses/${businessId}/subscriptions/wallet`);
   }
 
   return result;

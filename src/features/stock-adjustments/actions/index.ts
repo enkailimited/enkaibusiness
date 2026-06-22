@@ -55,7 +55,7 @@ export async function createAdjustmentAction(
   const result = await createAdjustment(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/stock-adjustments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/stock-adjustments`);
   }
 
   return result;
@@ -103,7 +103,7 @@ export async function updateAdjustmentAction(
   const result = await updateAdjustment(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/stock-adjustments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/stock-adjustments`);
   }
 
   return result;
@@ -133,7 +133,7 @@ export async function deleteAdjustmentAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteAdjustment(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/stock-adjustments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/stock-adjustments`);
   }
   return result;
 }
@@ -145,7 +145,7 @@ export async function approveAdjustmentAction(
   const user = await requireAuth();
   const result = await approveAdjustment(id, user.id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/stock-adjustments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/stock-adjustments`);
   }
   return result;
 }

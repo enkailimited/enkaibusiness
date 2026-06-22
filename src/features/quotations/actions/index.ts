@@ -71,7 +71,7 @@ export async function createQuotationAction(
   const result = await createQuotation(parsed.data, businessId, workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
 
   return result;
@@ -131,7 +131,7 @@ export async function updateQuotationAction(
   const result = await updateQuotation(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
 
   return result;
@@ -161,7 +161,7 @@ export async function deleteQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteQuotation(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }
@@ -170,7 +170,7 @@ export async function sendQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markQuotationAsSent(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }
@@ -179,7 +179,7 @@ export async function acceptQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markQuotationAsAccepted(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }
@@ -188,7 +188,7 @@ export async function convertQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markQuotationAsConverted(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }
@@ -197,7 +197,7 @@ export async function rejectQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markQuotationAsRejected(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }
@@ -206,7 +206,7 @@ export async function expireQuotationAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markQuotationAsExpired(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/quotations`);
+    revalidatePath(`/workspaces/businesses/${businessId}/quotations`);
   }
   return result;
 }

@@ -64,7 +64,7 @@ export async function createProductAction(
   const result = await createProduct(businessId, user.id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/products`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/products`);
   }
 
   return result;
@@ -105,7 +105,7 @@ export async function updateProductAction(
   const result = await updateProduct(productId, user.id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/products`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/products`);
   }
 
   return result;
@@ -128,7 +128,7 @@ export async function deleteProductAction(
   const result = await deleteProduct(productId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/products`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/products`);
   }
 
   return result;
@@ -167,7 +167,7 @@ export async function removeProductVariantAction(
   const result = await removeProductVariant(variantId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/products`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/products`);
   }
 
   return result;

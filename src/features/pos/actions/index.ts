@@ -34,7 +34,7 @@ export async function openSessionAction(
   const result = await openSession(parsed.data, businessId, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
   }
 
   return result;
@@ -63,7 +63,7 @@ export async function closeSessionAction(
   const result = await closeSession(sessionId, parsed.data, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
   }
 
   return result;

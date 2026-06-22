@@ -65,7 +65,7 @@ export async function createPurchaseAction(
   const result = await createPurchase(parsed.data, businessId, workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/purchases`);
+    revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
   }
 
   return result;
@@ -124,7 +124,7 @@ export async function updatePurchaseAction(
   const result = await updatePurchase(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/purchases`);
+    revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
   }
 
   return result;
@@ -154,7 +154,7 @@ export async function deletePurchaseAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deletePurchase(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/purchases`);
+    revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
   }
   return result;
 }

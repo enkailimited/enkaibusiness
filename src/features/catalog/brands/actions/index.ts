@@ -30,7 +30,7 @@ export async function createBrandAction(
   const result = await createBrand(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
   }
 
   return result;
@@ -63,7 +63,7 @@ export async function updateBrandAction(
   if (result.success) {
     const brand = await import("../services/brand-service").then((m) => m.getBrand(brandId));
     if (brand) {
-      revalidatePath(`/businesses/${brand.businessId}/catalog`);
+      revalidatePath(`/workspaces/businesses/${brand.businessId}/catalog`);
     }
   }
 
@@ -83,7 +83,7 @@ export async function deleteBrandAction(
   const result = await deleteBrand(brandId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
   }
 
   return result;

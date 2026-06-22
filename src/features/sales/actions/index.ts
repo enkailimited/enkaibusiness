@@ -68,7 +68,7 @@ export async function createSaleAction(
   const result = await createSale(parsed.data, businessId, workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
   }
 
   return result;
@@ -130,7 +130,7 @@ export async function updateSaleAction(
   const result = await updateSale(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
   }
 
   return result;
@@ -160,7 +160,7 @@ export async function voidSaleAction(id: string, businessId: string) {
   await requireAuth();
   const result = await voidSale(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
   }
   return result;
 }

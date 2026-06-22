@@ -59,7 +59,7 @@ export async function createGoodsReceivedAction(
   const result = await createGoodsReceived(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/goods-received`);
+    revalidatePath(`/workspaces/businesses/${businessId}/goods-received`);
   }
 
   return result;
@@ -109,7 +109,7 @@ export async function updateGoodsReceivedAction(
   const result = await updateGoodsReceived(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/goods-received`);
+    revalidatePath(`/workspaces/businesses/${businessId}/goods-received`);
   }
 
   return result;
@@ -139,7 +139,7 @@ export async function deleteGoodsReceivedAction(id: string, businessId: string) 
   await requireAuth();
   const result = await deleteGoodsReceived(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/goods-received`);
+    revalidatePath(`/workspaces/businesses/${businessId}/goods-received`);
   }
   return result;
 }

@@ -47,7 +47,7 @@ export async function createLocationAction(
   const result = await createLocation(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${parsed.data.businessId}/inventory`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/inventory`);
   }
 
   return result;
@@ -86,7 +86,7 @@ export async function updateLocationAction(
   const result = await updateLocation(locationId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${location.businessId}/inventory`);
+    revalidatePath(`/workspaces/businesses/${location.businessId}/inventory`);
   }
 
   return result;
@@ -101,7 +101,7 @@ export async function deleteLocationAction(
   const result = await deleteLocation(locationId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/inventory`);
+    revalidatePath(`/workspaces/businesses/${businessId}/inventory`);
   }
 
   return result;
@@ -164,7 +164,7 @@ export async function transferStockAction(
   if (result.success) {
     const location = await getLocation(parsed.data.fromLocationId);
     if (location) {
-      revalidatePath(`/businesses/${location.businessId}/inventory`);
+      revalidatePath(`/workspaces/businesses/${location.businessId}/inventory`);
     }
   }
 
@@ -184,7 +184,7 @@ export async function adjustStockAction(
   const result = await adjustStock(locationId, catalogItemId, newQuantity, variantId, notes);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/inventory`);
+    revalidatePath(`/workspaces/businesses/${businessId}/inventory`);
   }
 
   return result;

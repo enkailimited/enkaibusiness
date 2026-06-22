@@ -41,7 +41,7 @@ export async function createExpenseAction(
   const result = await createExpense(parsed.data, businessId, user.workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/expenses`);
+    revalidatePath(`/workspaces/businesses/${businessId}/expenses`);
   }
 
   return result;
@@ -75,7 +75,7 @@ export async function updateExpenseAction(
   const result = await updateExpense(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/expenses`);
+    revalidatePath(`/workspaces/businesses/${businessId}/expenses`);
   }
 
   return result;
@@ -105,7 +105,7 @@ export async function approveExpenseAction(id: string, businessId: string) {
   const user = await requireAuth();
   const result = await approveExpense(id, user.id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/expenses`);
+    revalidatePath(`/workspaces/businesses/${businessId}/expenses`);
   }
   return result;
 }
@@ -114,7 +114,7 @@ export async function markExpenseAsPaidAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markExpenseAsPaid(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/expenses`);
+    revalidatePath(`/workspaces/businesses/${businessId}/expenses`);
   }
   return result;
 }
@@ -123,7 +123,7 @@ export async function deleteExpenseAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteExpense(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/expenses`);
+    revalidatePath(`/workspaces/businesses/${businessId}/expenses`);
   }
   return result;
 }

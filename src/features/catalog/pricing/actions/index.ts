@@ -54,7 +54,7 @@ export async function createPriceListAction(
   const result = await createPriceList(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/pricing`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/pricing`);
   }
 
   return result;
@@ -88,7 +88,7 @@ export async function updatePriceListAction(
   const result = await updatePriceList(priceListId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/pricing`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/pricing`);
   }
 
   return result;
@@ -116,7 +116,7 @@ export async function deletePriceListAction(
   const result = await deletePriceList(priceListId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/pricing`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/pricing`);
   }
 
   return result;
@@ -153,7 +153,7 @@ export async function removePriceListItemAction(
   const result = await removePriceListItem(itemId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/catalog/pricing`);
+    revalidatePath(`/workspaces/businesses/${businessId}/catalog/pricing`);
   }
 
   return result;

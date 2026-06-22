@@ -50,7 +50,7 @@ export async function createRegisterAction(
   const result = await createRegister(parsed.data, businessId);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/cash-management`);
+    revalidatePath(`/workspaces/businesses/${businessId}/cash-management`);
   }
 
   return result;
@@ -84,7 +84,7 @@ export async function updateRegisterAction(
   const result = await updateRegister(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/cash-management`);
+    revalidatePath(`/workspaces/businesses/${businessId}/cash-management`);
   }
 
   return result;
@@ -114,7 +114,7 @@ export async function deleteRegisterAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteRegister(id);
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/cash-management`);
+    revalidatePath(`/workspaces/businesses/${businessId}/cash-management`);
   }
   return result;
 }
@@ -145,7 +145,7 @@ export async function recordTransactionAction(
   const result = await recordTransaction(parsed.data, user.id);
 
   if (result.success) {
-    revalidatePath(`/businesses/${businessId}/cash-management`);
+    revalidatePath(`/workspaces/businesses/${businessId}/cash-management`);
   }
 
   return result;
