@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:assign-owner-roles": "tsx scripts/assign-owner-roles.ts",
     "db:reset": "prisma migrate reset",
     "auth:generate": "npx @better-auth/cli generate",
     "auth:migrate": "npx @better-auth/cli migrate",
