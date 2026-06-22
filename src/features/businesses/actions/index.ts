@@ -76,6 +76,18 @@ export async function createBusinessAction(
     },
   });
 
+  const ownerRole = await prisma.role.findUnique({ where: { slug: "owner" } });
+  if (ownerRole) {
+    const existing = await prisma.userRole.findFirst({
+      where: { userId: user.id, roleId: ownerRole.id, businessId: business.id },
+    });
+    if (!existing) {
+      await prisma.userRole.create({
+        data: { userId: user.id, roleId: ownerRole.id, businessId: business.id },
+      });
+    }
+  }
+
   const now = new Date();
   let endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   if (plan.interval === "WEEKLY") {
