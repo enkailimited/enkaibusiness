@@ -63,6 +63,7 @@ export const auth = betterAuth({
       lastName: { type: "string", required: true, input: true },
       gender: { type: "string", required: false },
       isOnboarded: { type: "boolean", required: false, defaultValue: false },
+      mustChangePassword: { type: "boolean", required: false, defaultValue: true },
     },
   },
   hooks: {
@@ -118,6 +119,7 @@ export const auth = betterAuth({
               username: (customData.username as string) || null,
               gender,
               isOnboarded: false,
+              mustChangePassword: true,
             },
           });
         },

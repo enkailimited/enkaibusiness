@@ -8,6 +8,13 @@ import type { UserProfile } from "@/features/users/types";
 import { requireAuth, getSessionUser } from "@/server/auth";
 import { hasPermission } from "@/features/rbac";
 import { createInvitedUserWithStaff } from "@/features/users/services/admin-user-service";
+import { prisma } from "@/server/db";
+import {
+  generateTempPassword,
+  setUserPassword,
+  sendInviteEmail,
+  createUserInvite,
+} from "@/features/users/services/invite-service";
 
 export async function getProfileAction(userId: string): Promise<
   ActionResponse & { user?: UserProfile }
@@ -163,6 +170,86 @@ export async function deactivateUserAction(userId: string): Promise<ActionRespon
     return {
       success: false,
       message: error instanceof Error ? error.message : "Failed to deactivate user",
+    };
+  }
+}
+
+export async function reinviteUserAction(
+  userId: string,
+  data?: { email?: string; phone?: string }
+): Promise<ActionResponse> {
+  try {
+    const sessionUser = await requireAuth();
+    const canManage = await hasPermission(sessionUser.id, "users.update");
+    if (!canManage) {
+      return { success: false, message: "You do not have permission to manage users" };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, firstName: true, lastName: true, isActive: true, phone: true },
+    });
+    if (!user) return { success: false, message: "User not found" };
+    if (!user.isActive) return { success: false, message: "Cannot re-invite inactive user" };
+
+    const targetEmail = data?.email || user.email;
+    const targetPhone = data?.phone !== undefined ? data.phone : user.phone;
+
+    if (data?.email || data?.phone !== undefined) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(data.email ? { email: data.email } : {}),
+          ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+        },
+      });
+    }
+
+    const tempPassword = generateTempPassword();
+    await setUserPassword(user.id, tempPassword);
+    await createUserInvite(user.id, targetEmail, targetPhone || null, sessionUser.id);
+
+    const invitedByName = `${sessionUser.firstName} ${sessionUser.lastName}`.trim() || "Admin";
+    const emailSent = await sendInviteEmail(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
+
+    return {
+      success: true,
+      message: emailSent
+        ? "User re-invited successfully. Invitation email sent."
+        : "User re-invited but email could not be sent.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to re-invite user",
+    };
+  }
+}
+
+export async function updateUserAction(
+  userId: string,
+  data: { firstName?: string; lastName?: string; email?: string; phone?: string }
+): Promise<ActionResponse> {
+  try {
+    const sessionUser = await requireAuth();
+    const canManage = await hasPermission(sessionUser.id, "users.update");
+    if (!canManage) {
+      return { success: false, message: "You do not have permission to manage users" };
+    }
+
+    const updateData: Record<string, string | null | undefined> = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+
+    await prisma.user.update({ where: { id: userId }, data: updateData });
+
+    return { success: true, message: "User updated successfully" };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to update user",
     };
   }
 }

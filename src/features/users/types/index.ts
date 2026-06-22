@@ -13,6 +13,8 @@ export interface UserProfile {
   createdAt: Date;
   updatedAt: Date;
   roles?: { id: string; name: string; slug: string; scope: string }[];
+  inviteStatus?: string | null;
+  inviteSentAt?: Date | null;
 }
 
 export interface UpdateProfileInput {

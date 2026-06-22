@@ -9,6 +9,8 @@ export interface AssistantMessage {
   timestamp: Date;
 }
 
+export type FirdausMode = "platform" | "workspace" | "generic";
+
 export interface AssistantContext {
   userId: string;
   businessId?: string;
@@ -19,6 +21,7 @@ export interface AssistantContext {
   permissions?: string[];
   workspaceId?: string;
   salesHierarchyLevel?: string;
+  mode?: FirdausMode;
 }
 
 export interface AssistantResponse {

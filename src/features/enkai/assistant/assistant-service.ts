@@ -7,6 +7,7 @@ import { toolRegistry } from "../tools/tool-registry";
 import { systemPrompt, greetingSwahili, helpSwahili, noPermission, incompleteTransaction, successMessage, errorMessage } from "../prompts/prompts";
 import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler, WorkflowDefinition } from "./types";
 import type { IntentType } from "../commands/types";
+import { processWithBrain } from "../brain/business-brain";
 
 const config = {
   maxHistoryLength: 50,

@@ -35,3 +35,4 @@ export type { ExpenseCategory, ClassificationResult } from "./services/expense-c
 export { FirdausInsights } from "./components/firdaus-insights";
 export { FirdausGlobalListener } from "./components/firdaus-global-listener";
 export { FirdausToast } from "./components/firdaus-toast";
+export { FirdausResponseToast } from "./components/firdaus-response-toast";

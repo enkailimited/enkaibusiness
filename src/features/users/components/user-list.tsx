@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Search, ShieldCheck, ShieldX, Trash2 } from "lucide-react";
+import { Loader2, Search, ShieldCheck, ShieldX, Trash2, RefreshCw, Pencil, Mail } from "lucide-react";
 import type { UserProfile } from "@/features/users/types";
 import {
   listUsersAction,
   activateUserAction,
   deactivateUserAction,
   deleteUserAction,
+  reinviteUserAction,
+  updateUserAction,
 } from "@/features/users/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { getInitials } from "@/lib/utils";
 
 export function UserList() {
@@ -29,7 +33,11 @@ export function UserList() {
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
   const [toggleTarget, setToggleTarget] = useState<UserProfile | null>(null);
+  const [reinviteTarget, setReinviteTarget] = useState<UserProfile | null>(null);
+  const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
+  const [editForm, setEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const query = useQuery({
     queryKey: ["users", { search, page }],
@@ -72,6 +80,39 @@ export function UserList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setDeleteTarget(null);
+    },
+  });
+
+  const [reinviteForm, setReinviteForm] = useState({ email: "", phone: "" });
+
+  const reinviteMutation = useMutation({
+    mutationFn: async ({ userId, data }: { userId: string; data?: { email?: string; phone?: string } }) => {
+      const result = await reinviteUserAction(userId, data);
+      if (!result.success) throw new Error(result.message);
+      return result;
+    },
+    onSuccess: (result) => {
+      toast({ title: "Re-invited", description: result.message });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setReinviteTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ userId, data }: { userId: string; data: { firstName?: string; lastName?: string; email?: string; phone?: string } }) => {
+      const result = await updateUserAction(userId, data);
+      if (!result.success) throw new Error(result.message);
+    },
+    onSuccess: () => {
+      toast({ title: "Updated", description: "User info updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setEditTarget(null);
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -121,7 +162,7 @@ export function UserList() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="truncate text-sm font-medium">
                         {user.firstName} {user.lastName}
                       </p>
@@ -131,6 +172,16 @@ export function UserList() {
                       >
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
+                      {user.inviteStatus === "PENDING" && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-600 border-amber-600">
+                          Invited
+                        </Badge>
+                      )}
+                      {user.inviteStatus === "ACCEPTED" && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-600">
+                          Joined
+                        </Badge>
+                      )}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
                       {user.email}
@@ -146,6 +197,35 @@ export function UserList() {
                     )}
                   </div>
                   <div className="flex items-center gap-1">
+                    {user.isActive && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Edit user info"
+                          onClick={() => {
+                            setEditTarget(user);
+                            setEditForm({ firstName: user.firstName, lastName: user.lastName, email: user.email, phone: user.phone ?? "" });
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Re-invite user"
+                          onClick={() => {
+                            setReinviteTarget(user);
+                            setReinviteForm({ email: user.email, phone: user.phone ?? "" });
+                          }}
+                          disabled={reinviteMutation.isPending}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                     {user.isActive ? (
                       <Button
                         variant="ghost"
@@ -212,6 +292,119 @@ export function UserList() {
           )}
         </CardContent>
       </Card>
+
+      {/* Re-invite dialog with inline editing */}
+      <Dialog open={!!reinviteTarget} onOpenChange={(open) => { if (!open) setReinviteTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Re-invite User</DialogTitle>
+            <DialogDescription>
+              {reinviteTarget
+                ? `Send a new invitation to ${reinviteTarget.firstName} ${reinviteTarget.lastName}. Edit email/phone if needed.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!reinviteTarget) return;
+              const data: { email?: string; phone?: string } = {};
+              if (reinviteForm.email !== reinviteTarget.email) data.email = reinviteForm.email;
+              if (reinviteForm.phone !== (reinviteTarget.phone ?? "")) data.phone = reinviteForm.phone;
+              reinviteMutation.mutate({
+                userId: reinviteTarget.id,
+                data: Object.keys(data).length > 0 ? data : undefined,
+              });
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={reinviteForm.email}
+                onChange={(e) => setReinviteForm((f) => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={reinviteForm.phone}
+                onChange={(e) => setReinviteForm((f) => ({ ...f, phone: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setReinviteTarget(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={reinviteMutation.isPending}>
+                <Mail className="mr-2 h-4 w-4" />
+                Send Re-invitation
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit info dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User Info</DialogTitle>
+            <DialogDescription>Update user's name, email, or phone</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editTarget) return;
+              updateMutation.mutate({ userId: editTarget.id, data: editForm });
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="text-sm font-medium">First Name</label>
+              <Input
+                value={editForm.firstName}
+                onChange={(e) => setEditForm((f) => ({ ...f, firstName: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Last Name</label>
+              <Input
+                value={editForm.lastName}
+                onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Phone</label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={updateMutation.isPending}>
+                Save
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation */}
       <ConfirmDialog

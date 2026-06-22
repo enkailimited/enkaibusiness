@@ -37,10 +37,52 @@ export interface BrainResponse {
   step?: string;
 }
 
+const NEEDS_BUSINESS: string[] = [
+  "sell", "create-sale", "check-stock", "check-price", "lookup-customer",
+  "add-customer", "check-staff", "view-orders", "create-order", "view-report",
+  "add-expense", "add-purchase", "lookup-supplier", "add-supplier",
+  "transfer-stock", "adjust-stock", "check-wallet", "create-purchase-order",
+  "create-quotation", "create-invoice", "create-return", "send-notification",
+  "business-insights",
+];
+
 export async function processWithBrain(req: BrainRequest): Promise<BrainResponse> {
   const { input, context, pageContext } = req;
   const businessId = context.businessId || "";
   const userId = context.userId;
+  const mode = context.mode || "generic";
+
+  if (mode === "platform") {
+    return handlePlatformRequest(input, userId, pageContext);
+  }
+
+  if (!businessId && userId) {
+    const userBiz = await prisma.userRole.findFirst({
+      where: { userId },
+      select: { businessId: true },
+    });
+    if (userBiz?.businessId) {
+      context.businessId = userBiz.businessId;
+      return processWithBrain({ ...req, context });
+    }
+  }
+
+  if (!businessId) {
+    const parsed = parseCommand(input);
+    if (parsed.intent === "help" || parsed.intent === "unknown") {
+      return {
+        message: "Mimi ni Firdaus, msaidizi wako wa biashara. Ninaweza kukusaidia kuona ripoti, kuangalia stock, kurekodi mauzo, na mengine mengi. Tafadhali nenda kwenye ukurasa wa biashara yako, kisha niite kwa kusema Dausi nikusaidie.",
+      };
+    }
+    if (parsed.intent === "setup-business") {
+      return {
+        message: "Ili kuanzisha biashara mpya, tafadhali nenda kwenye sehemu ya 'Setup' kwenye dashboard au wasiliana na msimamizi wa mfumo.",
+      };
+    }
+    return {
+      message: "Samahani, siwezi kukusaidia kwa sasa kwa sababu huna biashara iliyosajiliwa. Tafadhali wasiliana na msimamizi wako au anzisha biashara kwanza.",
+    };
+  }
 
   // Check for active persistent workflow
   const activeWf = await getActiveWorkflow(businessId, userId);
@@ -50,7 +92,6 @@ export async function processWithBrain(req: BrainRequest): Promise<BrainResponse
 
   const parsed = parseCommand(input);
   if (parsed.intent === "unknown") {
-    // Check if input is a direct reply to a missing info from a DB workflow
     const dbWf = await getActiveWorkflow(businessId, userId);
     if (dbWf) {
       return handleActiveWorkflow(dbWf, input, context);
@@ -159,7 +200,7 @@ async function handleActiveWorkflow(
   }
 
   // Advance to next step
-  const nextStep = sequence[currentIdx + 1];
+  const nextStep = sequence[currentIdx + 1] || "completed";
   const nextStatus = currentIdx >= sequence.length - 2 ? "VALIDATING" : "COLLECTING_DATA";
   await saveWorkflowStep(wf.id, nextStep, nextStatus);
 
@@ -379,6 +420,114 @@ async function handleGenericIntent(
   return { message: result.message, data: result.data };
 }
 
+async function handlePlatformRequest(
+  input: string,
+  _userId: string | undefined,
+  pageContext?: BrainRequest["pageContext"],
+): Promise<BrainResponse> {
+  const lower = input.toLowerCase();
+
+  // --- Sales-team context awareness ---
+  if (pageContext?.page === "sales-team" || /timu.*mauzo|sales.?team|team|wanatimu|mwanatimu/.test(lower)) {
+    const [profiles, pendingInvites] = await Promise.all([
+      prisma.salesProfile.count(),
+      prisma.userInvite.count({ where: { status: "PENDING" } }),
+    ]);
+    const hierarchies = await prisma.salesHierarchy.findMany({
+      select: { title: true, _count: { select: { profiles: true } } },
+      orderBy: { level: "asc" },
+    });
+    const hierarchySummary = hierarchies.map((h) => `  • ${h.title}: ${h._count.profiles}`).join("\n");
+
+    return {
+      message: `Timu ya Mauzo\nJumla ya wanatimu: ${profiles}\nMialiko inayosubiri: ${pendingInvites}\n\nNgazi:\n${hierarchySummary}\n\nUnaweza:\n  • Kuona timu yako - "timu yangu"\n  • Kuongeza mwanatimu - "ongeza mwanatimu"\n  • Kutuma mwaliko upya - "tuma mwaliko upya"\n  • Kuangalia mauzo ya timu - "mauzo ya timu"`,
+    };
+  }
+
+  // --- Users ---
+  if (/watumiaji|users?|watumiaji/.test(lower)) {
+    const [total, active, inactive, recent] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isActive: false } }),
+      prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 5, select: { firstName: true, lastName: true, email: true, createdAt: true } }),
+    ]);
+    const list = recent.map((u) => `  • ${u.firstName} ${u.lastName} (${u.email})`).join("\n");
+    return {
+      message: `Jumla ya watumiaji: ${total}\nWanaotumia: ${active}\nWaliozuiwa: ${inactive}\n\nWatumiaji wapya 5:\n${list}`,
+    };
+  }
+
+  // --- Businesses ---
+  if (/biashara|businesses?|business/.test(lower)) {
+    const [total, active, inactive] = await Promise.all([
+      prisma.business.count(),
+      prisma.business.count({ where: { isActive: true } }),
+      prisma.business.count({ where: { isActive: false } }),
+    ]);
+    return { message: `Jumla ya biashara: ${total}\nZinazotumika: ${active}\nHazitumiki: ${inactive}` };
+  }
+
+  // --- Subscriptions ---
+  if (/subscription|subscriptions|usajili|plan/.test(lower)) {
+    const [total, active, expired, cancelled] = await Promise.all([
+      prisma.subscription.count(),
+      prisma.subscription.count({ where: { status: "ACTIVE" } }),
+      prisma.subscription.count({ where: { status: "EXPIRED" } }),
+      prisma.subscription.count({ where: { status: "CANCELLED" } }),
+    ]);
+    return { message: `Jumla ya usajili: ${total}\nWanaoendelea: ${active}\nWameisha: ${expired}\nWameghairi: ${cancelled}` };
+  }
+
+  // --- Leads ---
+  if (/leads?|lead|wateja watarajiwa/.test(lower)) {
+    const [total, new_, contacted, converted] = await Promise.all([
+      prisma.lead.count(),
+      prisma.lead.count({ where: { status: "NEW" } }),
+      prisma.lead.count({ where: { status: "CONTACTED" } }),
+      prisma.lead.count({ where: { status: "CONVERTED" } }),
+    ]);
+    return { message: `Jumla ya leads: ${total}\nMpya: ${new_}\nWamewasiliana: ${contacted}\nWamebadilishwa kuwa wateja: ${converted}` };
+  }
+
+  // --- Workspaces ---
+  if (/workspace|workspaces|kazi/.test(lower)) {
+    const total = await prisma.workspace.count();
+    return { message: `Jumla ya workspaces: ${total}` };
+  }
+
+  // --- Sales (cross-business) ---
+  if (/mauzo|sales?|selling|income/.test(lower)) {
+    const [totalSales, totalRevenue] = await Promise.all([
+      prisma.sale.count(),
+      prisma.sale.aggregate({ _sum: { grandTotal: true } }),
+    ]);
+    const revenue = totalRevenue._sum?.grandTotal?.toLocaleString() || "0";
+    return { message: `Jumla ya mauzo yote: ${totalSales}\nMapato yote: Tsh ${revenue}` };
+  }
+
+  // --- Help / unknown ---
+  const isOnSalesTeamPage = pageContext?.page === "sales-team";
+  return {
+    message: isOnSalesTeamPage
+      ? "Mimi ni Firdaus, msaidizi wako wa timu ya mauzo. Ninaweza kukusaidia:\n"
+        + "  • Timu yangu — kuona wanatimu wako\n"
+        + "  • Ongeza mwanatimu — kumwalika mwanatimu mpya\n"
+        + "  • Tuma mwaliko upya — kumtumia mwaliko tena mwanatimu\n"
+        + "  • Mauzo ya timu — kuona mauzo ya timu yako\n\n"
+        + "Unachotaka kufanya?"
+      : "Mimi ni Firdaus, msaidizi wako wa mfumo. Ninaweza kukusaidia:\n"
+        + "  • Watumiaji — takwimu za watumiaji wote\n"
+        + "  • Biashara — takwimu za biashara zote\n"
+        + "  • Subscription — hali ya usajili\n"
+        + "  • Leads — wateja watarajiwa\n"
+        + "  • Workspace — workspaces zote\n"
+        + "  • Mauzo — mauzo ya biashara zote\n"
+        + "  • Timu ya mauzo — takwimu za timu ya mauzo\n\n"
+        + "Unachotaka kuona?",
+  };
+}
+
 async function createAuditLog(
   context: AssistantContext,
   action: string,
@@ -389,10 +538,9 @@ async function createAuditLog(
     await prisma.auditLog.create({
       data: {
         userId: context.userId,
-        businessId: context.businessId || "",
+        resourceType: "FIRDAUS",
+        resourceId: action,
         action,
-        entity: "FIRDAUS",
-        entityId: action,
         before: { input },
         after: { response, timestamp: new Date().toISOString() },
       },

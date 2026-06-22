@@ -117,12 +117,12 @@ export function UserInviteForm({ businessId }: UserInviteFormProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="space-y-4">
+        <form ref={formRef} action={formAction} onSubmit={handleSubmit} noValidate className="space-y-4">
           {businessId && <input type="hidden" name="businessId" value={businessId} />}
           <input type="hidden" name="gender" value={selectedGender} />
           <input type="hidden" name="roleId" value={selectedRole} />
 
-          {step === 0 && (
+          <div className={step !== 0 ? "hidden" : ""}>
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-4">
                 <User className="h-4 w-4" />
@@ -194,9 +194,9 @@ export function UserInviteForm({ businessId }: UserInviteFormProps) {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {step === 1 && (
+          <div className={step !== 1 ? "hidden" : ""}>
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-4">
                 <Contact className="h-4 w-4" />
@@ -244,9 +244,9 @@ export function UserInviteForm({ businessId }: UserInviteFormProps) {
                 })}
               </div>
             </div>
-          )}
+          </div>
 
-          {step === 2 && (
+          <div className={step !== 2 ? "hidden" : ""}>
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-4">
                 <ShieldCheck className="h-4 w-4" />
@@ -332,7 +332,7 @@ export function UserInviteForm({ businessId }: UserInviteFormProps) {
                 </div>
               )}
             </div>
-          )}
+          </div>
 
           {step === 2 && state?.success === false && (
             <p className="text-sm text-destructive">{state.message}</p>

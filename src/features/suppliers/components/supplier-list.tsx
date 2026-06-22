@@ -1,17 +1,25 @@
-import { requireAuth } from "@/server/auth";
-import { listSuppliers } from "../services/supplier-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listSuppliersAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { SUPPLIER_TYPE_LABELS } from "../constants";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { SupplierWithCount } from "../types";
 
 interface SupplierListProps {
   businessId: string;
 }
 
-export async function SupplierList({ businessId }: SupplierListProps) {
-  await requireAuth();
-  const suppliers = await listSuppliers(businessId);
+export function SupplierList({ businessId }: SupplierListProps) {
+  const query = useQuery({
+    queryKey: ["suppliers", businessId],
+    queryFn: async () => {
+      const result = await listSuppliersAction(businessId);
+      return (result ?? []) as SupplierWithCount[];
+    },
+  });
 
   const columns = [
     {
@@ -62,10 +70,14 @@ export async function SupplierList({ businessId }: SupplierListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={suppliers}
+      data={query.data ?? []}
       emptyTitle="No suppliers found"
       emptyDescription="Add your first supplier to get started."
     />

@@ -3,8 +3,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
-import { AuthProvider } from "@/features/auth/components/auth-provider";
-import { FirdausProvider, FirdausGlobalListener, FirdausToast } from "@/features/enkai";
+import { AuthProvider, useAuth } from "@/features/auth/components/auth-provider";
+import { FirdausProvider, FirdausGlobalListener, FirdausToast, FirdausResponseToast } from "@/features/enkai";
+import { LauncherSound } from "@/components/launcher-sound";
+
+function FirdausGreeter() {
+  const { user } = useAuth();
+  const name = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || undefined : undefined;
+  return <FirdausToast userName={name} />;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -31,7 +38,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <FirdausProvider>
             {children}
             <FirdausGlobalListener />
-            <FirdausToast />
+            <FirdausGreeter />
+            <FirdausResponseToast />
+            <LauncherSound />
           </FirdausProvider>
         </AuthProvider>
       </ThemeProvider>

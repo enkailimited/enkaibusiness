@@ -1,12 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { cn } from "@/lib/utils";
+import { useState, useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FormStepper } from "@/components/ui/form-stepper";
 import { createLocationAction, updateLocationAction } from "../actions";
+import { MapPin, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LocationWithBalances } from "../types";
+
+const STEPS = [
+  { title: "Taarifa za Msingi", description: "Jina la eneo" },
+  { title: "Mahali", description: "Tawi na duka" },
+];
 
 interface LocationFormProps {
   businessId: string;
@@ -15,6 +23,7 @@ interface LocationFormProps {
 }
 
 export function LocationForm({ businessId, location, onSuccess }: LocationFormProps) {
+  const [step, setStep] = useState(0);
   const action = location ? updateLocationAction.bind(null, location.id) : createLocationAction;
   const [state, formAction, pending] = useActionState(action, null);
 
@@ -23,55 +32,85 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{location ? "Edit Location" : "Add Location"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-4">
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
+        <FormStepper steps={STEPS} currentStep={step} />
+        <form action={formAction} className="space-y-6">
           <input type="hidden" name="businessId" value={businessId} />
 
-          <div className="space-y-2">
-            <Label htmlFor="name">Location Name</Label>
-            <Input
-              id="name"
-              name="name"
-              defaultValue={location?.name ?? ""}
-              placeholder="Main Warehouse"
-              required
-            />
-            {state?.errors?.name && (
-              <p className="text-sm text-destructive">{state.errors.name[0]}</p>
-            )}
+          <div className={cn(step !== 0 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                  <MapPin className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
+                  <p className="text-sm text-gray-500">Jina la eneo</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-medium">
+                    Jina la Eneo <span className="text-red-500">*</span>
+                  </Label>
+                  <Input id="name" name="name" defaultValue={location?.name ?? ""} placeholder="Bohari Kuu" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  {state?.errors?.name && (
+                    <p className="text-sm text-destructive">{state.errors.name[0]}</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="branchId">Branch ID (optional)</Label>
-            <Input
-              id="branchId"
-              name="branchId"
-              defaultValue={location?.branchId ?? ""}
-              placeholder="For branch-level locations"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storeId">Store ID (optional)</Label>
-            <Input
-              id="storeId"
-              name="storeId"
-              defaultValue={location?.storeId ?? ""}
-              placeholder="For store-level locations"
-            />
+          <div className={cn(step !== 1 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                  <Navigation className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Mahali</h3>
+                  <p className="text-sm text-gray-500">Tawi na duka</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="branchId" className="text-sm font-medium">
+                    Tawi <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input id="branchId" name="branchId" defaultValue={location?.branchId ?? ""} placeholder="Kwa maeneo ya tawi" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="storeId" className="text-sm font-medium">
+                    Duka <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input id="storeId" name="storeId" defaultValue={location?.storeId ?? ""} placeholder="Kwa maeneo ya duka" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                </div>
+              </div>
+            </div>
           </div>
 
           {state?.message && !state?.success && (
-            <p className="text-sm text-destructive">{state.message}</p>
+            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
+              <p className="font-medium">{state.message}</p>
+            </div>
           )}
 
-          <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Saving..." : location ? "Update Location" : "Create Location"}
-          </Button>
+          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Nyuma
+            </Button>
+            {step < STEPS.length - 1 ? (
+              <Button type="button" onClick={() => setStep((s) => s + 1)} className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700">
+                Endelea <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+                {pending ? "Inahifadhi..." : "Hifadhi"}
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

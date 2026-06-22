@@ -87,21 +87,14 @@ export async function createInvitedUserWithStaff(
 
       // Assign role via UserRole so permissions are picked up
       if (input.roleId) {
-        await tx.userRole.upsert({
-          where: {
-            userId_roleId_businessId: {
-              userId: u.id,
-              roleId: input.roleId,
-              businessId: businessId ?? "",
-            },
-          },
-          update: {},
-          create: {
-            userId: u.id,
-            roleId: input.roleId,
-            businessId: businessId ?? undefined,
-          },
+        const existingRole = await tx.userRole.findFirst({
+          where: { userId: u.id, roleId: input.roleId, businessId: businessId },
         });
+        if (!existingRole) {
+          await tx.userRole.create({
+            data: { userId: u.id, roleId: input.roleId, businessId },
+          });
+        }
       }
 
       let staffRecord: { id: string } | null = null;

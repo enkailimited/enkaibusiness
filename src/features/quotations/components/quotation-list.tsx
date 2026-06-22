@@ -1,8 +1,11 @@
-import { requireAuth } from "@/server/auth";
-import { getBusinessQuotations } from "../services/quotation-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listQuotationsAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { QUOTATION_STATUS_LABELS, QUOTATION_STATUS_VARIANTS } from "../constants";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { QuotationListItem } from "../types";
 
 interface QuotationListProps {
@@ -22,9 +25,14 @@ function formatDate(dateString: string | null): string {
   });
 }
 
-export async function QuotationList({ businessId }: QuotationListProps) {
-  await requireAuth();
-  const quotations = await getBusinessQuotations(businessId);
+export function QuotationList({ businessId }: QuotationListProps) {
+  const query = useQuery({
+    queryKey: ["quotations", businessId],
+    queryFn: async () => {
+      const result = await listQuotationsAction(businessId);
+      return (result ?? []) as QuotationListItem[];
+    },
+  });
 
   const columns = [
     {
@@ -76,10 +84,14 @@ export async function QuotationList({ businessId }: QuotationListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={quotations}
+      data={query.data ?? []}
       emptyTitle="No quotations found"
       emptyDescription="Create your first quotation to get started."
     />

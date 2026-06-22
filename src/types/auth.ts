@@ -5,6 +5,7 @@ export interface AuthUser {
   lastName: string;
   avatarUrl: string | null;
   isOnboarded: boolean;
+  mustChangePassword: boolean;
 }
 
 export interface SessionUser extends AuthUser {

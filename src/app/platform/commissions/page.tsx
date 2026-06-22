@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -277,6 +278,7 @@ export default function PlatformCommissionsPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create Commission Rule</DialogTitle>
+                  <DialogDescription className="sr-only">Create a new commission rule</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>

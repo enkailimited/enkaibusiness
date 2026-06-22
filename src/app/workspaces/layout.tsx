@@ -1,6 +1,15 @@
+"use client";
+
 import { Sidebar } from "@/components/layout/sidebar";
+import { Navbar } from "@/components/layout/navbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { Building2, Users, Settings, LayoutDashboard, User } from "lucide-react";
+import {
+  Building2,
+  Users,
+  Settings,
+  LayoutDashboard,
+  User,
+} from "lucide-react";
 
 const workspaceNavItems = [
   { title: "Dashboard", href: "/workspaces/dashboard", icon: LayoutDashboard },
@@ -16,12 +25,18 @@ export default function WorkspacesLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <Sidebar items={workspaceNavItems} />
-      <main className="pb-16 md:pl-64 md:pb-0">
-        <div className="container py-6">{children}</div>
-      </main>
-      <BottomNav items={workspaceNavItems} />
+    <div className="min-h-screen bg-muted/20">
+      {/* <Sidebar items={workspaceNavItems} /> */}
+
+      <div className="flex flex-1 flex-col transition-all duration-300">
+        <Navbar profileHref="/workspaces/profile" />
+
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+          <div className="max-w-8xl">{children}</div>
+        </main>
+      </div>
+
+      {/* <BottomNav items={workspaceNavItems} /> */}
     </div>
   );
 }

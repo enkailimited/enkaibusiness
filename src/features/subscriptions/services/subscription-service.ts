@@ -43,7 +43,7 @@ export async function subscribe(
         endDate.setMonth(endDate.getMonth() + 1);
     }
 
-    const graceEndDate = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const graceEndDate = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const existingActive = await prisma.subscription.findFirst({
       where: {
@@ -182,7 +182,7 @@ export async function renewSubscription(id: string): Promise<ActionResponse & { 
         endDate.setMonth(endDate.getMonth() + 1);
     }
 
-    const graceEndDate = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const graceEndDate = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const updated = await prisma.subscription.update({
       where: { id },
@@ -235,7 +235,7 @@ export async function updateSubscriptionStatus(
 export async function checkExpiringSubscriptions(): Promise<ActionResponse> {
   try {
     const now = new Date();
-    const graceThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const graceThreshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const expiring = await prisma.subscription.updateMany({
       where: {

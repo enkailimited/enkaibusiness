@@ -1,17 +1,31 @@
-import { requireAuth } from "@/server/auth";
-import { getBusinessBranches } from "../services/branch-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { getBusinessBranchesAction } from "../actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Store, Building2 } from "lucide-react";
 
 interface BranchListProps {
   businessId: string;
 }
 
-export async function BranchList({ businessId }: BranchListProps) {
-  await requireAuth();
-  const branches = await getBusinessBranches(businessId);
+export function BranchList({ businessId }: BranchListProps) {
+  const query = useQuery({
+    queryKey: ["branches", businessId],
+    queryFn: async () => {
+      const result = await getBusinessBranchesAction(businessId);
+      return result ?? [];
+    },
+  });
+
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
+  const branches = query.data ?? [];
 
   if (branches.length === 0) {
     return (

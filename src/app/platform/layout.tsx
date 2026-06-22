@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/layout/app-shell";
+import { PlatformShell } from "@/components/layout/platform-shell";
 
 export default function PlatformLayout({
   children,
@@ -6,8 +6,8 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppShell>
+    <PlatformShell>
       {children}
-    </AppShell>
+    </PlatformShell>
   );
 }

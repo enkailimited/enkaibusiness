@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { prisma } from "@/server/db";
 import {
   createLead,
   getLeads,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/validations/lead";
 import type { ActionResponse } from "@/types/relationships";
 import type { LeadFilters } from "@/server/services/lead-service";
+import { generateTempPassword, setUserPassword, sendInviteEmail } from "@/features/users/services/invite-service";
 
 export async function createLeadAction(
   _prevState: ActionResponse | null,
@@ -217,4 +219,60 @@ export async function convertLeadAction(
 export async function getLeadMetricsAction() {
   await requireAuth();
   return getLeadMetrics();
+}
+
+export async function resendLeadCredentialsAction(
+  leadId: string,
+  newEmail?: string,
+): Promise<ActionResponse> {
+  try {
+    const agent = await requireAuth();
+
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead) return { success: false, message: "Lead not found" };
+    if (!lead.convertedToUserId) return { success: false, message: "Lead has not been converted yet" };
+
+    const targetEmail = newEmail || lead.email;
+    if (!targetEmail) return { success: false, message: "No email address available" };
+
+    const user = await prisma.user.findUnique({ where: { id: lead.convertedToUserId } });
+    if (!user) return { success: false, message: "Converted user not found" };
+
+    if (!user.mustChangePassword) {
+      return { success: false, message: "User has already changed their password. Resend is disabled." };
+    }
+
+    if (newEmail && newEmail !== user.email) {
+      await prisma.user.update({ where: { id: user.id }, data: { email: newEmail } });
+      await prisma.lead.update({ where: { id: leadId }, data: { email: newEmail } });
+    }
+
+    const tempPassword = generateTempPassword();
+    await setUserPassword(user.id, tempPassword);
+
+    const invitedByName = `${agent.firstName} ${agent.lastName}`.trim() || "Admin";
+    const emailSent = await sendInviteEmail(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
+
+    await prisma.leadActivity.create({
+      data: {
+        leadId,
+        action: "CREDENTIALS_RESENT",
+        detail: `Credentials resent to ${targetEmail}${emailSent ? "" : " (email delivery failed)"}`,
+        createdById: agent.id,
+      },
+    });
+
+    revalidatePath(`/leads/${leadId}`);
+    revalidatePath("/leads");
+
+    return {
+      success: true,
+      message: emailSent
+        ? "Credentials resent successfully"
+        : "Password reset but email could not be sent. Contact the user manually.",
+    };
+  } catch (error) {
+    console.error("Resend credentials error:", error);
+    return { success: false, message: "Failed to resend credentials" };
+  }
 }

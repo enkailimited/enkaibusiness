@@ -159,3 +159,21 @@ export async function removeMemberAction(workspaceId: string, userId: string) {
   }
   return result;
 }
+
+export async function createMyWorkspaceAction() {
+  const user = await requireAuth();
+
+  const wsName = `${user.firstName} ${user.lastName}'s Workspace`;
+  const slug = `${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}-${Date.now()}`;
+
+  const result = await createWorkspace(
+    { name: wsName, slug, description: "Personal workspace" },
+    user.id,
+  );
+
+  if (result.success) {
+    revalidatePath("/workspaces");
+  }
+
+  return result;
+}

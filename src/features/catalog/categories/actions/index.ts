@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { createCategory, updateCategory, deleteCategory } from "../services/category-service";
+import { createCategory, updateCategory, deleteCategory, getBusinessCategories } from "../services/category-service";
 import { createCategorySchema, updateCategorySchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -72,6 +72,11 @@ export async function updateCategoryAction(
   }
 
   return result;
+}
+
+export async function listCategoriesAction(businessId: string) {
+  await requireAuth();
+  return getBusinessCategories(businessId);
 }
 
 export async function deleteCategoryAction(

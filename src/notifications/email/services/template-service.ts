@@ -86,6 +86,16 @@ const SYSTEM_TEMPLATES = [
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .cred-input {
+      display:block;width:100%;box-sizing:border-box;padding:10px 12px;margin-top:4px;
+      font-size:15px;font-weight:600;color:#0f172a;background:#ffffff;
+      border:1px solid #e2e8f0;border-radius:6px;
+      user-select:all;-webkit-user-select:all;
+      outline:none;cursor:text;
+    }
+    .cred-input-pw { font-family:monospace; letter-spacing:0.5px; }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7">
@@ -110,33 +120,40 @@ const SYSTEM_TEMPLATES = [
               <p style="margin:0 0 20px;color:#374151;font-size:15px;line-height:1.6">
                 Your account has been created. Use the credentials below to sign in:
               </p>
-              <!-- Credentials Card -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:24px">
+
+              <!-- Email -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">
                 <tr>
-                  <td style="padding:20px">
-                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                      <tr>
-                        <td style="padding:6px 0">
-                          <span style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Email Address</span>
-                          <p style="margin:2px 0 0;color:#0f172a;font-size:15px;font-weight:500">{{email}}</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0;border-top:1px solid #e2e8f0">
-                          <span style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Username</span>
-                          <p style="margin:2px 0 0;color:#0f172a;font-size:15px;font-weight:500">{{username}}</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:6px 0;border-top:1px solid #e2e8f0">
-                          <span style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Temporary Password</span>
-                          <p style="margin:2px 0 0;color:#0f172a;font-size:15px;font-weight:500;font-family:monospace">{{temporaryPassword}}</p>
-                        </td>
-                      </tr>
-                    </table>
+                  <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
+                    <div style="color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Email Address</div>
+                    <input type="text" readonly value="{{email}}" class="cred-input" style="display:block;width:100%;box-sizing:border-box;padding:10px 12px;margin-top:4px;font-size:15px;font-weight:600;color:#0f172a;background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;user-select:all;-webkit-user-select:all;outline:none;cursor:text" />
+                    <div style="color:#94a3b8;font-size:10px;margin-top:4px;text-align:right">Tap to select &amp; copy</div>
                   </td>
                 </tr>
               </table>
+
+              <!-- Username -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px">
+                <tr>
+                  <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
+                    <div style="color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Username</div>
+                    <input type="text" readonly value="{{username}}" class="cred-input" style="display:block;width:100%;box-sizing:border-box;padding:10px 12px;margin-top:4px;font-size:15px;font-weight:600;color:#0f172a;background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;user-select:all;-webkit-user-select:all;outline:none;cursor:text" />
+                    <div style="color:#94a3b8;font-size:10px;margin-top:4px;text-align:right">Tap to select &amp; copy</div>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Temporary Password -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px">
+                <tr>
+                  <td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px">
+                    <div style="color:#64748b;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Temporary Password</div>
+                    <input type="text" readonly value="{{temporaryPassword}}" class="cred-input cred-input-pw" style="display:block;width:100%;box-sizing:border-box;padding:10px 12px;margin-top:4px;font-size:15px;font-weight:600;color:#0f172a;background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;user-select:all;-webkit-user-select:all;outline:none;cursor:text;font-family:monospace;letter-spacing:0.5px" />
+                    <div style="color:#94a3b8;font-size:10px;margin-top:4px;text-align:right">Tap to select &amp; copy</div>
+                  </td>
+                </tr>
+              </table>
+
               <!-- CTA Button -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>

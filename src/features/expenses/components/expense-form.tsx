@@ -1,11 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { cn } from "@/lib/utils";
+import { useState, useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FormStepper } from "@/components/ui/form-stepper";
 import { createExpenseAction } from "../actions";
+import { ChevronLeft, ChevronRight, Receipt, FileText } from "lucide-react";
 import type { ExpenseCategory } from "@/features/expense-categories/types";
 
 interface ExpenseFormProps {
@@ -13,73 +16,174 @@ interface ExpenseFormProps {
   categories: ExpenseCategory[];
 }
 
+const STEPS = [
+  { title: "Taarifa za Msingi", description: "Aina ya gharama na kiasi" },
+  { title: "Maelezo", description: "Tarehe, maelezo na mlipwaji" },
+];
+
 export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
+  const [step, setStep] = useState(0);
   const [state, formAction, pending] = useActionState(createExpenseAction.bind(null, businessId), null);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create Expense</CardTitle>
-        <CardDescription>Record a new business expense</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
-            <select
-              id="categoryId"
-              name="categoryId"
-              required
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
+        <FormStepper steps={STEPS} currentStep={step} />
+        <form action={formAction} className="space-y-6">
+          <input type="hidden" name="businessId" value={businessId} />
+
+          <div className={cn(step !== 0 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                  <Receipt className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
+                  <p className="text-sm text-gray-500">Aina ya gharama na kiasi</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId" className="text-sm font-medium">
+                    Aina ya Gharama <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    id="categoryId"
+                    name="categoryId"
+                    required
+                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    <option value="">Chagua aina</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {state?.errors?.categoryId && (
+                    <p className="text-sm text-red-500">{state.errors.categoryId[0]}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount" className="text-sm font-medium">
+                    Kiasi <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="Mf. 50000"
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {state?.errors?.amount && (
+                    <p className="text-sm text-red-500">{state.errors.amount[0]}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={cn(step !== 1 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Maelezo</h3>
+                  <p className="text-sm text-gray-500">Tarehe, maelezo na mlipwaji</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expenseDate" className="text-sm font-medium">
+                    Tarehe <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input
+                    id="expenseDate"
+                    name="expenseDate"
+                    type="date"
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-sm font-medium">
+                    Maelezo <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    placeholder="Maelezo ya ziada kuhusu gharama hii"
+                    className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paidTo" className="text-sm font-medium">
+                    Imelipwa Kwa <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input
+                    id="paidTo"
+                    name="paidTo"
+                    placeholder="Jina la muuzaji au mpokeaji"
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {state?.message && (
+            <div
+              className={`rounded-xl p-4 text-sm ${
+                state.success
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
+              }`}
             >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount</Label>
-            <Input id="amount" name="amount" type="number" step="0.01" min="0.01" required />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expenseDate">Date</Label>
-            <Input id="expenseDate" name="expenseDate" type="date" />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <textarea
-              id="description"
-              name="description"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="paidTo">Paid To</Label>
-            <Input id="paidTo" name="paidTo" placeholder="Vendor or recipient name" />
-          </div>
-
-          {state?.errors && (
-            <div className="text-sm text-destructive space-y-1">
-              {Object.entries(state.errors).map(([field, msgs]) => (
-                <p key={field}>{field}: {msgs.join(", ")}</p>
-              ))}
+              <p className="font-medium">{state.message}</p>
+              {state.errors && (
+                <ul className="mt-2 list-inside list-disc text-xs">
+                  {Object.values(state.errors).flat().map((msg, i) => (
+                    <li key={i}>{msg}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
-          {state?.message && !state.errors && (
-            <p className={state.success ? "text-sm text-green-600" : "text-sm text-destructive"}>
-              {state.message}
-            </p>
-          )}
+          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              className="h-11 rounded-xl border-gray-200 px-6"
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Nyuma
+            </Button>
 
-          <Button type="submit" disabled={pending}>
-            {pending ? "Creating..." : "Create Expense"}
-          </Button>
+            {step < STEPS.length - 1 ? (
+              <Button
+                type="button"
+                onClick={() => setStep((s) => s + 1)}
+                className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
+              >
+                Endelea
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={pending}
+                className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
+              >
+                {pending ? "Inahifadhi..." : "Hifadhi Gharama"}
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

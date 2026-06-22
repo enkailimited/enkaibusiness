@@ -19,12 +19,12 @@ export type CatalogItemType = (typeof CATALOG_ITEM_TYPES)[number];
 export type RoleScope = (typeof ROLE_SCOPES)[number];
 
 export const INDUSTRY_MODES: Record<Industry, readonly string[]> = {
-  COMMERCE: ["RETAIL", "WHOLESALE"],
-  HEALTHCARE: ["PHARMACY", "CLINIC", "HOSPITAL"],
-  RESTAURANT: ["RESTAURANT", "CAFE", "BAKERY"],
-  MANUFACTURING: ["GENERAL"],
-  AGRICULTURE: ["GENERAL"],
-  SERVICES: ["GENERAL"],
+  COMMERCE: ["retail", "wholesale"],
+  HEALTHCARE: ["pharmacy", "clinic", "hospital"],
+  RESTAURANT: ["restaurant", "cafe", "bakery"],
+  MANUFACTURING: ["general"],
+  AGRICULTURE: ["general"],
+  SERVICES: ["general"],
 } as const;
 
 export const PLATFORM_ROLES = [
@@ -121,6 +121,19 @@ export enum TicketStatus {
   IN_PROGRESS = "IN_PROGRESS",
   RESOLVED = "RESOLVED",
   CLOSED = "CLOSED",
+}
+
+export enum CustomerType {
+  RETAIL = "RETAIL",
+  WHOLESALE = "WHOLESALE",
+  WALK_IN = "WALK_IN",
+}
+
+export enum PricingTier {
+  RETAIL = "RETAIL",
+  WHOLESALE = "WHOLESALE",
+  PROMO = "PROMO",
+  CUSTOMER_GROUP = "CUSTOMER_GROUP",
 }
 
 export enum TicketPriority {

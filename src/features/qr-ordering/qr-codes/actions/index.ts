@@ -18,6 +18,7 @@ import {
 } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 import type { QRCodeFilterSchema } from "../schemas";
+import { requireQrOrderingEnabled } from "../../feature-gate";
 
 export async function createQRCodesAction(
   _prevState: ActionResponse | null,
@@ -137,6 +138,14 @@ export async function installQRCodeAction(
       message: "Validation failed",
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
+  }
+
+  if (parsed.data.businessId) {
+    try {
+      await requireQrOrderingEnabled(parsed.data.businessId);
+    } catch (e) {
+      return { success: false, message: (e as Error).message };
+    }
   }
 
   const result = await installQRCode(parsed.data, user.id);

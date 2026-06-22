@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -291,6 +292,7 @@ export default function PlatformDistributionPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create Campaign</DialogTitle>
+                  <DialogDescription className="sr-only">Create a new distribution campaign</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -531,6 +533,7 @@ export default function PlatformDistributionPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign QR Code</DialogTitle>
+            <DialogDescription className="sr-only">Assign a QR code to a user</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -560,6 +563,7 @@ export default function PlatformDistributionPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Install QR Code</DialogTitle>
+            <DialogDescription className="sr-only">Install a QR code at a business location</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>

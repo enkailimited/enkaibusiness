@@ -1,21 +1,30 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createBusinessAction } from "../actions";
+import { createBusinessAction, listActivePlansAction } from "../actions";
+import { BUSINESS_SIZE_LABELS } from "@/features/subscriptions/constants/pricing";
 import { INDUSTRIES, INDUSTRY_LABELS, BUSINESS_MODES } from "../constants";
+
+type Plan = { id: string; name: string; amount: number; currency: string; interval: string };
 
 interface BusinessFormProps {
   workspaceId: string;
+  onSuccess?: () => void;
 }
 
-export function BusinessForm({ workspaceId }: BusinessFormProps) {
+export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
   const [state, formAction, pending] = useActionState(createBusinessAction.bind(null, workspaceId), null);
   const [selectedIndustry, setSelectedIndustry] = useState<string>("COMMERCE");
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+
+  useEffect(() => {
+    listActivePlansAction().then((data) => setPlans(data as unknown as Plan[]));
+  }, []);
 
   const availableModes = BUSINESS_MODES[selectedIndustry] ?? [];
 
@@ -25,13 +34,19 @@ export function BusinessForm({ workspaceId }: BusinessFormProps) {
     );
   };
 
+  useEffect(() => {
+    if (state?.success && onSuccess) {
+      onSuccess();
+    }
+  }, [state, onSuccess]);
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-0 shadow-none">
+      <CardHeader className="px-0 pt-0">
         <CardTitle>Create Business</CardTitle>
         <CardDescription>Add a new business to your workspace</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-0">
         <form action={formAction} className="space-y-4">
           <input type="hidden" name="modes" value={JSON.stringify(selectedModes)} />
 
@@ -103,6 +118,36 @@ export function BusinessForm({ workspaceId }: BusinessFormProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="businessSize">Business Size</Label>
+            <select
+              id="businessSize"
+              name="businessSize"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
+              {Object.entries(BUSINESS_SIZE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="planId">Subscription Plan</Label>
+            <select
+              id="planId"
+              name="planId"
+              required
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
+              <option value="">Select a plan...</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} — {plan.interval} ({new Intl.NumberFormat().format(plan.amount)} {plan.currency})
+                </option>
+              ))}
+            </select>
           </div>
 
           {state?.errors && (

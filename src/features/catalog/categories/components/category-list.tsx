@@ -1,6 +1,10 @@
-import { getBusinessCategories } from "../services/category-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listCategoriesAction } from "../actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryWithChildren } from "../types";
 
 interface CategoryListProps {
@@ -47,8 +51,20 @@ function CategoryTreeItem({
   );
 }
 
-export async function CategoryList({ businessId }: CategoryListProps) {
-  const categories = await getBusinessCategories(businessId);
+export function CategoryList({ businessId }: CategoryListProps) {
+  const query = useQuery({
+    queryKey: ["categories", businessId],
+    queryFn: async () => {
+      const result = await listCategoriesAction(businessId);
+      return (result ?? []) as CategoryWithChildren[];
+    },
+  });
+
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
+  const categories = query.data ?? [];
 
   return (
     <Card>

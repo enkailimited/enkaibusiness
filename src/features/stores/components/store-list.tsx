@@ -1,17 +1,31 @@
-import { requireAuth } from "@/server/auth";
-import { getBranchStores } from "../services/store-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { getBranchStoresAction } from "../actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Store as StoreIcon } from "lucide-react";
 
 interface StoreListProps {
   branchId: string;
 }
 
-export async function StoreList({ branchId }: StoreListProps) {
-  await requireAuth();
-  const stores = await getBranchStores(branchId);
+export function StoreList({ branchId }: StoreListProps) {
+  const query = useQuery({
+    queryKey: ["stores", branchId],
+    queryFn: async () => {
+      const result = await getBranchStoresAction(branchId);
+      return result ?? [];
+    },
+  });
+
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
+  const stores = query.data ?? [];
 
   if (stores.length === 0) {
     return (

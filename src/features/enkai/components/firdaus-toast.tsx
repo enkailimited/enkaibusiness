@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useFirdausContext } from "../provider/firdaus-context";
 
 interface Props {
@@ -11,59 +11,64 @@ export function FirdausToast({ userName }: Props) {
   const { state, actions } = useFirdausContext();
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");
+  const [spoken, setSpoken] = useState(false);
+  const greetedRef = useRef(false);
 
   useEffect(() => {
-    if (state.hasGreeted || !state.businessId) return;
+    if (greetedRef.current) return;
+    const shouldGreet = typeof window !== "undefined" && sessionStorage.getItem("firdaus_greet") === "true";
+    if (!shouldGreet) return;
+
+    greetedRef.current = true;
+    try { sessionStorage.removeItem("firdaus_greet"); } catch {}
 
     const doGreeting = async () => {
-      actions.markGreeted();
+      const name = userName || state.userId || "Mfanyabiashara";
+
+      let greetingMessage = `Karibu ${name}. Mimi ni Firdaus. Nipo hapa kukusaidia. Ukihitaji msaada wowote sema tu "Dausi".`;
 
       try {
-        const { getGreetingDataAction } = await import("../actions/greeting-actions");
-        const userId = state.userId || "";
-        const data = await getGreetingDataAction(state.businessId, userId);
-        const { snapshot } = data;
-        const name = data.userName || userName || "Mfanyabiashara";
+        if (state.businessId) {
+          const { getGreetingDataAction } = await import("../actions/greeting-actions");
+          const data = await getGreetingDataAction(state.businessId, state.userId || "");
 
-        let greeting = `Karibu ${name}. Mimi ni Firdaus. Nipo hapa kukusaidia kuendesha biashara yako. Ukihitaji msaada wowote sema tu "Firdaus".`;
+          if (data) {
+            const parts: string[] = [];
+            const displayName = data.snapshot.userName || userName || "Mfanyabiashara";
+            parts.push(`Mauzo ya leo ni Tsh ${data.snapshot.todaySales.toLocaleString()}.`);
+            if (data.snapshot.lowStockCount > 0) {
+              parts.push(`Bidhaa ${data.snapshot.lowStockCount} zinahitaji kuagizwa.`);
+            }
+            if (data.snapshot.overdueCount > 0) {
+              parts.push(`Madeni ${data.snapshot.overdueCount} yamechelewa kulipwa.`);
+            }
+            if (data.snapshot.healthScore) {
+              parts.push(`Business Health Score ni ${data.snapshot.healthScore}/100 (${data.snapshot.healthGrade}).`);
+            }
+            greetingMessage = `Karibu ${displayName}.\n\n${parts.join("\n")}\n\nNipo tayari kusaidia.`;
+          }
+        }
+      } catch {}
 
-        const parts: string[] = [];
-        if (snapshot.todaySales > 0) {
-          parts.push(`Kwa sasa mauzo ya leo ni Tsh ${snapshot.todaySales.toLocaleString()}.`);
-        }
-        if (snapshot.lowStockCount > 0) {
-          const names = snapshot.criticalStockNames.slice(0, 3).join(", ");
-          parts.push(`Bidhaa ${snapshot.lowStockCount} zinakaribia kuisha stoo`);
-          if (names) parts[parts.length - 1] += ` (${names})`;
-          parts[parts.length - 1] += ".";
-        }
-        if (snapshot.overdueDebtCount > 0 && snapshot.topDebtorName) {
-          parts.push(`${snapshot.topDebtorName} ana deni kubwa la Tsh ${Number(snapshot.topDebtAmount || 0).toLocaleString()} ambalo halijalipwa.`);
-        }
-        if (snapshot.pendingPOCount > 0) {
-          parts.push(`Purchase Order ${snapshot.pendingPOCount} hazijakamilika.`);
-        }
-
-        if (parts.length > 0) {
-          greeting += `\n\n${parts.join("\n")}`;
-        }
-
-        setMessage(greeting);
-      } catch {
-        setMessage(`Karibu ${userName || "Mfanyabiashara"}. Mimi ni Firdaus. Nipo hapa kukusaidia kuendesha biashara yako. Ukihitaji msaada wowote sema tu "Firdaus".`);
-      }
-
+      setMessage(greetingMessage);
       setVisible(true);
-      setTimeout(() => setVisible(false), 12000);
+      setTimeout(() => setVisible(false), 14000);
     };
 
     doGreeting();
-  }, [state.hasGreeted, state.businessId, state.userId, userName, actions]);
+  }, [userName, state.businessId, state.userId]);
+
+  useEffect(() => {
+    if (!visible || spoken) return;
+    setSpoken(true);
+    const name = userName?.split(" ")[0] || "Mfanyabiashara";
+    actions.speak(`Habari ${name}. Mimi ni Firdaus. Nakusikiliza sasa. Ukihitaji msaada wakati wowote, sema tu Dausi, na nitakusaidia.`);
+  }, [visible, spoken, userName, actions]);
 
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in slide-in-from-bottom-4 fade-in duration-500">
+    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in slide-in-from-bottom-4 fade-in duration-500 md:bottom-5">
       <div className="rounded-xl border bg-background shadow-xl p-5">
         <div className="flex items-start gap-3">
           <span className="text-xl shrink-0 mt-0.5">✦</span>

@@ -1,16 +1,30 @@
-import { getBusinessUnits } from "../services/unit-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listUnitsAction } from "../actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/shared/data-table";
 import { UNIT_TYPE_LABELS, UNIT_TYPE_VARIANTS } from "../constants";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { UnitWithCount } from "../types";
 
 interface UnitListProps {
   businessId: string;
 }
 
-export async function UnitList({ businessId }: UnitListProps) {
-  const units = await getBusinessUnits(businessId);
+export function UnitList({ businessId }: UnitListProps) {
+  const query = useQuery({
+    queryKey: ["units", businessId],
+    queryFn: async () => {
+      const result = await listUnitsAction(businessId);
+      return (result ?? []) as UnitWithCount[];
+    },
+  });
+
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
 
   return (
     <Card>
@@ -50,7 +64,7 @@ export async function UnitList({ businessId }: UnitListProps) {
               cell: (r) => r._count.catalogItems,
             },
           ]}
-          data={units}
+          data={query.data ?? []}
           emptyTitle="No units of measure"
           emptyDescription="Add units like Pieces, Kilograms, or Liters to use in your catalog"
         />

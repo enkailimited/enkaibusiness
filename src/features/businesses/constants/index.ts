@@ -17,7 +17,7 @@ export const INDUSTRY_LABELS: Record<string, string> = {
 };
 
 export const BUSINESS_MODES: Record<string, string[]> = {
-  COMMERCE: ["retail", "wholesale", "ecommerce"],
+  COMMERCE: ["retail", "wholesale", "both"],
   HEALTHCARE: ["clinic", "pharmacy", "laboratory", "hospital"],
   RESTAURANT: ["dine_in", "takeaway", "delivery", "catering"],
   MANUFACTURING: ["production", "assembly", "packaging"],

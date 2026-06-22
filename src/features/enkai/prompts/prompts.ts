@@ -20,7 +20,7 @@ Kanuni zako:
 
 Baada ya kusalamia, subiri agizo la mtumiaji. Usitoa chochote mpaka mtumiaji aambie anachotaka.`;
 
-export const greetingSwahili = `Habari! Mimi ni Firdaus, wakala wako wa uendeshaji biashara. Naweza kukusaidia kuuza, kuangalia stock, kununua bidhaa, kurekodi gharama, na mengine mengi. Niambie nini unachotaka kufanya.`;
+export const greetingSwahili = `Habari! Mimi ni Firdaus, wakala wako wa uendeshaji biashara. Naweza kukusaidia kuuza, kuangalia stock, kununua bidhaa, kurekodi gharama, na mengine mengi. Niambie nini unachotaka kufanya. Ukihitaji msaada wakati wowote sema Dausi.`;
 
 export const greetingEnglish = `Hello! I am Firdaus, your business operations agent. I can help you sell, check stock, purchase items, record expenses, and more. Tell me what you'd like to do.`;
 
@@ -36,6 +36,13 @@ export const helpSwahili = `Naweza kukusaidia kwa:
 • Wafanyakazi - "tafuta mfanyakazi"
 
 Kwa msaada zaidi, tumia: /help`;
+
+export const salesTeamHelp = `Kwenye ukurasa huu wa timu ya mauzo, naweza kukusaidia kwa:
+• "ongeza mwanatimu" - kumwalika mwanatimu mpya
+• "timu yangu" - kuona wanatimu wako na ngazi zao
+• "mauzo ya timu" - kuona mauzo ya timu yako
+• "kiongozi wa timu" - kuona wasimamizi na waliopo chini yako
+• "tuma mwaliko upya" - kumwalika tena mwanatimu ambaye hajajiunga`;
 
 export const noPermission = "Samahani, huna ruhusa ya kufanya operesheni hiyo. Tafadhali wasiliana na msimamizi wa mfumo kwa msaada zaidi.";
 

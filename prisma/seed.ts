@@ -50,6 +50,83 @@ async function main() {
 
   // ─── 2. Platform Roles ──────────────────────────────────────────────────
 
+  const allSlugs = permissions;
+
+  const rolePermissionsMap: Record<string, string[]> = {
+    "super-admin": allSlugs,
+    "national-manager": [
+      "users.read", "users.list",
+      "roles.read", "roles.list",
+      "workspaces.read", "workspaces.list", "workspaces.manage_members",
+      "businesses.read", "businesses.list",
+      "branches.read", "branches.list",
+      "stores.read", "stores.list",
+      "catalog.read", "catalog.list",
+      "sales.read", "sales.list",
+      "inventory.read", "inventory.list",
+      "purchases.read", "purchases.list",
+      "expenses.read", "expenses.list",
+      "reports.read", "reports.export",
+      "settings.read",
+    ],
+    "national-sales-manager": [
+      "users.read", "users.list",
+      "workspaces.read", "workspaces.list",
+      "businesses.read", "businesses.list",
+      "branches.read", "branches.list",
+      "sales.read", "sales.list",
+      "inventory.read", "inventory.list",
+      "purchases.read", "purchases.list",
+      "reports.read", "reports.export",
+      "settings.read",
+    ],
+    "region-manager": [
+      "users.read",
+      "workspaces.read",
+      "businesses.read",
+      "branches.read",
+      "sales.read", "sales.list",
+      "inventory.read",
+      "purchases.read",
+      "reports.read",
+    ],
+    "team-leader": [
+      "users.read",
+      "sales.read", "sales.list",
+      "reports.read",
+    ],
+    "freelancer": [
+      "sales.read", "sales.list",
+      "reports.read",
+    ],
+    "marketing-manager": [
+      "users.read", "users.list",
+      "workspaces.read", "workspaces.list",
+      "businesses.read", "businesses.list",
+      "branches.read", "branches.list",
+      "reports.read", "reports.export",
+      "settings.read",
+    ],
+    "support-agent": [
+      "users.read", "users.list",
+      "workspaces.read", "workspaces.list",
+      "businesses.read", "businesses.list",
+      "branches.read",
+      "settings.read",
+    ],
+    "finance-officer": [
+      "users.read",
+      "businesses.read",
+      "sales.read", "sales.list",
+      "purchases.read", "purchases.list",
+      "expenses.read", "expenses.list",
+      "reports.read", "reports.export",
+      "settings.read", "settings.update",
+    ],
+  };
+
+  let superAdminRoleId: string | null = null;
+
   const platformRoles = [
     { name: "Super Admin", slug: "super-admin" },
     { name: "National Manager", slug: "national-manager" },
@@ -61,8 +138,6 @@ async function main() {
     { name: "Support Agent", slug: "support-agent" },
     { name: "Finance Officer", slug: "finance-officer" },
   ];
-
-  let superAdminRoleId: string | null = null;
 
   for (const rd of platformRoles) {
     const role = await prisma.role.upsert({
@@ -79,24 +154,68 @@ async function main() {
 
     if (rd.slug === "super-admin") {
       superAdminRoleId = role.id;
-      for (const slug of permissions) {
-        const perm = await prisma.permission.findUnique({ where: { slug } });
-        if (perm) {
-          await prisma.rolePermission.upsert({
-            where: {
-              roleId_permissionId: { roleId: role.id, permissionId: perm.id },
-            },
-            update: {},
-            create: { roleId: role.id, permissionId: perm.id },
-          }).catch(() => {});
-        }
+    }
+
+    const rolePerms = rolePermissionsMap[rd.slug] || [];
+    for (const slug of rolePerms) {
+      const perm = await prisma.permission.findUnique({ where: { slug } });
+      if (perm) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId: role.id, permissionId: perm.id },
+          },
+          update: {},
+          create: { roleId: role.id, permissionId: perm.id },
+        }).catch(() => {});
       }
     }
   }
 
-  console.log(`✔ Created ${platformRoles.length} platform roles`);
+  console.log(`✔ Created ${platformRoles.length} platform roles with permissions`);
 
   // ─── 3. Business Roles ──────────────────────────────────────────────────
+
+  const businessRolePermissionsMap: Record<string, string[]> = {
+    owner: allSlugs,
+    manager: [
+      "branches.read", "branches.list",
+      "stores.read", "stores.list",
+      "catalog.create", "catalog.read", "catalog.update", "catalog.list",
+      "sales.create", "sales.read", "sales.update", "sales.void", "sales.list",
+      "inventory.create", "inventory.read", "inventory.update", "inventory.adjust", "inventory.list",
+      "purchases.create", "purchases.read", "purchases.update", "purchases.list",
+      "expenses.create", "expenses.read", "expenses.update", "expenses.list",
+      "reports.read", "reports.export",
+      "settings.read", "settings.update",
+    ],
+    accountant: [
+      "sales.read", "sales.list",
+      "purchases.read", "purchases.list",
+      "expenses.create", "expenses.read", "expenses.update", "expenses.approve", "expenses.list",
+      "reports.read", "reports.export",
+      "settings.read",
+    ],
+    cashier: [
+      "sales.create", "sales.read", "sales.list",
+      "inventory.read", "inventory.list",
+    ],
+    doctor: [
+      "catalog.read", "catalog.list",
+      "sales.create", "sales.read", "sales.list",
+      "inventory.read", "inventory.list",
+      "customers.read", "customers.list",
+    ],
+    pharmacist: [
+      "catalog.create", "catalog.read", "catalog.update", "catalog.list",
+      "sales.create", "sales.read", "sales.list",
+      "inventory.create", "inventory.read", "inventory.update", "inventory.adjust", "inventory.list",
+      "purchases.create", "purchases.read", "purchases.list",
+    ],
+    chef: [
+      "catalog.read", "catalog.list",
+      "inventory.read", "inventory.list",
+    ],
+  };
 
   const businessRoles = [
     { name: "Owner", slug: "owner" },
@@ -109,7 +228,7 @@ async function main() {
   ];
 
   for (const rd of businessRoles) {
-    await prisma.role.upsert({
+    const role = await prisma.role.upsert({
       where: { slug: rd.slug },
       update: {},
       create: {
@@ -120,9 +239,23 @@ async function main() {
         isSystem: true,
       },
     });
+
+    const rolePerms = businessRolePermissionsMap[rd.slug] || [];
+    for (const slug of rolePerms) {
+      const perm = await prisma.permission.findUnique({ where: { slug } });
+      if (perm) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId: role.id, permissionId: perm.id },
+          },
+          update: {},
+          create: { roleId: role.id, permissionId: perm.id },
+        }).catch(() => {});
+      }
+    }
   }
 
-  console.log(`✔ Created ${businessRoles.length} business roles`);
+  console.log(`✔ Created ${businessRoles.length} business roles with permissions`);
 
   // ─── 4. Super User ──────────────────────────────────────────────────────
 
@@ -210,46 +343,59 @@ async function main() {
 
   // ─── 7. Subscription Plans ──────────────────────────────────────────────
 
-  await prisma.subscriptionPlan.upsert({
-    where: { slug: "daily-300" },
-    update: {},
-    create: {
-      name: "Daily Subscription",
-      slug: "daily-300",
-      description: "300 TZS per day — basic business access",
-      amount: new Prisma.Decimal(300),
-      currency: "TZS",
-      interval: "DAILY",
-    },
-  });
+  // Remove old plans that don't match the new naming scheme
+  const oldPlanSlugs = ["weekly-1500", "monthly-5000"];
+  for (const slug of oldPlanSlugs) {
+    const oldPlan = await prisma.subscriptionPlan.findUnique({
+      where: { slug },
+      include: { _count: { select: { subscriptions: true } } },
+    });
+    if (oldPlan && oldPlan._count.subscriptions === 0) {
+      await prisma.subscriptionPlan.delete({ where: { slug } });
+    }
+  }
 
-  await prisma.subscriptionPlan.upsert({
-    where: { slug: "weekly-1500" },
-    update: {},
-    create: {
-      name: "Weekly Subscription",
-      slug: "weekly-1500",
-      description: "1,500 TZS per week — standard plan",
-      amount: new Prisma.Decimal(1500),
-      currency: "TZS",
-      interval: "WEEKLY",
-    },
-  });
+  const planTiers = [
+    { daily: 300, name: "Msingi" },
+    { daily: 500, name: "Biashara" },
+    { daily: 1000, name: "Biashara Plus" },
+    { daily: 1500, name: "Biashara Premium" },
+  ];
 
-  await prisma.subscriptionPlan.upsert({
-    where: { slug: "monthly-5000" },
-    update: {},
-    create: {
-      name: "Monthly Subscription",
-      slug: "monthly-5000",
-      description: "5,000 TZS per month — premium plan",
-      amount: new Prisma.Decimal(5000),
-      currency: "TZS",
-      interval: "MONTHLY",
-    },
-  });
+  const intervals: { label: string; suffix: string; multiplier: number }[] = [
+    { label: "Daily", suffix: "daily", multiplier: 1 },
+    { label: "Weekly", suffix: "weekly", multiplier: 7 },
+    { label: "Monthly", suffix: "monthly", multiplier: 30 },
+  ];
 
-  console.log("✔ Created 3 subscription plans");
+  let planCount = 0;
+  for (const tier of planTiers) {
+    for (const interval of intervals) {
+      const amount = tier.daily * interval.multiplier;
+      const slug = `${interval.suffix}-${tier.daily}`;
+      const name = `${interval.label} - ${tier.name}`;
+      const desc = `${amount.toLocaleString()} TZS kwa ${interval.label.toLowerCase()} — mpango wa ${tier.name}`;
+      await prisma.subscriptionPlan.upsert({
+        where: { slug },
+        update: {
+          name,
+          description: desc,
+          amount: new Prisma.Decimal(amount),
+        },
+        create: {
+          name,
+          slug,
+          description: desc,
+          amount: new Prisma.Decimal(amount),
+          currency: "TZS",
+          interval: interval.suffix.toUpperCase() as "DAILY" | "WEEKLY" | "MONTHLY",
+        },
+      });
+      planCount++;
+    }
+  }
+
+  console.log(`✔ Created ${planCount} subscription plans`);
 
   // ─── 8. Commission Rules ────────────────────────────────────────────────
 

@@ -1,18 +1,26 @@
-import { requireAuth } from "@/server/auth";
-import { listExpenses } from "../services/expense-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listExpensesAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { EXPENSE_STATUS_LABELS } from "../constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ExpenseWithRelations } from "../types";
 
 interface ExpenseListProps {
   businessId: string;
 }
 
-export async function ExpenseList({ businessId }: ExpenseListProps) {
-  await requireAuth();
-  const expenses = await listExpenses(businessId);
+export function ExpenseList({ businessId }: ExpenseListProps) {
+  const query = useQuery({
+    queryKey: ["expenses", businessId],
+    queryFn: async () => {
+      const result = await listExpensesAction(businessId);
+      return (result ?? []) as ExpenseWithRelations[];
+    },
+  });
 
   const columns = [
     {
@@ -61,10 +69,14 @@ export async function ExpenseList({ businessId }: ExpenseListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={expenses}
+      data={query.data ?? []}
       emptyTitle="No expenses found"
       emptyDescription="Record your first expense to get started."
     />

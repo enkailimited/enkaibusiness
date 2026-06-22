@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { createUnit, updateUnit, deleteUnit } from "../services/unit-service";
+import { createUnit, updateUnit, deleteUnit, getBusinessUnits } from "../services/unit-service";
 import { createUnitSchema, updateUnitSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -69,6 +69,11 @@ export async function updateUnitAction(
   }
 
   return result;
+}
+
+export async function listUnitsAction(businessId: string) {
+  await requireAuth();
+  return getBusinessUnits(businessId);
 }
 
 export async function deleteUnitAction(

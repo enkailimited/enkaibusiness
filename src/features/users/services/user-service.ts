@@ -17,7 +17,9 @@ function toProfile(user: {
   createdAt: Date;
   updatedAt: Date;
   userRoles?: { role: { id: string; name: string; slug: string; scope: string } }[];
+  invites?: { status: string; createdAt: Date }[];
 }): UserProfile {
+  const latestInvite = user.invites?.length ? user.invites[0] : null;
   return {
     id: user.id,
     email: user.email,
@@ -31,6 +33,8 @@ function toProfile(user: {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     roles: user.userRoles?.map((ur) => ur.role),
+    inviteStatus: latestInvite?.status ?? null,
+    inviteSentAt: latestInvite?.createdAt ?? null,
   };
 }
 
@@ -102,6 +106,11 @@ export async function listUsers(params?: {
           select: {
             role: { select: { id: true, name: true, slug: true, scope: true } },
           },
+        },
+        invites: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { status: true, createdAt: true },
         },
       },
     }),

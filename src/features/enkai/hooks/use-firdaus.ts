@@ -46,6 +46,7 @@ export function usePageContext(): PageContext {
   else if (segments.includes("branches")) page = "branches";
   else if (segments.includes("staff")) page = "staff";
   else if (segments.includes("settings")) page = "settings";
+  else if (segments.includes("sales-team") || segments.includes("team")) page = "sales-team";
 
   const businessIdx = segments.indexOf("businesses");
   if (businessIdx !== -1 && segments[businessIdx + 1]) {

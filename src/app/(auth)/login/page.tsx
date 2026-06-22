@@ -63,6 +63,14 @@ function LoginForm() {
         return;
       }
 
+      // Check if user needs to change password
+      const session = await authClient.getSession();
+      if (session?.data?.user?.mustChangePassword) {
+        window.location.href = "/change-password";
+        return;
+      }
+      // Signal Firdaus to greet on next page load
+      try { sessionStorage.setItem("firdaus_greet", "true"); } catch {}
       // Force a full page reload to ensure cookie is sent to server
       window.location.href = redirectTo;
     } catch (err) {

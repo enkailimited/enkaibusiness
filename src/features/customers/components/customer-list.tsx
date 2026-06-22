@@ -1,24 +1,37 @@
-import { requireAuth } from "@/server/auth";
-import { listCustomers } from "../services/customer-service";
-import { listGroups } from "@/features/customer-groups/services/group-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listCustomersAction } from "../actions";
+import { listGroupsAction } from "@/features/customer-groups/actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { CUSTOMER_TYPE_LABELS } from "../constants";
 import { formatCurrency } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CustomerWithGroup } from "../types";
 
 interface CustomerListProps {
   businessId: string;
 }
 
-export async function CustomerList({ businessId }: CustomerListProps) {
-  await requireAuth();
-  const [customers, groups] = await Promise.all([
-    listCustomers(businessId),
-    listGroups(businessId),
-  ]);
+export function CustomerList({ businessId }: CustomerListProps) {
+  const customersQuery = useQuery({
+    queryKey: ["customers", businessId],
+    queryFn: async () => {
+      const result = await listCustomersAction(businessId);
+      return (result ?? []) as CustomerWithGroup[];
+    },
+  });
 
-  const groupMap = new Map(groups.map((g) => [g.id, g.name]));
+  const groupsQuery = useQuery({
+    queryKey: ["customer-groups", businessId],
+    queryFn: async () => {
+      const result = await listGroupsAction(businessId);
+      return result ?? [];
+    },
+  });
+
+  const groupMap = new Map((groupsQuery.data ?? []).map((g: { id: string; name: string }) => [g.id, g.name]));
 
   const columns = [
     {
@@ -34,7 +47,7 @@ export async function CustomerList({ businessId }: CustomerListProps) {
       key: "customerType",
       header: "Type",
       cell: (customer: CustomerWithGroup) => (
-        <Badge variant={customer.customerType === "wholesale" ? "default" : "secondary"}>
+        <Badge variant={customer.customerType === "WHOLESALE" ? "default" : "secondary"}>
           {CUSTOMER_TYPE_LABELS[customer.customerType] ?? customer.customerType}
         </Badge>
       ),
@@ -74,10 +87,14 @@ export async function CustomerList({ businessId }: CustomerListProps) {
     },
   ];
 
+  if (customersQuery.isPending || groupsQuery.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={customers}
+      data={customersQuery.data ?? []}
       emptyTitle="No customers found"
       emptyDescription="Add your first customer to get started."
     />

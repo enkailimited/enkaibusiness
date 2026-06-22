@@ -1,13 +1,29 @@
-import { getBusinessBrands } from "../services/brand-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listBrandsAction } from "../actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BrandListProps {
   businessId: string;
 }
 
-export async function BrandList({ businessId }: BrandListProps) {
-  const brands = await getBusinessBrands(businessId);
+export function BrandList({ businessId }: BrandListProps) {
+  const query = useQuery({
+    queryKey: ["brands", businessId],
+    queryFn: async () => {
+      const result = await listBrandsAction(businessId);
+      return result ?? [];
+    },
+  });
+
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
+  const brands = query.data ?? [];
 
   if (brands.length === 0) {
     return (

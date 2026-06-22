@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -288,6 +289,7 @@ export default function PlatformSupportPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create Support Ticket</DialogTitle>
+                  <DialogDescription className="sr-only">Create a new support ticket</DialogDescription>
                 </DialogHeader>
                 <form action={handleCreateTicket}>
                   <input type="hidden" name="priority" value={createPriority} />

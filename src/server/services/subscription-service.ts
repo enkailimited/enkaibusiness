@@ -98,7 +98,7 @@ export async function subscribe(
         break;
     }
 
-    const graceEndDate = new Date(endDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const graceEndDate = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const subscription = await prisma.subscription.create({
       data: {
@@ -139,15 +139,81 @@ export async function getSubscriptions(filters?: {
     if (filters.toDate) (where.startDate as Record<string, unknown>).lte = new Date(filters.toDate);
   }
 
-  return prisma.subscription.findMany({
+  const subscriptions = await prisma.subscription.findMany({
     where,
     include: {
       plan: true,
-      business: true,
+      business: {
+        include: {
+          createdBy: { select: { id: true, name: true, email: true } },
+        },
+      },
       _count: { select: { payments: true } },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const businessIds = subscriptions
+    .map((s) => s.businessId)
+    .filter((id): id is string => !!id);
+
+  let businessCounts: Map<
+    string,
+    {
+      catalogItems: number;
+      units: number;
+      categories: number;
+      brands: number;
+      customers: number;
+      suppliers: number;
+      branches: number;
+      staff: number;
+      uploads: number;
+    }
+  > = new Map();
+
+  if (businessIds.length > 0) {
+    const counts = await prisma.business.findMany({
+      where: { id: { in: businessIds } },
+      select: {
+        id: true,
+        _count: {
+          select: {
+            catalogItems: true,
+            units: true,
+            categories: true,
+            brands: true,
+            customers: true,
+            suppliers: true,
+            branches: true,
+            staff: true,
+            uploads: true,
+          },
+        },
+      },
+    });
+    businessCounts = new Map(counts.map((c) => [c.id, c._count]));
+  }
+
+  return subscriptions.map((sub) => ({
+    ...sub,
+    business: sub.business
+      ? {
+          ...sub.business,
+          _count: businessCounts.get(sub.businessId) ?? {
+            catalogItems: 0,
+            units: 0,
+            categories: 0,
+            brands: 0,
+            customers: 0,
+            suppliers: 0,
+            branches: 0,
+            staff: 0,
+            uploads: 0,
+          },
+        }
+      : null,
+  }));
 }
 
 export async function getSubscription(id: string) {
@@ -230,7 +296,7 @@ export async function getSubscriptionPayments(subscriptionId: string) {
 export async function checkExpiringSubscriptions(): Promise<ActionResponse> {
   try {
     const now = new Date();
-    const graceThreshold = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const graceThreshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const expiring = await prisma.subscription.updateMany({
       where: {

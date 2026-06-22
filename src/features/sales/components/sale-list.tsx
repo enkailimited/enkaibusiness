@@ -1,7 +1,11 @@
-import { requireAuth } from "@/server/auth";
-import { getBusinessSales } from "../services/sale-service";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { listSalesAction } from "../actions";
 import { SALE_STATUS_LABELS, SALE_STATUS_VARIANTS } from "../constants";
 import type { SaleListItem } from "../types";
 
@@ -21,9 +25,14 @@ function formatDate(dateString: string): string {
   });
 }
 
-export async function SaleList({ businessId }: SaleListProps) {
-  await requireAuth();
-  const sales = await getBusinessSales(businessId);
+export function SaleList({ businessId }: SaleListProps) {
+  const query = useQuery({
+    queryKey: ["sales", businessId],
+    queryFn: async () => {
+      const result = await listSalesAction(businessId);
+      return (result ?? []) as SaleListItem[];
+    },
+  });
 
   const columns = [
     {
@@ -75,10 +84,14 @@ export async function SaleList({ businessId }: SaleListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={sales}
+      data={query.data ?? []}
       emptyTitle="No sales found"
       emptyDescription="Record your first sale to get started."
     />

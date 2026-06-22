@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { createBrand, updateBrand, deleteBrand } from "../services/brand-service";
+import { createBrand, updateBrand, deleteBrand, getBusinessBrands } from "../services/brand-service";
 import { createBrandSchema, updateBrandSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -68,6 +68,11 @@ export async function updateBrandAction(
   }
 
   return result;
+}
+
+export async function listBrandsAction(businessId: string) {
+  await requireAuth();
+  return getBusinessBrands(businessId);
 }
 
 export async function deleteBrandAction(

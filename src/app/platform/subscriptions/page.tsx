@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -47,6 +48,20 @@ type SubscriptionPlan = {
   createdAt: string;
 };
 
+type BusinessDataCounts = {
+  catalogItems: number;
+  units: number;
+  categories: number;
+  brands: number;
+  customers: number;
+  suppliers: number;
+  branches: number;
+  staff: number;
+  uploads: number;
+};
+
+type BusinessOwner = { id: string; name: string | null; email: string };
+
 type Subscription = {
   id: string;
   businessId: string;
@@ -56,7 +71,12 @@ type Subscription = {
   endDate: string | null;
   createdAt: string;
   plan: SubscriptionPlan;
-  business: { id: string; businessName: string } | null;
+  business: {
+    id: string;
+    name: string;
+    createdBy: BusinessOwner | null;
+    _count: BusinessDataCounts;
+  } | null;
 };
 
 type Metrics = {
@@ -239,6 +259,7 @@ export default function PlatformSubscriptionsPage() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create Subscription Plan</DialogTitle>
+                  <DialogDescription className="sr-only">Create a new subscription plan</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -397,11 +418,13 @@ export default function PlatformSubscriptionsPage() {
             ) : (
               <div>
                 <div className="hidden grid-cols-12 gap-4 border-b px-6 py-3 text-xs font-medium text-muted-foreground md:grid">
-                  <div className="col-span-3">Business</div>
+                  <div className="col-span-2">Business</div>
+                  <div className="col-span-2">Owner</div>
                   <div className="col-span-2">Plan</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-2">Start Date</div>
-                  <div className="col-span-2">End Date</div>
+                  <div className="col-span-2">Data Usage</div>
+                  <div className="col-span-1">Status</div>
+                  <div className="col-span-1">Start</div>
+                  <div className="col-span-1">End</div>
                   <div className="col-span-1"></div>
                 </div>
                 {subscriptions.map((sub) => (
@@ -409,20 +432,36 @@ export default function PlatformSubscriptionsPage() {
                     key={sub.id}
                     className="grid grid-cols-1 gap-2 border-b px-6 py-4 last:border-0 md:grid-cols-12 md:items-center"
                   >
-                    <div className="text-sm font-medium md:col-span-3">
-                      {sub.business?.businessName ?? "Unknown"}
+                    <div className="text-sm font-medium md:col-span-2">
+                      {sub.business?.name ?? "Unknown"}
+                    </div>
+                    <div className="text-xs text-muted-foreground md:col-span-2">
+                      {sub.business?.createdBy
+                        ? `${sub.business.createdBy.name ?? sub.business.createdBy.email}`
+                        : "—"}
                     </div>
                     <div className="text-sm md:col-span-2">{sub.plan.name}</div>
-                    <div className="md:col-span-2">
+                    <div className="text-xs text-muted-foreground md:col-span-2">
+                      {sub.business ? (
+                        <span>
+                          {sub.business._count.catalogItems} items &middot;{" "}
+                          {sub.business._count.customers} customers &middot;{" "}
+                          {sub.business._count.branches} branches
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </div>
+                    <div className="md:col-span-1">
                       <Badge variant={STATUS_VARIANTS[sub.status] || "outline"}>
                         {sub.status}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground md:col-span-2">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground md:col-span-1">
                       <Calendar className="h-3 w-3" />
                       {formatDate(sub.startDate)}
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground md:col-span-2">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground md:col-span-1">
                       {sub.endDate ? (
                         <>
                           <Calendar className="h-3 w-3" />

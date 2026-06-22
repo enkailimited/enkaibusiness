@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { QuotationList } from "@/features/quotations/components/quotation-list";
 import { QuotationForm } from "@/features/quotations/components/quotation-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { requireAuth } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { listCustomers } from "@/features/customers/services/customer-service";
@@ -10,7 +11,7 @@ import { listProducts } from "@/features/catalog/products/services/product-servi
 
 interface Props { params: Promise<{ businessId: string }> }
 
-async function QuotationSection({ businessId }: { businessId: string }) {
+async function QuotationFormDialog({ businessId }: { businessId: string }) {
   await requireAuth();
   const [business, customers, products] = await Promise.all([
     prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } }),
@@ -30,12 +31,14 @@ async function QuotationSection({ businessId }: { businessId: string }) {
     lastName: c.lastName,
   }));
   return (
-    <QuotationForm
-      businessId={businessId}
-      workspaceId={business.workspaceId}
-      customers={customerOptions}
-      catalogItems={catalogItems}
-    />
+    <DialogForm title="New Quotation" description="Create a new customer quotation">
+      <QuotationForm
+        businessId={businessId}
+        workspaceId={business.workspaceId}
+        customers={customerOptions}
+        catalogItems={catalogItems}
+      />
+    </DialogForm>
   );
 }
 
@@ -44,8 +47,8 @@ export default async function QuotationsPage({ params }: Props) {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader title="Quotations" description="Create and manage customer quotations">
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-2xl" />}>
-          <QuotationSection businessId={businessId} />
+        <Suspense fallback={<Skeleton className="h-10 w-28 rounded-lg" />}>
+          <QuotationFormDialog businessId={businessId} />
         </Suspense>
       </PageHeader>
       <Suspense fallback={<Skeleton className="h-96 w-full rounded-2xl" />}>

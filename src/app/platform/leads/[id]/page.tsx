@@ -31,6 +31,7 @@ import {
   updateLeadStatusAction,
   assignLeadAction,
   addLeadActivityAction,
+  resendLeadCredentialsAction,
 } from "@/server/actions/leads";
 import { formatDate, getInitials, formatRelativeTime } from "@/lib/utils";
 
@@ -123,6 +124,10 @@ export default function LeadDetailPage() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [assignInput, setAssignInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
+  const [showResendForm, setShowResendForm] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendResult, setResendResult] = useState<string | null>(null);
 
   const loadLead = useCallback(async () => {
     if (!params.id) return;
@@ -181,6 +186,23 @@ export default function LeadDetailPage() {
       await loadLead();
     } catch (error) {
       console.error("Failed to add note:", error);
+    }
+  };
+
+  const handleResendCredentials = async () => {
+    if (!lead) return;
+    setResendLoading(true);
+    setResendResult(null);
+    try {
+      const result = await resendLeadCredentialsAction(lead.id, resendEmail || undefined);
+      setResendResult(result.message);
+      if (result.success) {
+        await loadLead();
+      }
+    } catch (error) {
+      setResendResult("Failed to resend credentials");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -435,8 +457,61 @@ export default function LeadDetailPage() {
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Add Note
               </Button>
+              {lead.status === "CONVERTED" && (
+                <Button
+                  className="w-full justify-start"
+                  variant="outline"
+                  onClick={() => {
+                    setShowResendForm(!showResendForm);
+                    setResendEmail(lead.email || "");
+                    setResendResult(null);
+                  }}
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Resend Credentials
+                </Button>
+              )}
             </CardContent>
           </Card>
+
+          {showResendForm && lead.status === "CONVERTED" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resend Credentials</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="Email address"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleResendCredentials}
+                    disabled={resendLoading || !resendEmail.trim()}
+                    size="sm"
+                  >
+                    {resendLoading ? "Sending..." : "Send"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowResendForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {resendResult && (
+                  <p className={`text-sm ${resendResult.includes("successfully") ? "text-emerald-600" : "text-red-600"}`}>
+                    {resendResult}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {lead.assignedTo && (
             <Card>

@@ -26,7 +26,7 @@ export async function createCustomerAction(
     phone: formData.get("phone") || undefined,
     address: formData.get("address") || undefined,
     city: formData.get("city") || undefined,
-    customerType: formData.get("customerType") || "retail",
+    customerType: formData.get("customerType") || "RETAIL",
     customerGroupId: formData.get("customerGroupId") || undefined,
     creditLimit: formData.get("creditLimit") || 0,
     isActive: formData.get("isActive") ?? true,

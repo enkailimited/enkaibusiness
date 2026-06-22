@@ -4,6 +4,7 @@ import type { LeadStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateLeadSchema, UpdateLeadSchema } from "@/lib/validations/lead";
+import { generateTempPassword, setUserPassword, sendInviteEmail } from "@/features/users/services/invite-service";
 
 export interface LeadFilters {
   status?: string;
@@ -189,14 +190,61 @@ export async function updateLeadStatus(
     }
 
     const oldStatus = lead.status;
+    let wasConversion = false;
 
-    await prisma.lead.update({ where: { id }, data: { status: status as LeadStatus } });
+    if (status === "CONVERTED" && !lead.convertedToUserId) {
+      if (!lead.email) {
+        return { success: false, message: "Cannot convert lead without an email address" };
+      }
+      let user = await prisma.user.findUnique({ where: { email: lead.email } });
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email: lead.email,
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            phone: lead.phone || undefined,
+            mustChangePassword: true,
+          },
+        });
+      }
+      await prisma.lead.update({
+        where: { id },
+        data: { status: status as LeadStatus, convertedToUserId: user.id, convertedAt: new Date() },
+      });
+      wasConversion = true;
+    } else {
+      await prisma.lead.update({ where: { id }, data: { status: status as LeadStatus } });
+    }
+
+    if (wasConversion) {
+      const updated = await prisma.lead.findUnique({ where: { id } });
+      if (updated?.email) {
+        const user = await prisma.user.findUnique({ where: { email: updated.email } });
+        if (user) {
+          const tempPassword = generateTempPassword();
+          await setUserPassword(user.id, tempPassword);
+          const invitedByName = "Enkai Business";
+          await sendInviteEmail(updated.email, tempPassword, invitedByName, "Enkai Business", false);
+          await prisma.leadActivity.create({
+            data: {
+              leadId: id,
+              action: "CREDENTIALS_SENT",
+              detail: `Credentials sent to ${updated.email}`,
+              createdById: userId || null,
+            },
+          });
+        }
+      }
+    }
 
     await prisma.leadActivity.create({
       data: {
         leadId: id,
         action: "STATUS_CHANGE",
-        detail: `Status changed from ${oldStatus} to ${status}`,
+        detail: status === "CONVERTED" && oldStatus !== "CONVERTED"
+          ? `Lead converted, user account created`
+          : `Status changed from ${oldStatus} to ${status}`,
         createdById: userId || null,
       },
     });

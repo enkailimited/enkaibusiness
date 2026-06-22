@@ -1,13 +1,13 @@
 export const CUSTOMER_TYPES = [
-  { value: "retail", label: "Retail" },
-  { value: "wholesale", label: "Wholesale" },
-  { value: "walk_in", label: "Walk-in" },
+  { value: "RETAIL", label: "Retail" },
+  { value: "WHOLESALE", label: "Wholesale" },
+  { value: "WALK_IN", label: "Walk-in" },
 ] as const;
 
 export const CUSTOMER_TYPE_LABELS: Record<string, string> = {
-  retail: "Retail",
-  wholesale: "Wholesale",
-  walk_in: "Walk-in",
+  RETAIL: "Retail",
+  WHOLESALE: "Wholesale",
+  WALK_IN: "Walk-in",
 };
 
 export const CUSTOMER_SORT_OPTIONS = [

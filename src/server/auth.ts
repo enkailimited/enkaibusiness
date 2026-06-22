@@ -22,6 +22,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         lastName: true,
         avatarUrl: true,
         isOnboarded: true,
+        mustChangePassword: true,
       },
     });
 
@@ -50,6 +51,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
         lastName: true,
         avatarUrl: true,
         isOnboarded: true,
+        mustChangePassword: true,
         userRoles: {
           select: {
             role: {
@@ -82,6 +84,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       lastName: dbUser.lastName,
       avatarUrl: dbUser.avatarUrl,
       isOnboarded: dbUser.isOnboarded,
+      mustChangePassword: dbUser.mustChangePassword,
       roles: [...new Set(roles)],
       permissions: [...new Set(permissions)],
       currentWorkspaceId: null,

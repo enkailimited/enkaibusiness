@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { AssistantMessage, AssistantContext } from "../assistant/types";
+import type { AssistantMessage, AssistantContext, FirdausMode } from "../assistant/types";
 
 export interface FirdausState {
   isListening: boolean;
@@ -15,6 +15,7 @@ export interface FirdausState {
   userId: string | null;
   staffId: string | null;
   hasGreeted: boolean;
+  mode: FirdausMode;
 }
 
 export interface FirdausActions {

@@ -13,6 +13,7 @@ import { FormField, FormError } from "@/components/ui/form";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 import { normalizePhone } from "@/lib/phone";
+import { createMyWorkspaceAction } from "@/features/workspaces/actions";
 import {
   Loader2, UserPlus, ChevronRight, ChevronLeft, Check, User, Shield, FileText,
 } from "lucide-react";
@@ -89,7 +90,29 @@ export default function RegisterPage() {
       return;
     }
 
-    router.push("/platform/dashboard");
+    // Wait briefly for session cookie to propagate after signup
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Retry workspace creation once if it fails (session may not be ready)
+    let wsCreated = false;
+    try {
+      const wsResult = await createMyWorkspaceAction();
+      wsCreated = wsResult?.success === true;
+    } catch {
+      // retry once after a short delay
+      try {
+        await new Promise((r) => setTimeout(r, 1000));
+        const wsResult = await createMyWorkspaceAction();
+        wsCreated = wsResult?.success === true;
+      } catch {
+        // workspace creation is best-effort during signup
+      }
+    }
+
+    setPending(false);
+
+    try { sessionStorage.setItem("firdaus_greet", "true"); } catch {}
+    router.push(wsCreated ? "/workspaces/dashboard" : "/");
     router.refresh();
   }
 

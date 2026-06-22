@@ -12,6 +12,7 @@ import {
 } from "../services/menu-service";
 import { createMenuItemSchema, updateMenuItemSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { requireQrOrderingEnabled } from "../../feature-gate";
 
 export async function createMenuItemAction(
   _prevState: ActionResponse | null,
@@ -34,6 +35,12 @@ export async function createMenuItemAction(
       message: "Validation failed",
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
+  }
+
+  try {
+    await requireQrOrderingEnabled(parsed.data.businessId);
+  } catch (e) {
+    return { success: false, message: (e as Error).message };
   }
 
   const result = await createMenuItem(parsed.data);

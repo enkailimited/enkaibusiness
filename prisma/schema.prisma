@@ -122,6 +122,19 @@ enum TicketPriority {
   URGENT
 }
 
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  WALK_IN
+}
+
+enum PricingTier {
+  RETAIL
+  WHOLESALE
+  PROMO
+  CUSTOMER_GROUP
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // PLATFORM FOUNDATION
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -141,8 +154,9 @@ model User {
   gender         String?
   avatarUrl      String?  @map("avatar_url")
   isActive       Boolean  @default(true) @map("is_active")
-  isOnboarded    Boolean  @default(false) @map("is_onboarded")
-  createdAt   DateTime @default(now()) @map("created_at")
+  isOnboarded         Boolean  @default(false) @map("is_onboarded")
+  mustChangePassword  Boolean  @default(true) @map("must_change_password")
+  createdAt           DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   workspaceMemberships              WorkspaceMember[]
@@ -815,8 +829,9 @@ model PriceList {
   id         String    @id @default(uuid()) @db.Uuid
   businessId String    @map("business_id") @db.Uuid
   name       String
-  type       String // "retail", "wholesale", "promo"
-  priority   Int       @default(0)
+  type         String       // "retail", "wholesale", "promo"
+  customerType CustomerType? @map("customer_type")
+  priority     Int          @default(0)
   startDate  DateTime? @map("start_date")
   endDate    DateTime? @map("end_date")
   isActive   Boolean   @default(true) @map("is_active")
@@ -879,7 +894,7 @@ model Customer {
   id              String   @id @default(uuid()) @db.Uuid
   businessId      String   @map("business_id") @db.Uuid
   userId          String?  @map("user_id") @db.Uuid
-  customerType    String   @default("retail") @map("customer_type") // retail, wholesale, walk_in
+  customerType    CustomerType   @default(RETAIL) @map("customer_type")
   firstName       String   @map("first_name")
   lastName        String?  @map("last_name")
   email           String?
@@ -1356,9 +1371,10 @@ model Sale {
   discountTotal Decimal  @default(0) @map("discount_total") @db.Decimal(15, 2)
   taxTotal      Decimal  @default(0) @map("tax_total") @db.Decimal(15, 2)
   grandTotal    Decimal  @db.Decimal(15, 2)
-  profitMargin  Decimal? @map("profit_margin") @db.Decimal(5, 2)
+  profitMargin  Decimal?     @map("profit_margin") @db.Decimal(5, 2)
+  pricingTier   PricingTier? @map("pricing_tier")
   notes         String?
-  createdById   String?  @map("created_by") @db.Uuid
+  createdById   String?      @map("created_by") @db.Uuid
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -1391,8 +1407,9 @@ model SaleItem {
   unitPrice     Decimal  @map("unit_price") @db.Decimal(15, 2)
   discount      Decimal  @default(0) @db.Decimal(15, 2)
   subtotal      Decimal  @db.Decimal(15, 2)
-  costPrice     Decimal? @map("cost_price") @db.Decimal(15, 2)
-  createdAt     DateTime @default(now()) @map("created_at")
+  costPrice     Decimal?     @map("cost_price") @db.Decimal(15, 2)
+  pricingTier   PricingTier? @map("pricing_tier")
+  createdAt     DateTime     @default(now()) @map("created_at")
 
   sale        Sale        @relation(fields: [saleId], references: [id], onDelete: Cascade)
   catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id])
@@ -2055,6 +2072,7 @@ model QRCode {
   businessId   String?      @map("business_id") @db.Uuid
   status       QRCodeStatus @default(UNASSIGNED)
   assignedToId String?      @map("assigned_to") @db.Uuid
+  mode         String?      // "retail", "wholesale", "restaurant", "general"
   installedAt  DateTime?    @map("installed_at")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")

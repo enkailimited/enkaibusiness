@@ -1,9 +1,12 @@
-import { requireAuth } from "@/server/auth";
-import { listInvoices } from "../services/invoice-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listInvoicesAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { INVOICE_STATUS_LABELS } from "../constants";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { InvoiceWithRelations } from "../types";
 
 interface InvoiceListProps {
@@ -11,9 +14,14 @@ interface InvoiceListProps {
   branchId?: string;
 }
 
-export async function InvoiceList({ businessId, branchId }: InvoiceListProps) {
-  await requireAuth();
-  const invoices = await listInvoices(businessId, {}, branchId);
+export function InvoiceList({ businessId, branchId }: InvoiceListProps) {
+  const query = useQuery({
+    queryKey: ["invoices", businessId, branchId],
+    queryFn: async () => {
+      const result = await listInvoicesAction(businessId, {}, branchId);
+      return (result ?? []) as InvoiceWithRelations[];
+    },
+  });
 
   const columns = [
     {
@@ -76,10 +84,14 @@ export async function InvoiceList({ businessId, branchId }: InvoiceListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={invoices}
+      data={query.data ?? []}
       emptyTitle="No invoices found"
       emptyDescription="Create your first invoice to get started."
     />

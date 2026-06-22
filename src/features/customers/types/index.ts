@@ -4,7 +4,7 @@ export interface Customer {
   id: string;
   businessId: string;
   userId: string | null;
-  customerType: "retail" | "wholesale" | "walk_in";
+  customerType: "RETAIL" | "WHOLESALE" | "WALK_IN";
   firstName: string;
   lastName: string | null;
   email: string | null;
@@ -42,11 +42,11 @@ export interface CreateCustomerInput {
   phone?: string;
   address?: string;
   city?: string;
-  customerType: "retail" | "wholesale" | "walk_in";
+  customerType: "RETAIL" | "WHOLESALE" | "WALK_IN";
   customerGroupId?: string;
   creditLimit?: number;
   isActive?: boolean;
   metadata?: Record<string, unknown>;
 }
 
-export type CustomerType = "retail" | "wholesale" | "walk_in";
+export type CustomerType = "RETAIL" | "WHOLESALE" | "WALK_IN";

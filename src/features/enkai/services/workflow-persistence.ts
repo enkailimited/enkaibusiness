@@ -137,6 +137,7 @@ export async function getActiveWorkflow(
   businessId: string,
   userId: string,
 ): Promise<PersistentWorkflow | null> {
+  if (!businessId || !userId) return null;
   const wf = await prisma.firdausWorkflow.findFirst({
     where: {
       businessId,

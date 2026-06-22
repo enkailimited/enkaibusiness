@@ -1,11 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { cn } from "@/lib/utils";
+import { useState, useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { FormStepper } from "@/components/ui/form-stepper";
 import { createStaffAction, updateStaffAction } from "../actions";
+import { ChevronLeft, ChevronRight, Users, Briefcase } from "lucide-react";
 import type { StaffWithUser } from "../types";
 
 interface StaffFormProps {
@@ -14,7 +17,13 @@ interface StaffFormProps {
   onSuccess?: () => void;
 }
 
+const STEPS = [
+  { title: "Taarifa za Msingi", description: "Mtumiaji na msimbo wa mfanyakazi" },
+  { title: "Kazi", description: "Wadhifa na tarehe ya kuajiriwa" },
+];
+
 export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
+  const [step, setStep] = useState(0);
   const action = staff ? updateStaffAction.bind(null, staff.id) : createStaffAction;
   const [state, formAction, pending] = useActionState(action, null);
 
@@ -23,76 +32,156 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{staff ? "Edit Staff" : "Add Staff"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form action={formAction} className="space-y-4">
-          {!staff && (
-            <>
-              <input type="hidden" name="businessId" value={businessId} />
-              <div className="space-y-2">
-                <Label htmlFor="userId">User ID</Label>
-                <Input
-                  id="userId"
-                  name="userId"
-                  placeholder="Select a user..."
-                  required
-                />
-                {state?.errors?.userId && (
-                  <p className="text-sm text-destructive">{state.errors.userId[0]}</p>
-                )}
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
+        <FormStepper steps={STEPS} currentStep={step} />
+        <form action={formAction} className="space-y-6">
+          {!staff && <input type="hidden" name="businessId" value={businessId} />}
+
+          <div className={cn(step !== 0 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Taarifa za Msingi</h3>
+                  <p className="text-sm text-gray-500">Mtumiaji na msimbo wa mfanyakazi</p>
+                </div>
               </div>
-            </>
+              <div className="space-y-4">
+                {!staff && (
+                  <div className="space-y-2">
+                    <Label htmlFor="userId" className="text-sm font-medium">
+                      Mtumiaji <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="userId"
+                      name="userId"
+                      required
+                      placeholder="Ingiza kitambulisho cha mtumiaji"
+                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    {state?.errors?.userId && (
+                      <p className="text-sm text-red-500">{state.errors.userId[0]}</p>
+                    )}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="employeeCode" className="text-sm font-medium">
+                    Msimbo wa Mfanyakazi <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input
+                    id="employeeCode"
+                    name="employeeCode"
+                    defaultValue={staff?.employeeCode ?? ""}
+                    placeholder="Mf. EMP-001"
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {state?.errors?.employeeCode && (
+                    <p className="text-sm text-red-500">{state.errors.employeeCode[0]}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={cn(step !== 1 && "hidden")}>
+            <div className="space-y-5">
+              <div className="flex items-center gap-3 pb-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
+                  <Briefcase className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Kazi</h3>
+                  <p className="text-sm text-gray-500">Wadhifa na tarehe ya kuajiriwa</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="position" className="text-sm font-medium">
+                    Wadhifa <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input
+                    id="position"
+                    name="position"
+                    defaultValue={staff?.position ?? ""}
+                    placeholder="Mf. Cashier"
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {state?.errors?.position && (
+                    <p className="text-sm text-red-500">{state.errors.position[0]}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hireDate" className="text-sm font-medium">
+                    Tarehe ya Kuajiriwa <span className="text-gray-400">(Hiari)</span>
+                  </Label>
+                  <Input
+                    id="hireDate"
+                    name="hireDate"
+                    type="date"
+                    defaultValue={staff?.hireDate ? new Date(staff.hireDate).toISOString().split("T")[0] : ""}
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  {state?.errors?.hireDate && (
+                    <p className="text-sm text-red-500">{state.errors.hireDate[0]}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {state?.message && (
+            <div
+              className={`rounded-xl p-4 text-sm ${
+                state.success
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-red-50 text-red-700 border border-red-200"
+              }`}
+            >
+              <p className="font-medium">{state.message}</p>
+              {state.errors && (
+                <ul className="mt-2 list-inside list-disc text-xs">
+                  {Object.values(state.errors).flat().map((msg, i) => (
+                    <li key={i}>{msg}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="employeeCode">Employee Code</Label>
-            <Input
-              id="employeeCode"
-              name="employeeCode"
-              defaultValue={staff?.employeeCode ?? ""}
-              placeholder="EMP-001"
-            />
-            {state?.errors?.employeeCode && (
-              <p className="text-sm text-destructive">{state.errors.employeeCode[0]}</p>
+          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep((s) => Math.max(0, s - 1))}
+              disabled={step === 0}
+              className="h-11 rounded-xl border-gray-200 px-6"
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Nyuma
+            </Button>
+
+            {step < STEPS.length - 1 ? (
+              <Button
+                type="button"
+                onClick={() => setStep((s) => s + 1)}
+                className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
+              >
+                Endelea
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={pending}
+                className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
+              >
+                {pending ? "Inahifadhi..." : staff ? "Badilisha Mfanyakazi" : "Hifadhi Mfanyakazi"}
+              </Button>
             )}
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="position">Position</Label>
-            <Input
-              id="position"
-              name="position"
-              defaultValue={staff?.position ?? ""}
-              placeholder="Cashier"
-            />
-            {state?.errors?.position && (
-              <p className="text-sm text-destructive">{state.errors.position[0]}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="hireDate">Hire Date</Label>
-            <Input
-              id="hireDate"
-              name="hireDate"
-              type="date"
-              defaultValue={staff?.hireDate ? new Date(staff.hireDate).toISOString().split("T")[0] : ""}
-            />
-            {state?.errors?.hireDate && (
-              <p className="text-sm text-destructive">{state.errors.hireDate[0]}</p>
-            )}
-          </div>
-
-          {state?.message && !state?.success && (
-            <p className="text-sm text-destructive">{state.message}</p>
-          )}
-
-          <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Saving..." : staff ? "Update Staff" : "Add Staff"}
-          </Button>
         </form>
       </CardContent>
     </Card>

@@ -1,8 +1,11 @@
-import { requireAuth } from "@/server/auth";
-import { getBusinessPurchases } from "../services/purchase-service";
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { listPurchasesAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { PURCHASE_STATUS_LABELS, PURCHASE_STATUS_VARIANTS } from "../constants";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PurchaseListItem } from "../types";
 
 interface PurchaseListProps {
@@ -21,9 +24,14 @@ function formatDate(dateString: string): string {
   });
 }
 
-export async function PurchaseList({ businessId }: PurchaseListProps) {
-  await requireAuth();
-  const purchases = await getBusinessPurchases(businessId);
+export function PurchaseList({ businessId }: PurchaseListProps) {
+  const query = useQuery({
+    queryKey: ["purchases", businessId],
+    queryFn: async () => {
+      const result = await listPurchasesAction(businessId);
+      return (result ?? []) as PurchaseListItem[];
+    },
+  });
 
   const columns = [
     {
@@ -72,10 +80,14 @@ export async function PurchaseList({ businessId }: PurchaseListProps) {
     },
   ];
 
+  if (query.isPending) {
+    return <Skeleton className="h-96 w-full rounded-2xl" />;
+  }
+
   return (
     <DataTable
       columns={columns}
-      data={purchases}
+      data={query.data ?? []}
       emptyTitle="No purchases found"
       emptyDescription="Create your first purchase to get started."
     />

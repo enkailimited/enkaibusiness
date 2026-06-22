@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { PurchaseList } from "@/features/purchases/components/purchase-list";
 import { PurchaseForm } from "@/features/purchases/components/purchase-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DialogForm } from "@/components/ui/dialog-form";
 import { requireAuth } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { listSuppliers } from "@/features/suppliers/services/supplier-service";
@@ -10,7 +11,7 @@ import { listProducts } from "@/features/catalog/products/services/product-servi
 
 interface Props { params: Promise<{ businessId: string }> }
 
-async function PurchaseSection({ businessId }: { businessId: string }) {
+async function PurchaseFormDialog({ businessId }: { businessId: string }) {
   await requireAuth();
   const [business, suppliers, products] = await Promise.all([
     prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } }),
@@ -24,14 +25,19 @@ async function PurchaseSection({ businessId }: { businessId: string }) {
     sku: p.sku,
     price: Number(p.price),
   }));
-  const supplierOptions = suppliers.map((s) => ({ id: s.id, name: s.name }));
+  const supplierOptions = suppliers.map((s) => ({
+    id: s.id,
+    name: s.name,
+  }));
   return (
-    <PurchaseForm
-      businessId={businessId}
-      workspaceId={business.workspaceId}
-      suppliers={supplierOptions}
-      catalogItems={catalogItems}
-    />
+    <DialogForm title="New Purchase" description="Record a new supplier purchase">
+      <PurchaseForm
+        businessId={businessId}
+        workspaceId={business.workspaceId}
+        suppliers={supplierOptions}
+        catalogItems={catalogItems}
+      />
+    </DialogForm>
   );
 }
 
@@ -40,8 +46,8 @@ export default async function PurchasesPage({ params }: Props) {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader title="Purchases" description="Record and manage supplier purchases">
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-2xl" />}>
-          <PurchaseSection businessId={businessId} />
+        <Suspense fallback={<Skeleton className="h-10 w-28 rounded-lg" />}>
+          <PurchaseFormDialog businessId={businessId} />
         </Suspense>
       </PageHeader>
       <Suspense fallback={<Skeleton className="h-96 w-full rounded-2xl" />}>

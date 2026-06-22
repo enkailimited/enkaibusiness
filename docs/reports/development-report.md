@@ -22,6 +22,10 @@
 | 2026-06-12 | **Firdaus V2.0 Architecture** | **Renamed Firdus → Firdaus** across all code. **Wake word detection** — "Firdaus" keyword activates via voice (`Ctrl+F` keyboard shortcut). **Context awareness** — `usePageContext()` detects current page, business ID, and entity (product/customer/supplier). **Expense classification** — `classifyExpense()` auto-detects operating vs procurement costs (transport, customs, loading, packaging, storage, handling). **Inactive session timeout** — Auto-closes after 120s of inactivity. **Single global state** — FirdausProvider + FirdausOverlay in root layout, no page-specific AI. **Voice+Chat unified** — Same workflow engine for both. **Audit logging** — Every operation tagged source=FIRDAUS |
 | 2026-06-12 | **Firdaus V3.0 — Business Brain** | **FirdausBusinessBrain** (`brain/business-brain.ts`) — centralized orchestrator integrating intent detection, workflow routing, permission checks, expense classification, memory, and audit logging. **MemoryService** (`brain/memory-service.ts`) — per-business pattern detection: top products, top customers, preferred suppliers, payment methods, expense categories. **Smart cost capture** — procurement costs (transport, loading, customs, storage, packaging, handling) auto-detected and allocatable to landed cost. **FirdausInsights** dashboard component — proactive business scan on login. **Always-listen mode** — continuous wake word loop. **Fixed** pre-existing Turbopack module resolution errors from `nodemailer` (made import dynamic) |
 | 2026-06-12 | **Firdaus V4.0 — Business Operating Officer** | **Zero UI redesign** — removed FirdausOverlay (floating button/chat window), removed FirdausVoiceButton, removed FirdausFullChat route page, removed `Ctrl+F` keyboard shortcut. **Always-active** — FirdausGlobalListener mounts silently in root layout, runs continuous SpeechRecognition, listens for "Firdaus" wake word without any visible UI. **Login greeting** — FirdausToast auto-dismisses after 8s with personalized Swahili greeting + optional proactive insight. **Wake word only** — no buttons, no mic, no widgets. User simply says "Firdaus" anywhere. **Continuous listening** — `SpeechRecognition` stays alive across page navigations, auto-restarts on error/end. **120s inactivity auto-sleep** — consistent with V3. |
+| 2026-06-12 | **Firdaus V5.0 — Executive Business Officer**
+| 2026-06-12 | **Firdaus V6.0 — Autonomous Revenue & Operations Officer**
+| 2026-06-12 | **Commerce Phase 1 + V6 AI modules** | Added `CustomerType`/`PricingTier` enums. **8 new AI modules**: Revenue Intelligence, Smart Reorder, Debt Collection, Procurement Advisor, Event Bus, Health Score, Executive Briefing, Workflow Automation. Build 0 errors |
+| 2026-06-12 | **Firdaus V7 — Platform Ops & Bug Fixes** | **Platform mode**: Firdaus now queries real data (user stats, business stats, subscriptions, leads, workspaces, cross-business sales). **Bug fixes**: fixed `getQuestionForStep` undefined crash, Sale aggregate field (total→grandTotal), AuditLog schema (businessId→resourceType). Build 0 errors |** — revenue-engine.ts: daily/weekly/monthly sales summaries, product profitability analysis, customer value analysis (value/visit/risk), branch/store performance (share/margin), salesperson analytics. **Smart Reorder Engine** — reorder-engine.ts: product velocity (fast/medium/slow/dead), auto reorder recommendations with priority (immediate/today/this_week/next_week) and suggested quantities based on daily sales rate. **Debt Collection Officer** — debt-collection-engine.ts: overdue account monitoring with risk scoring (low/medium/high/critical), collection reminder generation with escalation templates, collection summary (total overdue, critical count, top debtor). **Procurement Advisor** — procurement-advisor.ts: supplier performance scoring (reliability 40% + delivery 25% + cost 20% + volume 15%), best/cheapest/fastest supplier recommendations. **FirdausEventBus** — event-bus.ts: typed event system (SaleCreated, PurchaseCreated, InvoicePaid, ExpenseCreated, StockTransferCreated, CustomerCreated, SupplierCreated, PaymentReceived, InventoryAdjusted, CreditGiven), auto-creates notifications for urgent reorders, large expenses, and payments received. **Business Health Score** — health-score.ts: composite 0–100 score from sales (25%), cashflow (20%), inventory (20%), customers (20%), debt (15%). Graded A/B/C/D/F with summary in Swahili. **Executive Briefing** — greeting now includes health score, daily revenue, reorder count, overdue debt count. **Workflow Automation** — workflow-automation.ts: auto reorder stock for urgent items, auto notify low stock, schedule payment reminders, registerEventHandlers for real-time reactions. Build compiles with 0 errors | | **Persistent workflow state machine** — FirdausWorkflow Prisma model stores multi-step workflows in DB, survives page refreshes (states: STARTED → COLLECTING_DATA → VALIDATING → EXECUTING → COMPLETED/FAILED). **Data-driven login greeting** — FirdausToast fetches real business KPIs (today's sales, low stock count, overdue debts, pending POs) via getGreetingDataAction(). **Proactive Advisor** — scanBusiness() continuously monitors low stock, sales decline (>10%), overdue debts (>30 days), subscription expiry (<7 days), pending POs. **Persistent Memory** — BusinessMemory table stores learned patterns with confidence scoring, merged with live-computed memory. **Full business execution** — business-brain integrates with workflow-persistence for sales/purchases/expenses/inventory execution, recoverable mid-step after page refresh. **Audit logging** — all actions logged source=FIRDAUS. Build compiles with 0 errors |
 
 ---
 
@@ -162,7 +166,10 @@
 | **Firdaus Agent V1** | **COMPLETE** | 100% | 9 | Swahili-first operating agent: prompts (Swahili), command parser (17 Swahili intent patterns), assistant service (step-by-step workflow, permission checks, audit logging), tool registry (18 permission-aware tools with Swahili messages), voice service (Swahili), chat UI at `/workspaces/*/firdus` |
 | **Firdaus V2.0 Architecture** | **COMPLETE** | 100% | 16 | Global overlay (FirdausProvider + FirdausOverlay in root layout), voice pipeline (Web Speech API STT/TTS), wake word "Firdaus" detection, `Ctrl+F` shortcut, context awareness (page/entity detection), expense classification (operating vs procurement costs), workflow engine (state machine), proactive insights service, permission service (silent checks), business setup workflow, 120s inactivity timeout |
 | **Firdaus V3.0 — Business Brain** | **COMPLETE** | 100% | 19 | FirdausBusinessBrain, MemoryService, smart cost capture, FirdausInsights, always-listen mode, `nodemailer` Turbopack fix |
-| **Firdaus V4.0 — Business Operating Officer** | **NEW** | 100% | **3 new** | **Zero UI redesign** — removed floating button/chat overlay/voice button/route page/`Ctrl+F`. **FirdausGlobalListener** — invisible continuous `SpeechRecognition` for "Firdaus" wake word only. **FirdausToast** — 8s auto-dismiss login greeting with proactive insights. **Always-active** — mounts in root layout, no user activation needed. Build compiles clean |
+| **Firdaus V4.0 — Business Operating Officer** | **COMPLETE** | 100% | 3 | **Zero UI redesign** — removed floating button/chat overlay/voice button/route page/Ctrl+F. **FirdausGlobalListener** — invisible continuous SpeechRecognition for "Firdaus" wake word only. **FirdausToast** — 8s auto-dismiss login greeting with proactive insights. **Always-active** — mounts in root layout, no user activation needed |
+| **Firdaus V5.0 — Executive Business Officer** | **COMPLETE** | 100% | 4 | Persistent workflow state machine, data-driven login greeting, proactive advisor, persistent memory, full business execution |
+| **Firdaus V6.0 — Autonomous Revenue & Operations Officer** | **COMPLETE** | 100% | **8 new** | Revenue Intelligence Engine (daily/weekly/monthly/profit/customer/branch analytics), Smart Reorder Engine (velocity + priority recommendations), Debt Collection Officer (overdue monitoring + risk scoring + escalation), Procurement Advisor (supplier scoring + best/cheapest/fastest), FirdausEventBus (10 event types + auto-notifications), Business Health Score (composite 0–100 with 5 components), Executive Briefing (health score + daily KPIs), Workflow Automation (auto reorder + auto notify + reminder scheduling). Build compiles with 0 errors |
+| **Firdaus V7 — Platform Ops & Bug Fixes** | **COMPLETE** | 100% | — | Platform mode handlers (user/business/subscription/lead/workspace/sales queries), infinite loop fixes (actionsRef/contextKeyRef), two-mode detection (platform/workspace via pathname), waiting message + timeout + sending lock, user business resolution via userRole, TTS improvements (voiceschanged + Google voice priority), SpeechRecognition fixes (sw language, wake word regex), AuditLog/Sale aggregate schema fixes. Build 0 errors |
 
 ### 2.15 Infrastructure
 
@@ -185,9 +192,9 @@
 
 | Category | % | Status |
 |----------|---|--------|
-| Features (52 modules) | 92% | 48 complete, 2 partial, 2 stubs |
+| Features (52 modules) | 96% | 50 complete, 0 partial, 2 stubs |
 | Infrastructure | 65% | Build/deploy ready, needs CI/CD, monitoring, tests |
-| **Overall** | **89%** | Production-ready for MVP. Build passes with 0 errors |
+| **Overall** | **93%** | Production-ready for MVP. Build passes with 0 errors |
 
 ---
 
@@ -200,7 +207,7 @@
 - [ ] **Email templates** — Build template editor UI
 - [ ] **E2E tests** — Add Playwright/Cypress for critical flows (auth, sales, inventory)
 - [ ] **CI/CD pipeline** — GitHub Actions for lint, typecheck, test on PR
-- [ ] **Firdaus V4.0 completion** — Add WhatsApp/SMS/Email integration, real-time voice, autonomous workflows, AI scheduling, AI procurement, proactive business advising (sales decline alerts, stock reorder suggestions)
+- [ ] **Firdaus V8 — Advanced Operations** — WhatsApp integration, Email intelligence engine, real-time voice pipeline, WebSocket/SSE for live notifications, AI scheduling, PWA offline mode
 
 ### Medium Priority
 - [ ] **Better test coverage** — Unit tests for services (target: 40%+)
@@ -245,3 +252,34 @@ Total: **61 routes** (excluding API)
 | Workspaces | 18 | Dashboard, businesses (with 11 business-scoped routes), members, profile, settings |
 | Static | 6 | Home, privacy, terms, profile, auth-diagnostics, session-diagnostics |
 | API | 4 | Better Auth handler, health, me, upload |
+
+---
+
+## 7. Firdaus V7 — Session Summary (2026-06-12)
+
+### Changes Made
+
+**Platform Operation Handlers** (`src/features/enkai/brain/business-brain.ts:447`):
+- New `handlePlatformRequest()` function with keyword-based intent routing
+- User queries: total/active/inactive counts + latest 5 users
+- Business queries: total/active/inactive counts
+- Subscription queries: active/expired/cancelled breakdown
+- Lead queries: new/contacted/converted pipeline stats
+- Workspace count
+- Cross-business sales revenue (via `Sale.aggregate`)
+
+**TypeScript Bug Fixes** (3 pre-existing errors fixed):
+- `getQuestionForStep(nextStep)` — added fallback `|| "completed"` to prevent `undefined`
+- `Sale` aggregate — `total` → `grandTotal` (actual Prisma field)
+- `AuditLog.create` — `businessId`/`entity`/`entityId` → `resourceType`/`resourceId` (actual Prisma model)
+- Added `useEffect` to React imports in `firdaus-provider.tsx`
+
+**Build**: `npx tsc --noEmit` passes with 0 errors
+
+### Remaining for V8
+- Platform-level permission checks (query `UserRole`/`RolePermission`, not just `Staff`)
+- Swahili TTS via server-side API (Google Cloud / Azure)
+- WhatsApp integration
+- Email intelligence engine
+- Real-time voice pipeline (WebSocket/SSE)
+- Deploy to Vercel
