@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { prisma } from "@/server/db";
 import {
   createMenuItem,
   updateMenuItem,
@@ -13,6 +14,16 @@ import {
 import { createMenuItemSchema, updateMenuItemSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 import { requireQrOrderingEnabled } from "../../feature-gate";
+
+async function revalidateMenuBusiness(menuItemId: string) {
+  const item = await prisma.qRMenuItem.findUnique({
+    where: { id: menuItemId },
+    select: { businessId: true },
+  });
+  if (item) {
+    revalidatePath(`/workspaces/businesses/${item.businessId}/qr-ordering`);
+  }
+}
 
 export async function createMenuItemAction(
   _prevState: ActionResponse | null,
@@ -46,7 +57,7 @@ export async function createMenuItemAction(
   const result = await createMenuItem(parsed.data);
 
   if (result.success) {
-    revalidatePath("/qr-ordering");
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/qr-ordering`);
   }
 
   return result;
@@ -84,7 +95,7 @@ export async function updateMenuItemAction(
   const result = await updateMenuItem(id, parsed.data);
 
   if (result.success) {
-    revalidatePath("/qr-ordering");
+    await revalidateMenuBusiness(id);
   }
 
   return result;
@@ -104,7 +115,7 @@ export async function deleteMenuItemAction(id: string): Promise<ActionResponse> 
   await requireAuth();
   const result = await deleteMenuItem(id);
   if (result.success) {
-    revalidatePath("/qr-ordering");
+    await revalidateMenuBusiness(id);
   }
   return result;
 }
@@ -116,7 +127,7 @@ export async function setMenuItemAvailabilityAction(
   await requireAuth();
   const result = await setMenuItemAvailability(id, isAvailable);
   if (result.success) {
-    revalidatePath("/qr-ordering");
+    await revalidateMenuBusiness(id);
   }
   return result;
 }
