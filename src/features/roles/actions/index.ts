@@ -140,6 +140,16 @@ export async function getPlatformRolesAction() {
   return roles;
 }
 
+export async function getBusinessRolesAction() {
+  await requireAuth();
+  const roles = await prisma.role.findMany({
+    where: { scope: "BUSINESS" },
+    select: { id: true, name: true, slug: true },
+    orderBy: { name: "asc" },
+  });
+  return roles;
+}
+
 export async function getRolesAction() {
   await requireAuth();
   const roles = await prisma.role.findMany({

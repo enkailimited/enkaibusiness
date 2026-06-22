@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useRef } from "react";
-import { getPlatformRolesAction } from "@/features/roles/actions";
+import { getPlatformRolesAction, getBusinessRolesAction } from "@/features/roles/actions";
 import { inviteUserWithStaffAction } from "@/features/users/actions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,10 +57,11 @@ export function UserInviteForm({ businessId }: UserInviteFormProps) {
   );
 
   useEffect(() => {
-    getPlatformRolesAction()
+    const fetchRoles = businessId ? getBusinessRolesAction() : getPlatformRolesAction();
+    fetchRoles
       .then((data) => setRoles(data as RoleOption[]))
       .finally(() => setRolesLoading(false));
-  }, []);
+  }, [businessId]);
 
   // Reset form after successful submission
   useEffect(() => {

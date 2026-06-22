@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
 import { updateStaffAction } from "../actions";
 import { inviteUserWithStaffAction } from "@/features/users/actions";
-import { getPlatformRolesAction } from "@/features/roles/actions";
+import { getBusinessRolesAction } from "@/features/roles/actions";
 import { ChevronLeft, ChevronRight, Briefcase, User, AtSign, Phone, Hash, ShieldCheck } from "lucide-react";
 import type { StaffWithUser } from "../types";
 import type { ActionResponse } from "@/types/relationships";
@@ -52,7 +52,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
 
   useEffect(() => {
     if (!isEdit) {
-      getPlatformRolesAction()
+      getBusinessRolesAction()
         .then((data) => setRoles(data as RoleOption[]))
         .finally(() => setRolesLoading(false));
     }
@@ -291,7 +291,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
 
               <div>
                 <Label className="text-sm font-medium mb-3 block">
-                  Platform Role <span className="text-gray-400">(Optional)</span>
+                  Business Role <span className="text-gray-400">(Optional)</span>
                 </Label>
                 {rolesLoading ? (
                   <div className="flex items-center justify-center py-4">
