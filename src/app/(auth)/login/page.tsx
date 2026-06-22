@@ -55,7 +55,8 @@ function LoginForm() {
         const msg =
           signInError.message?.toLowerCase().includes("invalid") ||
           signInError.message?.toLowerCase().includes("no user") ||
-          signInError.message?.toLowerCase().includes("incorrect")
+          signInError.message?.toLowerCase().includes("incorrect") ||
+          signInError.message?.toLowerCase().includes("not found")
             ? "Invalid email, phone/username, or password"
             : signInError.message || "Failed to sign in";
         setError(msg);
