@@ -20,7 +20,7 @@ export default async function StaffPage({ params }: Props) {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader title="Staff" description="Manage business staff members">
-        <DialogForm title="Add Staff" description="Add a new staff member">
+        <DialogForm title="Invite Staff" description="Create user account and send invitation email">
           <StaffForm businessId={businessId} />
         </DialogForm>
       </PageHeader>

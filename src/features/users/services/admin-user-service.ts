@@ -22,6 +22,8 @@ interface CreateInvitedUserInput {
   storeId?: string | null;
   roleId?: string | null;
   position?: string | null;
+  employeeCode?: string | null;
+  hireDate?: string | null;
 }
 
 function generateTempPassword(): string {
@@ -104,6 +106,8 @@ export async function createInvitedUserWithStaff(
             userId: u.id,
             businessId,
             position: input.position || null,
+            employeeCode: input.employeeCode || null,
+            hireDate: input.hireDate ? new Date(input.hireDate) : null,
           },
           select: { id: true },
         });

@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { createStaffSchema, updateStaffSchema, createAssignmentSchema } from "../schemas";
+import { updateStaffSchema, createAssignmentSchema } from "../schemas";
 import {
-  createStaff,
   updateStaff,
   getStaff,
   deleteStaff,
@@ -12,37 +11,6 @@ import {
   removeAssignment,
 } from "../services/staff-service";
 import type { ActionResponse } from "@/types/relationships";
-
-export async function createStaffAction(
-  _prevState: ActionResponse | null,
-  formData: FormData,
-): Promise<ActionResponse> {
-  await requireAuth();
-
-  const parsed = createStaffSchema.safeParse({
-    userId: formData.get("userId"),
-    businessId: formData.get("businessId"),
-    employeeCode: formData.get("employeeCode") || undefined,
-    position: formData.get("position") || undefined,
-    hireDate: formData.get("hireDate") || undefined,
-  });
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  const result = await createStaff(parsed.data);
-
-  if (result.success) {
-    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/staff`);
-  }
-
-  return result;
-}
 
 export async function updateStaffAction(
   staffId: string,

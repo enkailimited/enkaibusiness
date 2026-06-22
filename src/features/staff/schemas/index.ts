@@ -1,13 +1,5 @@
 import { z } from "zod";
 
-export const createStaffSchema = z.object({
-  userId: z.string().uuid("Invalid user ID"),
-  businessId: z.string().uuid("Invalid business ID"),
-  employeeCode: z.string().max(50, "Employee code too long").optional(),
-  position: z.string().max(100, "Position too long").optional(),
-  hireDate: z.string().optional(),
-});
-
 export const updateStaffSchema = z.object({
   employeeCode: z.string().max(50, "Employee code too long").optional(),
   position: z.string().max(100, "Position too long").optional(),
@@ -35,7 +27,6 @@ export const updateAssignmentSchema = z.object({
   isPrimary: z.boolean().optional(),
 });
 
-export type CreateStaffSchema = z.infer<typeof createStaffSchema>;
 export type UpdateStaffSchema = z.infer<typeof updateStaffSchema>;
 export type CreateAssignmentSchema = z.infer<typeof createAssignmentSchema>;
 export type UpdateAssignmentSchema = z.infer<typeof updateAssignmentSchema>;

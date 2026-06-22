@@ -116,6 +116,8 @@ export async function inviteUserWithStaffAction(
   const storeIdRaw = (formData.get("storeId") || "").toString().trim();
   const roleIdRaw = (formData.get("roleId") || "").toString().trim();
   const positionRaw = (formData.get("position") || "").toString().trim();
+  const employeeCodeRaw = (formData.get("employeeCode") || "").toString().trim();
+  const hireDateRaw = (formData.get("hireDate") || "").toString().trim();
 
   if (!firstName || !lastName || !email || !phoneRaw || !usernameRaw || !genderRaw) {
     return { success: false, message: "First name, last name, email, phone, username and gender are required" };
@@ -133,6 +135,8 @@ export async function inviteUserWithStaffAction(
     storeId: storeIdRaw || null,
     roleId: roleIdRaw || null,
     position: positionRaw || null,
+    employeeCode: employeeCodeRaw || null,
+    hireDate: hireDateRaw || null,
   });
 
   return result;

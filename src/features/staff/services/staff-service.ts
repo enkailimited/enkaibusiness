@@ -2,46 +2,8 @@ import "server-only";
 
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
-import type { CreateStaffSchema, UpdateStaffSchema, CreateAssignmentSchema } from "../schemas";
+import type { UpdateStaffSchema, CreateAssignmentSchema } from "../schemas";
 import type { StaffWithUser, StaffWithAssignments, StaffAssignmentWithDetails } from "../types";
-
-export async function createStaff(
-  data: CreateStaffSchema,
-): Promise<ActionResponse & { data?: StaffWithUser }> {
-  try {
-    const existing = await prisma.staff.findUnique({
-      where: { userId: data.userId },
-    });
-
-    if (existing) {
-      return { success: false, message: "User is already registered as staff" };
-    }
-
-    const staff = await prisma.staff.create({
-      data: {
-        userId: data.userId,
-        businessId: data.businessId,
-        employeeCode: data.employeeCode,
-        position: data.position,
-        hireDate: data.hireDate ? new Date(data.hireDate) : null,
-      },
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
-        },
-      },
-    });
-
-    return {
-      success: true,
-      message: "Staff created successfully",
-      data: staff as unknown as StaffWithUser,
-    };
-  } catch (error) {
-    console.error("Create staff error:", error);
-    return { success: false, message: "Failed to create staff" };
-  }
-}
 
 export async function updateStaff(
   id: string,
