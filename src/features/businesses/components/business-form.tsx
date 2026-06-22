@@ -121,7 +121,16 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
       </CardHeader>
       <CardContent className="px-0">
         <form action={formAction}>
+          <input type="hidden" name="name" value={formData.name} />
+          <input type="hidden" name="slug" value={formData.slug} />
+          <input type="hidden" name="email" value={formData.email} />
+          <input type="hidden" name="phone" value={formData.phone} />
+          <input type="hidden" name="address" value={formData.address} />
+          <input type="hidden" name="taxId" value={formData.taxId} />
+          <input type="hidden" name="industry" value={formData.industry} />
           <input type="hidden" name="modes" value={JSON.stringify(formData.modes)} />
+          <input type="hidden" name="businessSize" value={formData.businessSize} />
+          <input type="hidden" name="planId" value={formData.planId} />
 
           {step === 1 && (
             <div className="space-y-4">
