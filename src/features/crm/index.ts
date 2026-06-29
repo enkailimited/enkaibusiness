@@ -48,3 +48,15 @@ export {
   listContacts,
   deleteContact,
 } from "./services/contact-service";
+
+export {
+  logActivity,
+  getCustomerActivities,
+  getBusinessActivities,
+  getCustomerStatement,
+} from "./services/activity-service";
+export type {
+  ActivityInput,
+  CustomerStatement,
+  CustomerStatementLine,
+} from "./services/activity-service";

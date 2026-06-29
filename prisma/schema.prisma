@@ -439,6 +439,11 @@ model User {
   depositRequestsReviewed          WalletDepositRequest[] @relation("DepositRequestReviewedBy")
   requestedApprovals               ApprovalRequest[]      @relation("ApprovalRequestRequestedBy")
   approvalActions                  ApprovalAction[]       @relation("ApprovalActionApprover")
+  deliveryNotesReceived            DeliveryNote[]         @relation("DeliveryNoteReceivedBy")
+  deliveryNotesCreated             DeliveryNote[]         @relation("DeliveryNoteCreatedBy")
+  customerActivitiesAssigned       CustomerActivity[]     @relation("CustomerActivityAssignedTo")
+  customerActivitiesCreated        CustomerActivity[]     @relation("CustomerActivityCreatedBy")
+  journalEntriesCreated            JournalEntry[]         @relation("JournalEntryCreatedBy")
 
   @@map("users")
 }
@@ -533,8 +538,10 @@ model Workspace {
 
   members       WorkspaceMember[]
   businesses    Business[]
-  sales         Sale[]
-  notifications Notification[]
+  sales             Sale[]
+  notifications     Notification[]
+  deliveryNotes     DeliveryNote[]
+  journalEntries    JournalEntry[]
 
   @@map("workspaces")
 }
@@ -642,6 +649,10 @@ model Business {
   automationRules         AutomationRule[]
   approvalWorkflows       ApprovalWorkflow[]
   approvalRequests        ApprovalRequest[]
+  deliveryNotes           DeliveryNote[]
+  customerActivities      CustomerActivity[]
+  chartAccounts           ChartAccount[]
+  journalEntries          JournalEntry[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -695,6 +706,7 @@ model Branch {
   catalogItemAssignments CatalogItemAssignment[]
   cashRegisters          CashRegister[]
   userInvites            UserInvite[]
+  deliveryNotes          DeliveryNote[]
 
   @@unique([businessId, name])
   @@index([businessId])
@@ -1007,6 +1019,7 @@ model CatalogItem {
   updatedBy            User?                   @relation("CatalogItemUpdatedBy", fields: [updatedById], references: [id])
   attributes           CatalogItemAttribute[]
   promotionItems       PromotionItem[]
+  deliveryNoteItems    DeliveryNoteItem[]
 
   @@unique([businessId, slug])
   @@unique([businessId, sku])
@@ -1176,6 +1189,8 @@ model Customer {
   invoices           Invoice[]
   payments           Payment[]
   campaignRecipients CampaignRecipient[]
+  activities         CustomerActivity[]
+  deliveryNotes      DeliveryNote[]
 
   @@index([businessId])
   @@index([contactId])
@@ -1648,9 +1663,10 @@ model Sale {
   customer  Customer?  @relation(fields: [customerId], references: [id])
   staff     Staff?     @relation("SaleStaff", fields: [staffId], references: [id])
   createdBy User?      @relation("SaleCreatedBy", fields: [createdById], references: [id])
-  items     SaleItem[]
-  invoices  Invoice[]  @relation("SaleInvoices")
-  returns   Return[]   @relation("SaleReturns")
+  items          SaleItem[]
+  invoices       Invoice[]    @relation("SaleInvoices")
+  returns        Return[]     @relation("SaleReturns")
+  deliveryNotes  DeliveryNote[]
 
   @@index([businessId])
   @@index([branchId])
@@ -1787,7 +1803,8 @@ model Invoice {
   business Business      @relation(fields: [businessId], references: [id])
   customer Customer      @relation(fields: [customerId], references: [id])
   sale     Sale?         @relation("SaleInvoices", fields: [saleId], references: [id])
-  items    InvoiceItem[]
+  items          InvoiceItem[]
+  deliveryNotes  DeliveryNote[]
 
   @@index([businessId])
   @@index([customerId])
@@ -3126,4 +3143,171 @@ model ApprovalAction {
 
   @@index([requestId])
   @@map("approval_actions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMERCE — DELIVERY NOTES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── DeliveryNote ─────────────────────────────────────────────────────────────
+
+model DeliveryNote {
+  id               String    @id @default(uuid()) @db.Uuid
+  workspaceId      String    @map("workspace_id") @db.Uuid
+  businessId       String    @map("business_id") @db.Uuid
+  branchId         String?   @map("branch_id") @db.Uuid
+  customerId       String?   @map("customer_id") @db.Uuid
+  saleId           String?   @map("sale_id") @db.Uuid
+  invoiceId        String?   @map("invoice_id") @db.Uuid
+  deliveryDate     DateTime  @default(now()) @map("delivery_date")
+  estimatedArrival DateTime? @map("estimated_arrival")
+  status           String    @default("draft") // draft, preparing, dispatched, in-transit, delivered, partially-delivered, cancelled
+  reference        String?
+  notes            String?
+  recipientName    String?   @map("recipient_name")
+  recipientPhone   String?   @map("recipient_phone")
+  deliveryAddress  String?   @map("delivery_address")
+  signatureUrl     String?   @map("signature_url")
+  receivedById     String?   @map("received_by") @db.Uuid
+  receivedAt       DateTime? @map("received_at")
+  photoUrls        Json?     @default("[]") @map("photo_urls")
+  createdById      String?   @map("created_by") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id])
+  business  Business   @relation(fields: [businessId], references: [id])
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  customer  Customer?  @relation(fields: [customerId], references: [id])
+  sale      Sale?      @relation(fields: [saleId], references: [id])
+  invoice   Invoice?   @relation(fields: [invoiceId], references: [id])
+  receivedBy User?     @relation("DeliveryNoteReceivedBy", fields: [receivedById], references: [id])
+  createdBy User?      @relation("DeliveryNoteCreatedBy", fields: [createdById], references: [id])
+  items     DeliveryNoteItem[]
+
+  @@index([businessId, status])
+  @@index([customerId])
+  @@index([saleId])
+  @@index([deliveryDate])
+  @@map("delivery_notes")
+}
+
+// ─── DeliveryNoteItem ─────────────────────────────────────────────────────────
+
+model DeliveryNoteItem {
+  id                String   @id @default(uuid()) @db.Uuid
+  deliveryNoteId    String   @map("delivery_note_id") @db.Uuid
+  catalogItemId     String   @map("catalog_item_id") @db.Uuid
+  quantity          Decimal  @db.Decimal(15, 2)
+  deliveredQuantity Decimal  @default(0) @map("delivered_quantity") @db.Decimal(15, 2)
+  notes             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  deliveryNote DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+  catalogItem  CatalogItem  @relation(fields: [catalogItemId], references: [id])
+
+  @@index([deliveryNoteId])
+  @@map("delivery_note_items")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMERCE — CRM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CustomerActivity ─────────────────────────────────────────────────────────
+
+model CustomerActivity {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @map("business_id") @db.Uuid
+  customerId   String   @map("customer_id") @db.Uuid
+  type         String   // "call" | "email" | "sms" | "meeting" | "note" | "task" | "visit" | "complaint"
+  subject      String
+  notes        String?
+  assignedToId String?  @map("assigned_to") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdById  String?  @map("created_by") @db.Uuid
+
+  business   Business @relation(fields: [businessId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+  assignedTo User?    @relation("CustomerActivityAssignedTo", fields: [assignedToId], references: [id])
+  createdBy  User?    @relation("CustomerActivityCreatedBy", fields: [createdById], references: [id])
+
+  @@index([businessId, customerId])
+  @@index([customerId, createdAt])
+  @@index([assignedToId])
+  @@map("customer_activities")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMMERCE — ACCOUNTING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── ChartAccount (Chart of Accounts) ────────────────────────────────────────
+
+model ChartAccount {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  code        String   // e.g. "1100", "4100"
+  name        String
+  type        String   // "asset" | "liability" | "equity" | "income" | "expense"
+  parentId    String?  @map("parent_id") @db.Uuid
+  isActive    Boolean  @default(true) @map("is_active")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  parent        ChartAccount?  @relation("ChartAccountParent", fields: [parentId], references: [id])
+  children      ChartAccount[] @relation("ChartAccountParent")
+  journalLines  JournalLine[]
+
+  @@unique([businessId, code])
+  @@index([businessId, type])
+  @@map("chart_accounts")
+}
+
+// ─── JournalEntry ─────────────────────────────────────────────────────────────
+
+model JournalEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @map("business_id") @db.Uuid
+  workspaceId   String   @map("workspace_id") @db.Uuid
+  entryDate     DateTime @default(now()) @map("entry_date")
+  reference     String?  // auto-generated journal reference
+  referenceType String?  @map("reference_type") // "sale" | "purchase" | "expense" | "payment" | "receipt" | "adjustment"
+  referenceId   String?  @map("reference_id") @db.Uuid
+  description   String?
+  isPosted      Boolean  @default(true) @map("is_posted")
+  createdById   String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business  Business      @relation(fields: [businessId], references: [id])
+  workspace Workspace     @relation(fields: [workspaceId], references: [id])
+  createdBy User?         @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  lines     JournalLine[]
+
+  @@index([businessId, entryDate])
+  @@index([referenceType, referenceId])
+  @@index([entryDate])
+  @@map("journal_entries")
+}
+
+// ─── JournalLine ──────────────────────────────────────────────────────────────
+
+model JournalLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  journalEntryId  String   @map("journal_entry_id") @db.Uuid
+  chartAccountId  String   @map("chart_account_id") @db.Uuid
+  debit           Decimal  @default(0) @db.Decimal(15, 2)
+  credit          Decimal  @default(0) @db.Decimal(15, 2)
+  description     String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  journalEntry JournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  chartAccount ChartAccount  @relation(fields: [chartAccountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([chartAccountId])
+  @@map("journal_lines")
 }
