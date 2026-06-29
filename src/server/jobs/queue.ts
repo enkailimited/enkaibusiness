@@ -1,6 +1,6 @@
 import "server-only";
 
-import PgBoss from "pg-boss";
+import { PgBoss } from "pg-boss";
 import { prisma } from "@/server/db";
 
 const boss = new PgBoss({
