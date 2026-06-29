@@ -7,6 +7,8 @@ import type { SaleWithRelations, SaleListItem } from "../types";
 import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 import { emitSaleCreated, emitSaleUpdated, emitSaleVoided } from "@/modules/ai/events/event-bus";
+import { pricingEngine } from "@/server/engines/pricing-engine";
+import { taxEngine } from "@/server/engines/tax-engine";
 
 function log(area: string, msg: string, meta?: Record<string, unknown>) {
   console.log(`[DIAG:${area}] ${msg}`, meta ?? "");
@@ -20,15 +22,11 @@ export async function createSale(
 ): Promise<ActionResponse & { data?: { id: string } }> {
   log("sale.create", "start", { businessId, branchId: data.branchId, itemCount: data.items.length });
   try {
-    if (!data.branchId) {
-      return { success: false, message: "Branch is required for sales" };
-    }
+      if (!data.branchId) {
+        return { success: false, message: "Branch is required for sales" };
+      }
 
-    const subtotal = data.items.reduce((sum, item) => sum + item.subtotal, 0);
-    const discountTotal = data.discountTotal ?? 0;
-    const taxTotal = data.taxTotal ?? 0;
-    const grandTotal = subtotal - discountTotal + taxTotal;
-    const isCompleted = data.status === "completed" || !data.status;
+      const isCompleted = data.status === "completed" || !data.status;
     const paymentType = data.paymentType ?? "cash";
     const amountPaid = paymentType === "cash" ? grandTotal : (data.amountPaid ?? 0);
     const isCredit = paymentType === "credit";
@@ -40,9 +38,68 @@ export async function createSale(
     const catalogItemIds = [...new Set(data.items.map((i) => i.catalogItemId))];
     const catalogItems = await prisma.catalogItem.findMany({
       where: { id: { in: catalogItemIds } },
-      select: { id: true, name: true, costPrice: true, trackStock: true },
+      select: { id: true, name: true, price: true, costPrice: true, taxRate: true, trackStock: true, unitId: true, currency: true },
     });
     const catalogMap = new Map(catalogItems.map((ci) => [ci.id, ci]));
+
+    const resolvedItems = await Promise.all(
+      data.items.map(async (item) => {
+        let unitPrice = item.unitPrice;
+        let discount = item.discount ?? 0;
+        let taxRate = catalogMap.get(item.catalogItemId)?.taxRate ? Number(catalogMap.get(item.catalogItemId)!.taxRate) : undefined;
+
+        try {
+          const priceResult = await pricingEngine.resolvePrice({
+            catalogItemId: item.catalogItemId,
+            businessId,
+            customerId: data.customerId,
+            quantity: Number(item.quantity),
+            branchId: data.branchId,
+          });
+
+          if (priceResult) {
+            unitPrice = priceResult.unitPrice;
+            if (priceResult.discountPercent) {
+              discount = unitPrice * Number(item.quantity) * (priceResult.discountPercent / 100);
+            }
+            if (priceResult.discount) {
+              discount = priceResult.discount;
+            }
+            if (priceResult.taxRate !== undefined) {
+              taxRate = priceResult.taxRate;
+            }
+          }
+        } catch {
+          // Engine unavailable — fall through to frontend values
+        }
+
+        const subtotal = unitPrice * Number(item.quantity);
+        return { ...item, unitPrice, discount, subtotal, taxRate };
+      }),
+    );
+
+    const subtotal = resolvedItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const discountTotal = resolvedItems.reduce((sum, item) => sum + (item.discount ?? 0), 0);
+
+    let taxTotal = 0;
+    try {
+      const taxCalc = await taxEngine.calculate({
+        businessId,
+        customerId: data.customerId,
+        items: resolvedItems.map((item) => ({
+          catalogItemId: item.catalogItemId,
+          quantity: Number(item.quantity),
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+        })),
+        subtotal: subtotal - discountTotal,
+      });
+      taxTotal = taxCalc.totalTax;
+    } catch {
+      taxTotal = data.taxTotal ?? 0;
+    }
+
+    const grandTotal = subtotal - discountTotal + taxTotal;
 
     const sale = await prisma.$transaction(async (tx) => {
       const created = await tx.sale.create({
@@ -63,14 +120,14 @@ export async function createSale(
           notes: data.notes || null,
           createdById: createdById || null,
           items: {
-            create: data.items.map((item) => {
+            create: resolvedItems.map((item) => {
               const catalogItem = catalogMap.get(item.catalogItemId);
               return {
                 catalogItemId: item.catalogItemId,
-                variantId: item.variantId || null,
+                variantId: (item as { variantId?: string }).variantId || null,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
-                discount: item.discount,
+                discount: item.discount ?? 0,
                 subtotal: item.subtotal,
                 costPrice: catalogItem?.costPrice ?? null,
               };
@@ -86,15 +143,16 @@ export async function createSale(
         log("sale.create", "resolvedLocation", { locationId: location?.id });
 
         if (location) {
-          for (const item of data.items) {
+          for (const item of resolvedItems) {
             const catalogItem = catalogMap.get(item.catalogItemId);
             if (!catalogItem?.trackStock) continue;
+            const variantId = (item as { variantId?: string }).variantId ?? null;
 
             let balance = await tx.inventoryBalance.findFirst({
               where: {
                 locationId: location.id,
                 catalogItemId: item.catalogItemId,
-                variantId: item.variantId ?? null,
+                variantId,
               },
             });
 
@@ -103,7 +161,7 @@ export async function createSale(
                 data: {
                   locationId: location.id,
                   catalogItemId: item.catalogItemId,
-                  variantId: item.variantId || null,
+                  variantId,
                   quantityOnHand: 0,
                   quantityAvailable: 0,
                   quantityCommitted: 0,
@@ -126,7 +184,7 @@ export async function createSale(
               data: {
                 locationId: location.id,
                 catalogItemId: item.catalogItemId,
-                variantId: item.variantId || null,
+                variantId,
                 quantityChange: -item.quantity,
                 balanceBefore: currentQty,
                 balanceAfter: newQty,
@@ -182,7 +240,7 @@ export async function createSale(
             dueDate: data.dueDate ? new Date(data.dueDate) : null,
             notes: data.customerId ? (data.notes || null) : `Walk-in sale — ${data.notes || ""}`.trim(),
             items: {
-              create: data.items.map((item) => ({
+              create: resolvedItems.map((item) => ({
                 catalogItemId: item.catalogItemId,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
@@ -361,6 +419,55 @@ export async function updateSale(
   createdById?: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
+    let resolvedItems: Array<Record<string, unknown>> | undefined;
+
+    if (data.items && data.items.length > 0) {
+      const catalogItemIds = [...new Set(data.items.map((i) => i.catalogItemId))];
+      const catalogItems = await prisma.catalogItem.findMany({
+        where: { id: { in: catalogItemIds } },
+        select: { id: true, price: true, costPrice: true, taxRate: true, trackStock: true },
+      });
+      const catalogMap = new Map(catalogItems.map((ci) => [ci.id, ci]));
+
+      resolvedItems = await Promise.all(
+        data.items.map(async (item) => {
+          let unitPrice = item.unitPrice;
+          let discount = item.discount ?? 0;
+          let taxRate = catalogMap.get(item.catalogItemId)?.taxRate
+            ? Number(catalogMap.get(item.catalogItemId)!.taxRate)
+            : undefined;
+
+          try {
+            const priceResult = await pricingEngine.resolvePrice({
+              catalogItemId: item.catalogItemId,
+              businessId: businessId!,
+              customerId: data.customerId,
+              quantity: Number(item.quantity),
+              branchId: data.branchId,
+            });
+
+            if (priceResult) {
+              unitPrice = priceResult.unitPrice;
+              if (priceResult.discountPercent) {
+                discount = unitPrice * Number(item.quantity) * (priceResult.discountPercent / 100);
+              }
+              if (priceResult.discount) {
+                discount = priceResult.discount;
+              }
+              if (priceResult.taxRate !== undefined) {
+                taxRate = priceResult.taxRate;
+              }
+            }
+          } catch {
+            // fall through
+          }
+
+          const subtotal = unitPrice * Number(item.quantity);
+          return { ...item, unitPrice, discount, subtotal, taxRate };
+        }),
+      );
+    }
+
     await prisma.$transaction(async (tx) => {
       const existing = await tx.sale.findUnique({
         where: { id },
@@ -420,11 +527,42 @@ export async function updateSale(
         await tx.saleItem.deleteMany({ where: { saleId: id } });
       }
 
-      const items = data.items ?? [];
-      const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-      const discountTotal = data.discountTotal ?? 0;
-      const taxTotal = data.taxTotal ?? 0;
-      const grandTotal = items.length > 0 ? subtotal - discountTotal + taxTotal : Number(existing.grandTotal);
+      const items: Array<Record<string, unknown>> = resolvedItems ?? (data.items ?? []) as unknown as Array<Record<string, unknown>>;
+      const hasItems = items.length > 0;
+
+      let subtotal = 0;
+      let discountTotal = 0;
+      let taxTotal = 0;
+      let grandTotal = Number(existing.grandTotal);
+
+      if (hasItems) {
+        if (resolvedItems) {
+          subtotal = (resolvedItems as Array<Record<string, unknown>>).reduce((s, i) => s + Number(i.subtotal), 0);
+          discountTotal = (resolvedItems as Array<Record<string, unknown>>).reduce((s, i) => s + Number(i.discount ?? 0), 0);
+
+          try {
+            const taxCalc = await taxEngine.calculate({
+              businessId: existing.businessId,
+              customerId: data.customerId,
+              items: (resolvedItems as Array<Record<string, unknown>>).map((i) => ({
+                catalogItemId: i.catalogItemId as string,
+                quantity: Number(i.quantity),
+                unitPrice: Number(i.unitPrice),
+                taxRate: i.taxRate as number | undefined,
+              })),
+              subtotal: subtotal - discountTotal,
+            });
+            taxTotal = taxCalc.totalTax;
+          } catch {
+            taxTotal = data.taxTotal ?? 0;
+          }
+        } else {
+          subtotal = (data.items ?? []).reduce((s, item) => s + item.subtotal, 0);
+          discountTotal = data.discountTotal ?? 0;
+          taxTotal = data.taxTotal ?? 0;
+        }
+        grandTotal = subtotal - discountTotal + taxTotal;
+      }
 
       await tx.sale.update({
         where: { id },
@@ -436,20 +574,20 @@ export async function updateSale(
           saleDate: data.saleDate ? new Date(data.saleDate) : undefined,
           reference: data.reference !== undefined ? (data.reference || null) : undefined,
           status: data.status,
-          subtotal: items.length > 0 ? subtotal : undefined,
-          discountTotal,
-          taxTotal,
-          grandTotal: items.length > 0 ? grandTotal : undefined,
+          subtotal: hasItems ? subtotal : undefined,
+          discountTotal: hasItems ? discountTotal : 0,
+          taxTotal: hasItems ? taxTotal : 0,
+          grandTotal: hasItems ? grandTotal : undefined,
           notes: data.notes !== undefined ? (data.notes || null) : undefined,
           items: data.items
             ? {
-                create: data.items.map((item) => ({
-                  catalogItemId: item.catalogItemId,
-                  variantId: item.variantId || null,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                  discount: item.discount,
-                  subtotal: item.subtotal,
+                create: (resolvedItems ?? data.items).map((item: Record<string, unknown>) => ({
+                  catalogItemId: item.catalogItemId as string,
+                  variantId: (item.variantId as string) || null,
+                  quantity: item.quantity as number,
+                  unitPrice: item.unitPrice as number,
+                  discount: (item.discount as number) ?? 0,
+                  subtotal: item.subtotal as number,
                 })),
               }
             : undefined,
@@ -459,18 +597,21 @@ export async function updateSale(
       if (isCompleted && data.items) {
         const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
         if (location) {
-          for (const item of data.items) {
+          const forDeduction = resolvedItems ?? data.items;
+          for (const item of forDeduction) {
+            const itemRecord = item as Record<string, unknown>;
             const catalogItem = await tx.catalogItem.findUnique({
-              where: { id: item.catalogItemId },
+              where: { id: itemRecord.catalogItemId as string },
               select: { name: true, trackStock: true },
             });
             if (!catalogItem?.trackStock) continue;
+            const variantId = (itemRecord.variantId as string) ?? null;
 
             let balance = await tx.inventoryBalance.findFirst({
               where: {
                 locationId: location.id,
-                catalogItemId: item.catalogItemId,
-                variantId: item.variantId ?? null,
+                catalogItemId: itemRecord.catalogItemId as string,
+                variantId,
               },
             });
 
@@ -478,8 +619,8 @@ export async function updateSale(
               balance = await tx.inventoryBalance.create({
                 data: {
                   locationId: location.id,
-                  catalogItemId: item.catalogItemId,
-                  variantId: item.variantId || null,
+                  catalogItemId: itemRecord.catalogItemId as string,
+                  variantId,
                   quantityOnHand: 0,
                   quantityAvailable: 0,
                   quantityCommitted: 0,
@@ -487,11 +628,12 @@ export async function updateSale(
               });
             }
 
+            const qty = Number(itemRecord.quantity);
             const currentQty = Number(balance.quantityOnHand);
-            if (currentQty < item.quantity) {
-              throw new Error(`Insufficient stock for "${catalogItem.name || item.catalogItemId}". Available: ${currentQty}, requested: ${item.quantity}`);
+            if (currentQty < qty) {
+              throw new Error(`Insufficient stock for "${catalogItem.name || itemRecord.catalogItemId}". Available: ${currentQty}, requested: ${qty}`);
             }
-            const newQty = currentQty - item.quantity;
+            const newQty = currentQty - qty;
 
             await tx.inventoryBalance.update({
               where: { id: balance.id },
@@ -501,9 +643,9 @@ export async function updateSale(
             await tx.stockMovement.create({
               data: {
                 locationId: location.id,
-                catalogItemId: item.catalogItemId,
-                variantId: item.variantId || null,
-                quantityChange: -item.quantity,
+                catalogItemId: itemRecord.catalogItemId as string,
+                variantId,
+                quantityChange: -qty,
                 balanceBefore: currentQty,
                 balanceAfter: newQty,
                 referenceType: "sale",
@@ -521,17 +663,16 @@ export async function updateSale(
         select: { id: true, paidAmount: true, total: true, balanceDue: true },
       });
 
-      if (linkedInvoice && items.length > 0) {
+      if (linkedInvoice && hasItems) {
         const invoicePaidAmount = Number(linkedInvoice.paidAmount);
-        const newTotal = grandTotal;
-        const newBalanceDue = Math.max(0, newTotal - invoicePaidAmount);
+        const newBalanceDue = Math.max(0, grandTotal - invoicePaidAmount);
 
         await tx.invoice.update({
           where: { id: linkedInvoice.id },
           data: {
             subtotal,
             tax: taxTotal,
-            total: newTotal,
+            total: grandTotal,
             balanceDue: newBalanceDue,
           },
         });
