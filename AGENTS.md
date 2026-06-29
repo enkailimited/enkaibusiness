@@ -333,8 +333,9 @@ Prefer evolution over replacement.
 10. **Phase 4 — Firdaus AI OS**: Created `src/ai/` with multi-provider LLM abstraction (OpenAI, Anthropic, Gemini), RAG pipeline (keyword retrieval + context injection), multi-layer memory (session + DB-backed business), 11 domain knowledge layers. Backward-compatible with old import paths.
 11. **Phase 5 — Search Abstraction Layer**: Created `src/server/search/` with adapter pattern (`PrismaSearchAdapter` implementing `SearchAdapter` interface), `SearchService` class with typed methods for all 18 searchable models. Migrated 6 critical services (customer, catalog, user, supplier, invoice, expense) from inline ILIKE queries.
 12. **Phase 6 — Industry Engine**: Created `src/server/industry/` with complete multi-industry platform engine. All 10 industries (Commerce, Restaurant, Education, Healthcare, Manufacturing, Agriculture, Services, Logistics, Real Estate, Non-Profit) with 50+ business modes, 80+ modules, 200+ permissions, industry-specific AI knowledge, reports, dashboards, KPIs, workflows, voice commands, and navigation. Adapter pattern design — everything flows from industry + mode config. Backward-compatible with existing commerce ERP.
-13. **Schema Update**: Added EDUCATION, LOGISTICS, REAL_ESTATE, NON_PROFIT to Industry enum.
-14. **Final Audit**: `FINAL-AUDIT-REPORT-2026-06-29.md` generated. Zero TODO/FIXME/HACK in source. Typecheck passes. `prisma generate` succeeds.
+13. **Phase 7 — Enterprise Engine Suite**: Created `src/server/engines/` with 11 pluggable engines: UoM (with conversions + chain resolution), Customer Segment (10 segments with credit/pricing/terms), Pricing (multi-tier, volume, segment, time-based), Inventory (commit/receive/reserve/transfer with mode strategies), Tax (multi-country, compound, withholding), Promotion (coupons, bundles, stacking priority), Order (16-state machine, partial delivery, backorder), Procurement (RFQ, PO, approval thresholds), Manufacturing (BOM, batches, serials), Analytics (ABC, forecasting, dead/fast stock, CLV), AI Context (business-aware Firdaus hints).
+14. **Schema Update**: Added EDUCATION, LOGISTICS, REAL_ESTATE, NON_PROFIT to Industry enum.
+15. **Final Audit**: `FINAL-AUDIT-REPORT-2026-06-29.md` generated. Zero TODO/FIXME/HACK in source. Typecheck passes. `prisma generate` succeeds.
 
 ### Key Decisions
 - **Event Bus**: DB persistence over in-memory. Retry 3x → poison-queue. Fire-and-forget emission. `processPendingEvents()` on startup.
@@ -343,6 +344,7 @@ Prefer evolution over replacement.
 - **AI Architecture**: LLM abstraction with swap-via-env-var. RAG uses keyword search first (zero deps), embeddings ready to plug in. Backward-compat re-exports from old locations.
 - **Search Service**: Adapter pattern — `PrismaSearchAdapter` today, easy swap to Meilisearch/Typesense later. Only `where.OR` conditions go through the abstraction; non-search filters remain inline.
 - **Industry Engine**: Configuration-driven — all 10 industries defined as TypeScript config objects in a registry, not hardcoded if/else. Runtime resolvers derive everything (modules, permissions, AI, reports, dashboards, workflows) from industry + mode. Existing commerce ERP is just `commerce` + `retail` in the registry.
+- **Enterprise Engines**: 11 pluggable domain engines (UoM, Segments, Pricing, Inventory, Tax, Promotion, Order, Procurement, Manufacturing, Analytics, AI Context). Each is standalone with clean interfaces, no existing code broken.
 
 ### Next Steps
 - **Phase 5a**: Migrate remaining 23 search sites (sales, purchases, purchase orders, returns, goods received, quotations, support tickets, leads, sales profiles, campaigns, uploads, cash registers, support service, platform, monitoring, login-service, auth-service, AI tools).
