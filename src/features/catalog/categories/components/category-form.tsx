@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo, useEffect } from "react";
+import { useState, useActionState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,6 +45,19 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
     [mode, businessId, initialData?.id],
   );
   const [state, formAction, pending] = useActionState<ActionResponse | null, FormData>(formActionRef, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [allowSubmit, setAllowSubmit] = useState(false);
+
+  function handleFinalSubmit() {
+    setAllowSubmit(true);
+    setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    if (step < STEPS.length - 1 || !allowSubmit) {
+      e.preventDefault();
+    }
+  }
 
   const isSuccess = state?.success === true;
   useEffect(() => {
@@ -65,7 +78,7 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -175,7 +188,7 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
                 Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+              <Button type="button" disabled={pending} onClick={handleFinalSubmit} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
                 {pending ? "Saving..." : "Save"}
               </Button>
             )}

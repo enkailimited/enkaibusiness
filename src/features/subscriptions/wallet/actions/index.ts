@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { serialize } from "@/lib/utils";
 import {
   getWallet,
   getWalletInfo,
@@ -14,7 +15,7 @@ import type { ActionResponse } from "@/types/relationships";
 
 export async function getWalletAction(businessId: string) {
   await requireAuth();
-  return getWallet(businessId);
+  return serialize(getWallet(businessId));
 }
 
 export async function getWalletInfoAction(businessId: string) {

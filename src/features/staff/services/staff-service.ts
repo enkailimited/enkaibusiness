@@ -53,9 +53,9 @@ export async function getStaff(id: string) {
   });
 }
 
-export async function getStaffByUser(userId: string) {
-  return prisma.staff.findUnique({
-    where: { userId },
+export async function getStaffByUser(userId: string, businessId?: string) {
+  return prisma.staff.findFirst({
+    where: { userId, ...(businessId ? { businessId } : {}) },
     include: {
       user: {
         select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
@@ -77,7 +77,15 @@ export async function getBusinessStaff(businessId: string): Promise<StaffWithUse
     where: { businessId },
     include: {
       user: {
-        select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true, avatarUrl: true },
+      },
+      assignments: {
+        include: {
+          role: { select: { id: true, name: true, slug: true } },
+          branch: { select: { id: true, name: true } },
+          store: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "desc" },
       },
     },
     orderBy: { createdAt: "desc" },

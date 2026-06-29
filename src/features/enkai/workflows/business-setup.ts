@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { BusinessRegistrationEngine } from "@/server/registrations";
 
 export interface BusinessSetupData {
   name: string;
@@ -25,23 +26,31 @@ export async function createBusiness(
   workspaceId: string,
   data: BusinessSetupData,
 ) {
-  const business = await prisma.business.create({
-    data: {
+  const result = await BusinessRegistrationEngine.register(
+    {
       name: data.name,
-      type: data.type,
-      industry: data.industry || data.type,
+      slug: `${data.name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
       workspaceId,
+      createdById: userId,
       currency: data.currency || "TZS",
-      isActive: true,
-      modes: {
-        create: { industry: (data.industry || data.type) as never, mode: data.type },
-      },
+      industry: (data.industry || data.type) as any,
+      modes: [data.type],
+      planId: "",
+      businessSize: "small",
     },
-  });
+    { id: "", amount: 0, interval: "MONTHLY", name: "Free" },
+    { dailyPrice: 0, setupFee: 0, qrPrintingFee: 0, totalSetupFee: 0 },
+  );
+
+  if (!result.success) {
+    throw new Error(result.message);
+  }
+
+  const businessId = result.data!.businessId;
 
   const branch = await prisma.branch.create({
     data: {
-      businessId: business.id,
+      businessId,
       name: data.branchName,
       address: data.branchAddress || null,
       isHeadOffice: true,
@@ -61,11 +70,13 @@ export async function createBusiness(
 
   const inventoryLocation = await prisma.inventoryLocation.create({
     data: {
-      businessId: business.id,
+      businessId,
       name: `${data.branchName} - Main Store`,
       type: "store",
     },
   });
+
+  const business = await prisma.business.findUnique({ where: { id: businessId } });
 
   return { business, branch, inventoryLocation };
 }

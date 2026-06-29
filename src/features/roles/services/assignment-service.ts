@@ -92,25 +92,15 @@ export async function hasPermission(
   permissionSlug: string,
   businessId?: string,
 ): Promise<boolean> {
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      ...(businessId ? { businessId } : {}),
-    },
-    include: {
-      role: {
-        include: {
-          rolePermissions: {
-            include: { permission: true },
-          },
-        },
-      },
-    },
-  });
-
-  return userRoles.some((ur) =>
-    ur.role.rolePermissions.some((rp) => rp.permission.slug === permissionSlug),
-  );
+  const where: Record<string, unknown> = {
+    userId,
+    role: { rolePermissions: { some: { permission: { slug: permissionSlug } } } },
+  };
+  if (businessId !== undefined) {
+    where.OR = [{ businessId }, { businessId: null }];
+  }
+  const count = await prisma.userRole.count({ where });
+  return count > 0;
 }
 
 export async function hasAnyPermission(
@@ -118,25 +108,10 @@ export async function hasAnyPermission(
   permissionSlugs: string[],
   businessId?: string,
 ): Promise<boolean> {
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      ...(businessId ? { businessId } : {}),
-    },
-    include: {
-      role: {
-        include: {
-          rolePermissions: {
-            include: { permission: true },
-          },
-        },
-      },
-    },
-  });
-
-  return userRoles.some((ur) =>
-    ur.role.rolePermissions.some((rp) => permissionSlugs.includes(rp.permission.slug)),
-  );
+  for (const slug of permissionSlugs) {
+    if (await hasPermission(userId, slug, businessId)) return true;
+  }
+  return false;
 }
 
 export async function getUsersWithRole(roleId: string) {

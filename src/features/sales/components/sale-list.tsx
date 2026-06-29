@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { listSalesAction } from "../actions";
 import { SALE_STATUS_LABELS, SALE_STATUS_VARIANTS } from "../constants";
+import { useActiveBranch } from "@/features/branches/context/active-branch-context";
 import type { SaleListItem } from "../types";
 
 interface SaleListProps {
@@ -26,10 +26,11 @@ function formatDate(dateString: string): string {
 }
 
 export function SaleList({ businessId }: SaleListProps) {
+  const { activeBranch } = useActiveBranch();
   const query = useQuery({
-    queryKey: ["sales", businessId],
+    queryKey: ["sales", businessId, activeBranch?.id],
     queryFn: async () => {
-      const result = await listSalesAction(businessId);
+      const result = await listSalesAction(businessId, activeBranch ? { branchId: activeBranch.id } : undefined);
       return (result ?? []) as SaleListItem[];
     },
   });

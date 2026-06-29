@@ -5,6 +5,7 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateLeadSchema, UpdateLeadSchema } from "../schemas";
 import type { LeadWithAssignments, LeadWithActivities, LeadFilters, LeadMetrics } from "../types";
+import { createAuthUser } from "@/server/registrations/shared/user-creation";
 import { generateTempPassword, setUserPassword, sendInviteEmail } from "@/features/users/services/invite-service";
 
 const assignedToInclude = {
@@ -167,13 +168,26 @@ export async function updateLeadStatus(
       }
       let user = await prisma.user.findUnique({ where: { email: lead.email } });
       if (!user) {
-        user = await prisma.user.create({
+        const tempPassword = generateTempPassword();
+        const created = await createAuthUser({
+          email: lead.email,
+          password: tempPassword,
+          firstName: lead.firstName,
+          lastName: lead.lastName,
+        });
+        if (!created) {
+          return { success: false, message: "Failed to create auth user for lead conversion" };
+        }
+        user = await prisma.user.findUnique({ where: { email: lead.email } });
+        if (!user) {
+          return { success: false, message: "User was created but could not be retrieved" };
+        }
+        await prisma.user.update({
+          where: { id: user.id },
           data: {
-            email: lead.email,
-            firstName: lead.firstName,
-            lastName: lead.lastName,
-            phone: lead.phone || undefined,
+            phone: lead.phone || null,
             mustChangePassword: true,
+            isOnboarded: false,
           },
         });
       }
@@ -185,7 +199,7 @@ export async function updateLeadStatus(
     await prisma.lead.update({ where: { id }, data: updateData });
 
     if (wasConversion) {
-      const user = await prisma.user.findUnique({ where: { email: lead.email } });
+      const user = await prisma.user.findUnique({ where: { email: lead.email! } });
       if (user) {
         const tempPassword = generateTempPassword();
         await setUserPassword(user.id, tempPassword);

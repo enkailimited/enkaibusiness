@@ -24,3 +24,16 @@ export const ITEM_TYPE_VARIANTS: Record<string, "default" | "secondary" | "outli
 };
 
 export const DEFAULT_PAGE_SIZE = 20;
+
+// Catalog type slugs for Commerce business type
+export const COMMERCE_CATALOG_TYPES = {
+  PRODUCT: "product",
+  SERVICE: "service",
+} as const;
+
+export type CommerceCatalogType = (typeof COMMERCE_CATALOG_TYPES)[keyof typeof COMMERCE_CATALOG_TYPES];
+
+export const CATALOG_TYPE_LABELS: Record<string, string> = {
+  product: "Product",
+  service: "Service",
+};

@@ -46,6 +46,47 @@ export async function setUserPassword(userId: string, newPassword: string): Prom
   }
 }
 
+async function buildInviteEmailPayload(
+  toEmail: string,
+  tempPassword: string,
+  invitedByName: string,
+  businessName: string,
+  isReinvite: boolean,
+) {
+  const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
+  const { renderTemplate, SYSTEM_TEMPLATES } = await import("@/notifications/email/services/template-service");
+
+  const tpl = (SYSTEM_TEMPLATES.find((t) => t.slug === "staff-invitation") || SYSTEM_TEMPLATES[0]) as unknown as {
+    subject: string;
+    htmlContent: string;
+    plainTextContent?: string | null;
+  };
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const loginUrl = `${baseUrl}/login`;
+  const changePasswordUrl = `${baseUrl}/change-password`;
+
+  const rendered = await renderTemplate(tpl, {
+    businessName,
+    inviteUrl: `${baseUrl}/login?invite=pending`,
+    invitedBy: invitedByName,
+    loginUrl,
+    temporaryPassword: tempPassword,
+    email: toEmail,
+    username: toEmail,
+    changePasswordUrl,
+  });
+
+  return {
+    sendEmailWithDefaultConfig,
+    options: {
+      to: toEmail,
+      subject: isReinvite ? "Re-invitation to Enkai Business" : "Invitation to Enkai Business",
+      html: rendered.html,
+      text: rendered.text,
+    },
+  };
+}
+
 export async function sendInviteEmail(
   toEmail: string,
   tempPassword: string,
@@ -54,41 +95,36 @@ export async function sendInviteEmail(
   isReinvite: boolean,
 ): Promise<boolean> {
   try {
-    const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
-    const { renderTemplate, SYSTEM_TEMPLATES } = await import("@/notifications/email/services/template-service");
-
-    const tpl = (SYSTEM_TEMPLATES.find((t) => t.slug === "staff-invitation") || SYSTEM_TEMPLATES[0]) as unknown as {
-      subject: string;
-      htmlContent: string;
-      plainTextContent?: string | null;
-    };
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const loginUrl = `${baseUrl}/login`;
-    const changePasswordUrl = `${baseUrl}/change-password`;
-
-    const rendered = await renderTemplate(tpl, {
-      businessName,
-      inviteUrl: `${baseUrl}/login?invite=pending`,
-      invitedBy: invitedByName,
-      loginUrl,
-      temporaryPassword: tempPassword,
-      email: toEmail,
-      username: toEmail,
-      changePasswordUrl,
-    });
-
-    const result = await sendEmailWithDefaultConfig({
-      to: toEmail,
-      subject: isReinvite ? "Re-invitation to Enkai Business" : "Invitation to Enkai Business",
-      html: rendered.html,
-      text: rendered.text,
-    });
-
+    const { sendEmailWithDefaultConfig, options } = await buildInviteEmailPayload(
+      toEmail, tempPassword, invitedByName, businessName, isReinvite,
+    );
+    const result = await sendEmailWithDefaultConfig(options);
     return result.success;
   } catch (err) {
     console.error("Failed to send invite email:", err);
     return false;
   }
+}
+
+export async function sendInviteEmailAsync(
+  toEmail: string,
+  tempPassword: string,
+  invitedByName: string,
+  businessName: string,
+  isReinvite: boolean,
+): Promise<void> {
+  buildInviteEmailPayload(toEmail, tempPassword, invitedByName, businessName, isReinvite)
+    .then(async ({ sendEmailWithDefaultConfig, options }) => {
+      const result = await sendEmailWithDefaultConfig(options);
+      if (result.success) {
+        console.log("[INVITE] Re-invitation email sent asynchronously to", toEmail, "messageId:", result.messageId);
+      } else {
+        console.error("[INVITE] Re-invitation email failed asynchronously for", toEmail, "error:", result.error, "category:", result.errorCategory);
+      }
+    })
+    .catch((err) => {
+      console.error("[INVITE] Failed to send re-invitation email asynchronously for", toEmail, ":", err);
+    });
 }
 
 export async function createUserInvite(

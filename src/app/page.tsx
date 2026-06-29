@@ -19,6 +19,9 @@ export default async function RootPage() {
               businessId: true,
             },
           },
+          staffProfiles: {
+            select: { id: true, businessId: true, isActive: true },
+          },
         },
       });
 
@@ -28,6 +31,30 @@ export default async function RootPage() {
 
       if (hasPlatformRole) {
         redirect("/platform/dashboard");
+      }
+
+      const activeStaffBusiness = dbUser?.staffProfiles?.find((s) => s.isActive)?.businessId;
+      if (activeStaffBusiness) {
+        const biz = await prisma.business.findUnique({
+          where: { id: activeStaffBusiness },
+          select: { status: true },
+        });
+        if (biz && biz.status !== "ACTIVE") {
+          redirect(`/workspaces/businesses/${activeStaffBusiness}/activation`);
+        }
+        redirect(`/workspaces/businesses/${activeStaffBusiness}/overview`);
+      }
+
+      const roleBusinessId = dbUser?.userRoles?.find((ur) => ur.businessId)?.businessId;
+      if (roleBusinessId) {
+        const biz = await prisma.business.findUnique({
+          where: { id: roleBusinessId },
+          select: { status: true },
+        });
+        if (biz && biz.status !== "ACTIVE") {
+          redirect(`/workspaces/businesses/${roleBusinessId}/activation`);
+        }
+        redirect(`/workspaces/businesses/${roleBusinessId}/overview`);
       }
 
       redirect("/workspaces/dashboard");

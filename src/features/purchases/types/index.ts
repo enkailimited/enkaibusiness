@@ -1,4 +1,20 @@
-export type PurchaseStatus = "draft" | "completed" | "cancelled";
+export type PurchaseStatus = "draft" | "completed" | "unpaid" | "partial" | "paid" | "overdue" | "cancelled";
+
+export function computePurchaseStatus(total: number, paidAmount: number, dueDate: string | null): PurchaseStatus {
+  const paid = Number(paidAmount);
+  const t = Number(total);
+  const balance = t - paid;
+
+  if (paid === 0 && balance === t) return "unpaid";
+  if (paid > 0 && balance > 0) return "partial";
+  if (balance <= 0) return "paid";
+  if (dueDate && new Date(dueDate) < new Date() && balance > 0) return "overdue";
+  return "unpaid";
+}
+
+export function validatePurchaseBalance(total: number, paidAmount: number, balanceDue: number): boolean {
+  return Math.abs(Number(paidAmount) + Number(balanceDue) - Number(total)) < 0.001;
+}
 
 export interface PurchaseWithItems {
   id: string;
@@ -11,6 +27,9 @@ export interface PurchaseWithItems {
   purchaseDate: string;
   reference: string | null;
   status: PurchaseStatus;
+  paidAmount: number;
+  balanceDue: number;
+  dueDate: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -50,6 +69,8 @@ export interface CreatePurchaseInput {
   purchaseDate?: string;
   reference?: string;
   status?: PurchaseStatus;
+  paidAmount?: number;
+  dueDate?: string;
   tax?: number;
   notes?: string;
   items: Array<{
@@ -76,6 +97,8 @@ export interface PurchaseListItem {
   reference: string | null;
   purchaseDate: string;
   status: PurchaseStatus;
+  paidAmount: number;
+  balanceDue: number;
   subtotal: number;
   tax: number;
   total: number;

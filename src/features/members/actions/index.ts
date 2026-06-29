@@ -7,7 +7,7 @@ import type { ActionResponse } from "@/types/relationships";
 import {
   generateTempPassword,
   setUserPassword,
-  sendInviteEmail,
+  sendInviteEmailAsync,
   createUserInvite,
 } from "@/features/users/services/invite-service";
 
@@ -95,13 +95,11 @@ export async function reinviteWorkspaceMemberAction(
     await createUserInvite(member.user.id, targetEmail, targetPhone || null, sessionUser.id);
 
     const invitedByName = `${sessionUser.firstName} ${sessionUser.lastName}`.trim() || "Admin";
-    const emailSent = await sendInviteEmail(targetEmail, tempPassword, invitedByName, member.workspace.name, true);
+    sendInviteEmailAsync(targetEmail, tempPassword, invitedByName, member.workspace.name, true);
 
     return {
       success: true,
-      message: emailSent
-        ? "Re-invitation sent successfully."
-        : "Re-invitation created but email could not be sent.",
+      message: "Re-invitation sent successfully. Email delivery in progress.",
     };
   } catch (error) {
     return {

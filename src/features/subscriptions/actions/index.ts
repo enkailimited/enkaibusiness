@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { serialize } from "@/lib/utils";
 import {
   createPlan,
   getPlan,
@@ -65,12 +66,12 @@ export async function createPlanAction(
 
 export async function listPlansAction() {
   await requireAuth();
-  return listPlans();
+  return serialize(listPlans());
 }
 
 export async function getPlanAction(id: string) {
   await requireAuth();
-  return getPlan(id);
+  return serialize(getPlan(id));
 }
 
 export async function updatePlanAction(
@@ -158,12 +159,12 @@ export async function listSubscriptionsAction(filters?: {
   toDate?: string;
 }) {
   await requireAuth();
-  return listSubscriptions(filters);
+  return serialize(listSubscriptions(filters));
 }
 
 export async function getSubscriptionAction(id: string) {
   await requireAuth();
-  return getSubscription(id);
+  return serialize(getSubscription(id));
 }
 
 export async function cancelSubscriptionAction(
@@ -238,7 +239,7 @@ export async function recordPaymentAction(
 
 export async function getPaymentsAction(subscriptionId: string) {
   await requireAuth();
-  return getPayments(subscriptionId);
+  return serialize(getPayments(subscriptionId));
 }
 
 // ─── Maintenance Actions ──────────────────────────────────────────────────
@@ -267,5 +268,5 @@ export async function checkExpiringSubscriptionsAction() {
 
 export async function getSubscriptionMetricsAction() {
   await requireAuth();
-  return getSubscriptionMetrics();
+  return serialize(getSubscriptionMetrics());
 }

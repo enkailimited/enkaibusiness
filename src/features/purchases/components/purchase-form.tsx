@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useActionState, useState, useMemo } from "react";
+import { useActionState, useState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +41,20 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
   const [step, setStep] = useState(0);
   const createAction = useMemo(() => createPurchaseAction.bind(null, businessId, workspaceId), [businessId, workspaceId]);
   const [state, formAction, pending] = useActionState(createAction, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [allowSubmit, setAllowSubmit] = useState(false);
+
+  function handleFinalSubmit() {
+    setAllowSubmit(true);
+    setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    if (step < STEPS.length - 1 || !allowSubmit) {
+      e.preventDefault();
+    }
+  }
+
   const [items, setItems] = useState<LineItem[]>([newLineItem()]);
 
   const catalogItemMap = new Map(catalogItems.map((c) => [c.id, c]));
@@ -76,7 +90,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="itemCount" value={items.length} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -326,7 +340,8 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
               </Button>
             ) : (
               <Button
-                type="submit"
+                type="button"
+                onClick={handleFinalSubmit}
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >

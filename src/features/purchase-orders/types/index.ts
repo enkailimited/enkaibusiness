@@ -10,6 +10,7 @@ export interface PurchaseOrderWithItems {
   orderDate: string;
   expectedDate: string | null;
   status: PurchaseOrderStatus;
+  reference: string | null;
   subtotal: number;
   tax: number;
   total: number;
@@ -75,6 +76,7 @@ export interface PurchaseOrderListItem {
   orderDate: string;
   expectedDate: string | null;
   status: PurchaseOrderStatus;
+  reference: string | null;
   subtotal: number;
   tax: number;
   total: number;

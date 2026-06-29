@@ -1,15 +1,23 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo } from "react";
+import { useState, useActionState, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
 import { createLocationAction, updateLocationAction } from "../actions";
 import { MapPin, Navigation, ChevronLeft, ChevronRight } from "lucide-react";
 import type { LocationWithBalances } from "../types";
+
+interface BranchOption {
+  id: string;
+  name: string;
+  isHeadOffice: boolean;
+  stores: Array<{ id: string; name: string }>;
+}
 
 const STEPS = [
   { title: "Basic Info", description: "Location name" },
@@ -18,17 +26,40 @@ const STEPS = [
 
 interface LocationFormProps {
   businessId: string;
+  branches: BranchOption[];
   location?: LocationWithBalances;
   onSuccess?: () => void;
 }
 
-export function LocationForm({ businessId, location, onSuccess }: LocationFormProps) {
+export function LocationForm({ businessId, branches, location, onSuccess }: LocationFormProps) {
   const [step, setStep] = useState(0);
+  const [selectedBranchId, setSelectedBranchId] = useState(location?.branchId ?? "");
   const formActionRef = useMemo(
     () => (location ? updateLocationAction.bind(null, location.id) : createLocationAction),
     [location],
   );
   const [state, formAction, pending] = useActionState(formActionRef, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [allowSubmit, setAllowSubmit] = useState(false);
+
+  const selectedBranch = branches.find((b) => b.id === selectedBranchId);
+  const storeOptions = selectedBranch?.stores ?? [];
+
+  const branchOptions = branches.map((b) => ({
+    value: b.id,
+    label: b.isHeadOffice ? `${b.name} (HQ)` : b.name,
+  }));
+
+  function handleFinalSubmit() {
+    setAllowSubmit(true);
+    setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    if (step < STEPS.length - 1 || !allowSubmit) {
+      e.preventDefault();
+    }
+  }
 
   if (state?.success && onSuccess) {
     onSuccess();
@@ -38,7 +69,7 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -82,13 +113,31 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
                   <Label htmlFor="branchId" className="text-sm font-medium">
                     Branch <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input id="branchId" name="branchId" defaultValue={location?.branchId ?? ""}                     placeholder="For branch locations" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Select
+                    id="branchId"
+                    name="branchId"
+                    options={branchOptions}
+                    placeholder="Select a branch"
+                    defaultValue={location?.branchId ?? ""}
+                    onChange={(e) => { setSelectedBranchId(e.target.value); }}
+                    className="h-11 rounded-xl border-gray-200 bg-white"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="storeId" className="text-sm font-medium">
                     Store <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input id="storeId" name="storeId" defaultValue={location?.storeId ?? ""}                     placeholder="For store locations" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Select
+                    id="storeId"
+                    name="storeId"
+                    options={storeOptions.map((s) => ({ value: s.id, label: s.name }))}
+                    placeholder="Select a store"
+                    defaultValue={location?.storeId ?? ""}
+                    className="h-11 rounded-xl border-gray-200 bg-white"
+                  />
+                  {!selectedBranch && (
+                    <p className="text-xs text-gray-400">Select a branch first to see available stores</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -109,7 +158,7 @@ export function LocationForm({ businessId, location, onSuccess }: LocationFormPr
                 Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+              <Button type="button" onClick={handleFinalSubmit} disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
                 {pending ? "Saving..." : "Save"}
               </Button>
             )}

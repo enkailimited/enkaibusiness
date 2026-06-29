@@ -27,6 +27,16 @@ export type {
   QRCodeAssignment,
   QRCodeInstallation,
   SupportTicket,
+  BusinessType,
+  BusinessTypeMode,
+  BusinessTypeModule,
+  CatalogType,
+  CatalogAttribute,
+  CatalogItemAttribute,
+  Contact,
+  Organization,
+  Address,
+  CommunicationLog,
 } from "./models";
 
 export type {

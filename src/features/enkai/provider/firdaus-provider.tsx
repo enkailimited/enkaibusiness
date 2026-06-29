@@ -1,8 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FirdausContext, type FirdausState } from "./firdaus-context";
-import { sendMessageAction } from "../actions/service-actions";
+import { FirdausContext, type FirdausState, DEFAULT_CONVERSATION_CONTEXT } from "./firdaus-context";
+import { sendVoiceMessageAction } from "../actions/service-actions";
+import { VoiceState } from "../voice/voice-state-machine";
+
+const VOICE_SAFE_ERRORS = [
+  "Samahani, kuna tatizo la muda mfupi lakini naendelea kukusikiliza.",
+  "Pole, sikuweza kukamilisha ombi lako. Tafadhali jaribu tena.",
+  "Samahani, kuna hitilafu. Jaribu tena baadaye.",
+  "Samahani, siwezi kufanya hilo kwa sasa. Jaribu tena.",
+] as const;
+
+function getRandomSafeError(): string {
+  return VOICE_SAFE_ERRORS[Math.floor(Math.random() * VOICE_SAFE_ERRORS.length)]!;
+}
+
 import type { AssistantMessage, AssistantContext, FirdausMode } from "../assistant/types";
 import type { FirdausActions } from "./firdaus-context";
 
@@ -10,10 +23,12 @@ const initialState: FirdausState = {
   isListening: false,
   isSpeaking: false,
   isAwake: false,
+  voiceState: VoiceState.SLEEPING,
   messages: [],
   currentWorkflow: null,
   currentStep: null,
   collectedParams: {},
+  conversationContext: { ...DEFAULT_CONVERSATION_CONTEXT },
   businessId: null,
   userId: null,
   staffId: null,
@@ -31,6 +46,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       return {
         ...prev,
         isAwake: true,
+        voiceState: VoiceState.WAKE_DETECTED,
         messages: prev.messages.length === 0
           ? [{
               id: `firdaus_wake_${Date.now()}`,
@@ -49,7 +65,11 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sleep = useCallback(() => {
-    setState((prev) => ({ ...prev, isAwake: false }));
+    setState((prev) => ({
+      ...prev,
+      isAwake: false,
+      voiceState: VoiceState.SLEEPING,
+    }));
   }, []);
 
   const setBusinessContext = useCallback((ctx: Partial<AssistantContext>) => {
@@ -63,12 +83,33 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const updateConversationContext = useCallback((partial: Partial<typeof DEFAULT_CONVERSATION_CONTEXT>) => {
+    setState((prev) => ({
+      ...prev,
+      conversationContext: { ...prev.conversationContext, ...partial },
+    }));
+  }, []);
+
+  const resetConversationContext = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      conversationContext: { ...DEFAULT_CONVERSATION_CONTEXT },
+    }));
+  }, []);
+
+  const updateVoiceState = useCallback((vs: VoiceState) => {
+    setState((prev) => ({ ...prev, voiceState: vs }));
+  }, []);
+
+  const updateWorkflow = useCallback((wf: string | null, step: string | null) => {
+    setState((prev) => ({ ...prev, currentWorkflow: wf, currentStep: step }));
+  }, []);
+
   const sendingRef = useRef(false);
 
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const voicesLoadedRef = useRef(false);
 
-  // Load voices once when they become available
   useEffect(() => {
     if (!("speechSynthesis" in window) || voicesLoadedRef.current) return;
     const voices = window.speechSynthesis.getVoices();
@@ -91,7 +132,6 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
     window.speechSynthesis.cancel();
 
     const voices = voicesRef.current;
-    // Prefer Google Swahili > any Swahili > Google English > any English
     const best = voices.find((v) => v.lang.startsWith("sw") && v.name.includes("Google"))
       || voices.find((v) => v.lang.startsWith("sw"))
       || voices.find((v) => v.lang.startsWith("en") && v.name.includes("Google"))
@@ -104,11 +144,18 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
     utterance.pitch = 1.05;
     utterance.volume = 1;
     if (best) utterance.voice = best;
-    utterance.onstart = () => setState((prev) => ({ ...prev, isSpeaking: true }));
-    utterance.onend = () => setState((prev) => ({ ...prev, isSpeaking: false }));
+    utterance.onstart = () => {
+      setState((prev) => ({ ...prev, isSpeaking: true }));
+      window.dispatchEvent(new CustomEvent("firdaus:voice-start"));
+    };
+    utterance.onend = () => {
+      setState((prev) => ({ ...prev, isSpeaking: false }));
+      window.dispatchEvent(new CustomEvent("firdaus:voice-end"));
+    };
     utterance.onerror = (e) => {
       console.warn("[Firdaus] SpeechSynthesis error:", e);
       setState((prev) => ({ ...prev, isSpeaking: false }));
+      window.dispatchEvent(new CustomEvent("firdaus:voice-end"));
     };
     window.speechSynthesis.speak(utterance);
   }, []);
@@ -124,9 +171,8 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       timestamp: new Date(),
     };
 
-    setState((prev) => ({ ...prev, messages: [...prev.messages, userMsg] }));
+    setState((prev) => ({ ...prev, messages: [...prev.messages, userMsg], voiceState: VoiceState.UNDERSTANDING }));
 
-    // Show waiting message immediately while verifying user
     const waitId = `wait_${Date.now()}`;
     setState((prev) => ({
       ...prev,
@@ -145,12 +191,14 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("Timeout")), 20000)
       );
+
+      setState((prev) => ({ ...prev, voiceState: VoiceState.EXECUTING }));
+
       const response = await Promise.race([
-        sendMessageAction(text, assistantContext.current),
+        sendVoiceMessageAction(text, assistantContext.current),
         timeoutPromise,
       ]);
 
-      // Remove waiting message and add the actual response
       setState((prev) => ({
         ...prev,
         messages: [
@@ -162,23 +210,18 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
             timestamp: new Date(),
           },
         ],
+        currentWorkflow: response.actionData?.currentWorkflow as string || prev.currentWorkflow,
+        currentStep: response.actionData?.currentStep as string || prev.currentStep,
+        collectedParams: response.actionData?.collectedParams as Record<string, unknown> || prev.collectedParams,
       }));
 
       speak(response.message);
-
-      if (response.actionData?.currentWorkflow) {
-        setState((prev) => ({
-          ...prev,
-          currentWorkflow: response.actionData!.currentWorkflow as string,
-          currentStep: response.actionData!.currentStep as string || null,
-          collectedParams: response.actionData!.collectedParams as Record<string, unknown> || {},
-        }));
-      }
     } catch (err) {
       console.error("[Firdaus] sendMessage error:", err);
-      const errMsg = "Samahani, tatizo limetokea. Tafadhali jaribu tena.";
+      const errMsg = getRandomSafeError();
       setState((prev) => ({
         ...prev,
+        voiceState: VoiceState.SLEEPING,
         messages: [
           ...prev.messages.filter((m) => m.id !== waitId),
           {
@@ -202,6 +245,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       currentWorkflow: null,
       currentStep: null,
       collectedParams: {},
+      conversationContext: { ...DEFAULT_CONVERSATION_CONTEXT },
     }));
   }, []);
 
@@ -217,6 +261,10 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
     setBusinessContext,
     clearSession,
     markGreeted,
+    updateConversationContext,
+    resetConversationContext,
+    updateVoiceState,
+    updateWorkflow,
   };
 
   return (

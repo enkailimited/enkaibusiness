@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateSupplierSchema, UpdateSupplierSchema, SupplierFilterSchema } from "../schemas";
 import type { Supplier, SupplierWithCount } from "../types";
@@ -60,36 +61,19 @@ export async function listSuppliers(
   businessId: string,
   filter?: SupplierFilterSchema,
 ): Promise<SupplierWithCount[]> {
-  const where: Record<string, unknown> = { businessId };
-
-  if (filter?.supplierType) {
-    where.supplierType = filter.supplierType;
-  }
-
-  if (filter?.country) {
-    where.country = filter.country;
-  }
-
-  if (filter?.isActive !== undefined) {
-    where.isActive = filter.isActive;
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { name: { contains: filter.search, mode: "insensitive" } },
-      { email: { contains: filter.search, mode: "insensitive" } },
-      { phone: { contains: filter.search, mode: "insensitive" } },
-      { city: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const raw = await prisma.supplier.findMany({
-    where,
+  const result = await searchService.suppliers<any>({
+    query: filter?.search,
+    businessId,
+    where: {
+      ...(filter?.supplierType ? { supplierType: filter.supplierType } : {}),
+      ...(filter?.country ? { country: filter.country } : {}),
+      ...(filter?.isActive !== undefined ? { isActive: filter.isActive } : {}),
+    },
     include: { _count: { select: { purchases: true, purchaseOrders: true } } },
     orderBy: { name: "asc" },
   });
 
-  return raw as unknown as SupplierWithCount[];
+  return result.items;
 }
 
 export async function deleteSupplier(id: string): Promise<ActionResponse> {

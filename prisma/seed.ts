@@ -8,6 +8,128 @@ const PASSWORD = "Enkai@2024!";
 async function main() {
   console.log("Seeding production data...\n");
 
+  // ─── 0. Business Types ──────────────────────────────────────────────────
+
+  const commerceType = await prisma.businessType.upsert({
+    where: { slug: "commerce" },
+    update: {},
+    create: {
+      name: "Commerce",
+      slug: "commerce",
+      description: "Retail and wholesale commerce businesses",
+      sortOrder: 1,
+      modes: {
+        create: [
+          { slug: "retail", name: "Retail", sortOrder: 1 },
+          { slug: "wholesale", name: "Wholesale", sortOrder: 2 },
+          { slug: "both", name: "Retail & Wholesale", sortOrder: 3 },
+        ],
+      },
+      modules: {
+        create: [
+          { module: "catalog", isRequired: true },
+          { module: "inventory", isRequired: true },
+          { module: "sales", isRequired: true },
+          { module: "pos", isRequired: false },
+          { module: "purchases", isRequired: false },
+          { module: "expenses", isRequired: false },
+          { module: "customers", isRequired: true },
+          { module: "suppliers", isRequired: false },
+          { module: "invoices", isRequired: false },
+          { module: "quotations", isRequired: false },
+          { module: "payments", isRequired: true },
+          { module: "subscriptions", isRequired: true },
+          { module: "reports", isRequired: true },
+          { module: "qr_ordering", isRequired: false },
+          { module: "delivery", isRequired: false },
+          { module: "returns", isRequired: false },
+        ],
+      },
+      catalogTypes: {
+        create: [
+          { slug: "product", name: "Product", sortOrder: 1 },
+          { slug: "service", name: "Service", sortOrder: 2 },
+        ],
+      },
+    },
+  });
+
+  console.log(`✔ Business Type: ${commerceType.name}`);
+
+  const healthcareType = await prisma.businessType.upsert({
+    where: { slug: "healthcare" },
+    update: {},
+    create: {
+      name: "Healthcare",
+      slug: "healthcare",
+      description: "Clinics, hospitals, and pharmacy businesses",
+      sortOrder: 2,
+      modes: {
+        create: [
+          { slug: "pharmacy", name: "Pharmacy", sortOrder: 1 },
+          { slug: "clinic", name: "Clinic", sortOrder: 2 },
+          { slug: "hospital", name: "Hospital", sortOrder: 3 },
+        ],
+      },
+      modules: {
+        create: [
+          { module: "catalog", isRequired: true },
+          { module: "inventory", isRequired: true },
+          { module: "sales", isRequired: true },
+          { module: "purchases", isRequired: false },
+          { module: "expenses", isRequired: false },
+          { module: "customers", isRequired: true },
+          { module: "payments", isRequired: true },
+          { module: "reports", isRequired: true },
+          { module: "subscriptions", isRequired: true },
+        ],
+      },
+      catalogTypes: {
+        create: [
+          { slug: "medicine", name: "Medicine", sortOrder: 1 },
+          { slug: "service", name: "Service", sortOrder: 2 },
+        ],
+      },
+    },
+  });
+  console.log(`✔ Business Type: ${healthcareType.name}`);
+
+  const agricultureType = await prisma.businessType.upsert({
+    where: { slug: "agriculture" },
+    update: {},
+    create: {
+      name: "Agriculture",
+      slug: "agriculture",
+      description: "Farming and agricultural businesses",
+      sortOrder: 3,
+      modes: {
+        create: [
+          { slug: "general", name: "General", sortOrder: 1 },
+        ],
+      },
+      modules: {
+        create: [
+          { module: "catalog", isRequired: true },
+          { module: "inventory", isRequired: true },
+          { module: "sales", isRequired: true },
+          { module: "purchases", isRequired: true },
+          { module: "expenses", isRequired: true },
+          { module: "customers", isRequired: false },
+          { module: "payments", isRequired: true },
+          { module: "reports", isRequired: true },
+          { module: "subscriptions", isRequired: false },
+        ],
+      },
+      catalogTypes: {
+        create: [
+          { slug: "product", name: "Product", sortOrder: 1 },
+          { slug: "livestock", name: "Livestock", sortOrder: 2 },
+        ],
+      },
+    },
+  });
+  console.log(`✔ Business Type: ${agricultureType.name}`);
+
   // ─── 1. Permissions ─────────────────────────────────────────────────────
 
   const modules = [
@@ -24,6 +146,8 @@ async function main() {
     { module: "expenses", actions: ["create", "read", "update", "approve", "list"] },
     { module: "reports", actions: ["read", "export"] },
     { module: "settings", actions: ["read", "update"] },
+    { module: "subscriptions", actions: ["create", "read", "update", "delete", "list", "approve", "suspend", "activate"] },
+    { module: "payments", actions: ["create", "read", "update", "approve", "reject", "list"] },
   ];
 
   const permissions: string[] = [];
@@ -122,6 +246,8 @@ async function main() {
       "expenses.read", "expenses.list",
       "reports.read", "reports.export",
       "settings.read", "settings.update",
+      "subscriptions.read", "subscriptions.list", "subscriptions.approve", "subscriptions.activate",
+      "payments.read", "payments.list", "payments.approve", "payments.reject",
     ],
   };
 
@@ -257,7 +383,61 @@ async function main() {
 
   console.log(`✔ Created ${businessRoles.length} business roles with permissions`);
 
-  // ─── 4. Super User ──────────────────────────────────────────────────────
+  // ─── 4. Workspace Roles ─────────────────────────────────────────────────
+
+  const workspaceRolePermissionsMap: Record<string, string[]> = {
+    owner: allSlugs.filter((s) => s.startsWith("workspaces.") || s.startsWith("users.") || s.startsWith("businesses.") || s.startsWith("settings.")),
+    admin: [
+      "workspaces.read", "workspaces.update", "workspaces.list", "workspaces.manage_members",
+      "businesses.read", "businesses.list",
+      "users.read", "users.list",
+      "settings.read",
+    ],
+    member: [
+      "workspaces.read", "workspaces.list",
+      "businesses.read", "businesses.list",
+    ],
+    guest: [],
+  };
+
+  const workspaceRoles = [
+    { name: "Workspace Owner", slug: "owner" },
+    { name: "Workspace Admin", slug: "admin" },
+    { name: "Workspace Member", slug: "member" },
+    { name: "Workspace Guest", slug: "guest" },
+  ];
+
+  for (const rd of workspaceRoles) {
+    const role = await prisma.role.upsert({
+      where: { slug: rd.slug + "-workspace" },
+      update: {},
+      create: {
+        name: rd.name,
+        slug: rd.slug + "-workspace",
+        description: `Workspace role: ${rd.name}`,
+        scope: "WORKSPACE",
+        isSystem: true,
+      },
+    });
+
+    const rolePerms = workspaceRolePermissionsMap[rd.slug] || [];
+    for (const slug of rolePerms) {
+      const perm = await prisma.permission.findUnique({ where: { slug } });
+      if (perm) {
+        await prisma.rolePermission.upsert({
+          where: {
+            roleId_permissionId: { roleId: role.id, permissionId: perm.id },
+          },
+          update: {},
+          create: { roleId: role.id, permissionId: perm.id },
+        }).catch(() => {});
+      }
+    }
+  }
+
+  console.log(`✔ Created ${workspaceRoles.length} workspace roles with permissions`);
+
+  // ─── 5. Super User ──────────────────────────────────────────────────────
 
   const passwordHash = await hashPassword(PASSWORD);
 

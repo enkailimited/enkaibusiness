@@ -6,6 +6,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { PURCHASE_STATUS_LABELS, PURCHASE_STATUS_VARIANTS } from "../constants";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useActiveBranch } from "@/features/branches/context/active-branch-context";
 import type { PurchaseListItem } from "../types";
 
 interface PurchaseListProps {
@@ -25,10 +26,11 @@ function formatDate(dateString: string): string {
 }
 
 export function PurchaseList({ businessId }: PurchaseListProps) {
+  const { activeBranch } = useActiveBranch();
   const query = useQuery({
-    queryKey: ["purchases", businessId],
+    queryKey: ["purchases", businessId, activeBranch?.id],
     queryFn: async () => {
-      const result = await listPurchasesAction(businessId);
+      const result = await listPurchasesAction(businessId, activeBranch ? { branchId: activeBranch.id } : undefined);
       return (result ?? []) as PurchaseListItem[];
     },
   });

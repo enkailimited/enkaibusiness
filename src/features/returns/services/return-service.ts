@@ -4,7 +4,8 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateReturnSchema, UpdateReturnSchema, ReturnFilterSchema } from "../schemas";
 import type { ReturnWithItems, ReturnWithRelations, ReturnItemData } from "../types";
-import { Prisma } from "@prisma/client";
+import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
+import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 
 function toItem(raw: Record<string, unknown>): ReturnItemData {
   return {
@@ -163,9 +164,73 @@ export async function approveReturn(id: string): Promise<ActionResponse> {
     });
     if (!ret) return { success: false, message: "Return not found" };
 
-    await prisma.return.update({
-      where: { id },
-      data: { status: "approved" },
+    await prisma.$transaction(async (tx) => {
+      await tx.return.update({
+        where: { id },
+        data: { status: "approved" },
+      });
+
+      const location = await resolveInventoryLocation(ret.businessId, null);
+
+      if (location) {
+        for (const item of ret.items) {
+          const catalogItem = await tx.catalogItem.findUnique({
+            where: { id: item.catalogItemId },
+            select: { trackStock: true },
+          });
+          if (!catalogItem?.trackStock) continue;
+
+          let balance = await tx.inventoryBalance.findFirst({
+            where: {
+              locationId: location.id,
+              catalogItemId: item.catalogItemId,
+              variantId: item.variantId ?? null,
+            },
+          });
+
+          if (balance) {
+            const currentQty = Number(balance.quantityOnHand);
+            const newQty = currentQty + Number(item.quantity);
+
+            await tx.inventoryBalance.update({
+              where: { id: balance.id },
+              data: { quantityOnHand: newQty, quantityAvailable: newQty },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId || null,
+                quantityChange: Number(item.quantity),
+                balanceBefore: currentQty,
+                balanceAfter: newQty,
+                referenceType: "return",
+                reference: id,
+                notes: `Return approved: ${ret.reference || id}`,
+              },
+            });
+          }
+        }
+      }
+
+      const cashPayment = await tx.payment.findFirst({
+        where: { saleId: ret.saleId, status: "completed" },
+        include: { paymentMethod: { select: { type: true } } },
+        orderBy: { paidAt: "desc" },
+      });
+
+      if (cashPayment?.paymentMethod?.type === "cash") {
+        await recordCashTransaction(
+          tx,
+          ret.businessId,
+          ret.branchId,
+          "cash_out",
+          Number(ret.refundAmount),
+          ret.reference || id,
+          `Refund for return ${ret.reference || id}`,
+        );
+      }
     });
 
     return { success: true, message: "Return approved" };

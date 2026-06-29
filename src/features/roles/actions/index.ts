@@ -3,29 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
 import { createRole, updateRole, deleteRole, assignPermissionToRole, removePermissionFromRole } from "../services/role-service";
-import { assignRoleToUser, removeRoleFromUser } from "../services/assignment-service";
+import { assignRoleToUser, removeRoleFromUser, hasPermission } from "../services/assignment-service";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
+import { createRoleSchema, updateRoleSchema, assignPermissionToRoleSchema, assignRoleSchema } from "../schemas";
 
 export async function createRoleAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.create");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const data = {
-    name: formData.get("name") as string,
-    slug: formData.get("slug") as string,
-    description: (formData.get("description") as string) || undefined,
-    scope: formData.get("scope") as "PLATFORM" | "BUSINESS",
-    businessId: (formData.get("businessId") as string) || undefined,
-  };
+  const parsed = createRoleSchema.safeParse({
+    name: formData.get("name"),
+    slug: formData.get("slug"),
+    description: formData.get("description") || undefined,
+    scope: formData.get("scope"),
+    businessId: formData.get("businessId") || undefined,
+  });
 
-  if (!data.name || !data.slug || !data.scope) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await createRole(data);
+  const result = await createRole(parsed.data);
 
   if (result.success) revalidatePath("/platform/roles");
 
@@ -37,20 +40,23 @@ export async function updateRoleAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.update");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const data: Record<string, string | undefined> = {
-    name: (formData.get("name") as string) || undefined,
-    slug: (formData.get("slug") as string) || undefined,
-    description: (formData.get("description") as string) || undefined,
-    scope: (formData.get("scope") as string) || undefined,
-  };
+  const parsed = updateRoleSchema.safeParse({
+    name: formData.get("name") || undefined,
+    slug: formData.get("slug") || undefined,
+    description: formData.get("description") || undefined,
+    scope: formData.get("scope") || undefined,
+    businessId: formData.get("businessId") || undefined,
+  });
 
-  const cleaned = Object.fromEntries(
-    Object.entries(data).filter(([_, v]) => v !== undefined && v !== ""),
-  );
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+  }
 
-  const result = await updateRole(id, cleaned);
+  const result = await updateRole(id, parsed.data);
 
   if (result.success) revalidatePath("/platform/roles");
 
@@ -58,7 +64,9 @@ export async function updateRoleAction(
 }
 
 export async function deleteRoleAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.delete");
+  if (!can) return { success: false, message: "Unauthorized" };
 
   const result = await deleteRole(id);
 
@@ -71,16 +79,20 @@ export async function assignPermissionAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.assign-permissions");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const roleId = formData.get("roleId") as string;
-  const permissionId = formData.get("permissionId") as string;
+  const parsed = assignPermissionToRoleSchema.safeParse({
+    roleId: formData.get("roleId"),
+    permissionId: formData.get("permissionId"),
+  });
 
-  if (!roleId || !permissionId) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await assignPermissionToRole(roleId, permissionId);
+  const result = await assignPermissionToRole(parsed.data.roleId, parsed.data.permissionId);
 
   if (result.success) revalidatePath("/platform/roles");
 
@@ -91,16 +103,20 @@ export async function removePermissionAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.assign-permissions");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const roleId = formData.get("roleId") as string;
-  const permissionId = formData.get("permissionId") as string;
+  const parsed = assignPermissionToRoleSchema.safeParse({
+    roleId: formData.get("roleId"),
+    permissionId: formData.get("permissionId"),
+  });
 
-  if (!roleId || !permissionId) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await removePermissionFromRole(roleId, permissionId);
+  const result = await removePermissionFromRole(parsed.data.roleId, parsed.data.permissionId);
 
   if (result.success) revalidatePath("/platform/roles");
 
@@ -111,17 +127,21 @@ export async function assignRoleToUserAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.assign");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const userId = formData.get("userId") as string;
-  const roleId = formData.get("roleId") as string;
-  const businessId = (formData.get("businessId") as string) || undefined;
+  const parsed = assignRoleSchema.safeParse({
+    userId: formData.get("userId"),
+    roleId: formData.get("roleId"),
+    businessId: formData.get("businessId") || undefined,
+  });
 
-  if (!userId || !roleId) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await assignRoleToUser(userId, roleId, businessId);
+  const result = await assignRoleToUser(parsed.data.userId, parsed.data.roleId, parsed.data.businessId);
 
   if (result.success) revalidatePath("/platform/roles");
 
@@ -165,17 +185,21 @@ export async function removeRoleFromUserAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "roles.assign");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const userId = formData.get("userId") as string;
-  const roleId = formData.get("roleId") as string;
-  const businessId = (formData.get("businessId") as string) || undefined;
+  const parsed = assignRoleSchema.safeParse({
+    userId: formData.get("userId"),
+    roleId: formData.get("roleId"),
+    businessId: formData.get("businessId") || undefined,
+  });
 
-  if (!userId || !roleId) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await removeRoleFromUser(userId, roleId, businessId);
+  const result = await removeRoleFromUser(parsed.data.userId, parsed.data.roleId, parsed.data.businessId);
 
   if (result.success) revalidatePath("/platform/roles");
 

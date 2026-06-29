@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateInvoiceSchema, UpdateInvoiceSchema, InvoiceFilterSchema } from "../schemas";
 import type { InvoiceWithItems, InvoiceWithRelations, InvoiceItemData } from "../types";
@@ -31,6 +32,13 @@ async function generateInvoiceNumber(businessId: string): Promise<string> {
   const count = await prisma.invoice.count({ where: { businessId } });
   const seq = String(count + 1).padStart(6, "0");
   return `${INVOICE_NUMBER_PREFIX}-${seq}`;
+}
+
+function recalcInvoiceStatus(total: number, paidAmount: number, dueDate: Date | null): string {
+  if (paidAmount <= 0) return "unpaid";
+  if (paidAmount >= total) return "paid";
+  if (dueDate && dueDate < new Date()) return "overdue";
+  return "partial";
 }
 
 export async function createInvoice(
@@ -98,15 +106,22 @@ export async function updateInvoice(
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (notes !== undefined) updateData.notes = notes || null;
 
+    const invoice = await prisma.invoice.findUnique({
+      where: { id },
+      select: { total: true, paidAmount: true, dueDate: true },
+    });
+    if (!invoice) return { success: false, message: "Invoice not found" };
+
+    const existingPaid = Number(invoice.paidAmount);
+
     if (items) {
       const subtotal = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-      const total = subtotal + (rest as { tax?: number }).tax ?? 0;
+      const total = subtotal + ((rest as { tax?: number }).tax ?? 0);
       updateData.subtotal = subtotal;
       updateData.total = total;
-      updateData.balanceDue = total;
+      updateData.balanceDue = total - existingPaid;
 
       await prisma.invoiceItem.deleteMany({ where: { invoiceId: id } });
-
       await prisma.invoiceItem.createMany({
         data: items.map((item) => ({
           invoiceId: id,
@@ -118,6 +133,12 @@ export async function updateInvoice(
         })),
       });
     }
+
+    const finalTotal = (updateData.total as number) ?? Number(invoice.total);
+    const finalPaid = existingPaid;
+    const finalDue = updateData.dueDate ? new Date(updateData.dueDate as string) : invoice.dueDate;
+    updateData.balanceDue = finalTotal - finalPaid;
+    updateData.status = recalcInvoiceStatus(finalTotal, finalPaid, finalDue);
 
     await prisma.invoice.update({ where: { id }, data: updateData });
 
@@ -155,29 +176,20 @@ export async function listInvoices(
   filter?: InvoiceFilterSchema,
   branchId?: string,
 ): Promise<InvoiceWithRelations[]> {
-  const where: Record<string, unknown> = { businessId };
+  const dateFilter: Record<string, Date> = {};
+  if (filter?.dateFrom) dateFilter.gte = new Date(filter.dateFrom);
+  if (filter?.dateTo) dateFilter.lte = new Date(filter.dateTo);
+  const hasDateFilter = filter?.dateFrom || filter?.dateTo;
 
-  if (branchId) where.branchId = branchId;
-  if (filter?.status) where.status = filter.status;
-  if (filter?.customerId) where.customerId = filter.customerId;
-
-  if (filter?.dateFrom || filter?.dateTo) {
-    const dateFilter: Record<string, Date> = {};
-    if (filter.dateFrom) dateFilter.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) dateFilter.lte = new Date(filter.dateTo);
-    where.invoiceDate = dateFilter;
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { invoiceNumber: { contains: filter.search, mode: "insensitive" } },
-      { customer: { firstName: { contains: filter.search, mode: "insensitive" } } },
-      { customer: { lastName: { contains: filter.search, mode: "insensitive" } } },
-    ];
-  }
-
-  const raw = await prisma.invoice.findMany({
-    where,
+  const result = await searchService.invoices<any>({
+    query: filter?.search,
+    businessId,
+    where: {
+      ...(branchId ? { branchId } : {}),
+      ...(filter?.status ? { status: filter.status } : {}),
+      ...(filter?.customerId ? { customerId: filter.customerId } : {}),
+      ...(hasDateFilter ? { invoiceDate: dateFilter } : {}),
+    },
     include: {
       items: true,
       customer: { select: { id: true, firstName: true, lastName: true } },
@@ -186,7 +198,7 @@ export async function listInvoices(
     orderBy: { createdAt: "desc" },
   });
 
-  return raw as unknown as InvoiceWithRelations[];
+  return result.items;
 }
 
 export async function markAsSent(id: string): Promise<ActionResponse> {
@@ -205,31 +217,61 @@ export async function markAsSent(id: string): Promise<ActionResponse> {
 export async function recordPayment(
   id: string,
   amount: number,
+  businessId: string,
+  workspaceId?: string,
+  paymentMethodId?: string,
+  customerId?: string,
+  createdById?: string,
+  notes?: string,
 ): Promise<ActionResponse> {
   try {
-    const invoice = await prisma.invoice.findUnique({ where: { id } });
-    if (!invoice) return { success: false, message: "Invoice not found" };
+    await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findUnique({
+        where: { id },
+        select: { id: true, total: true, paidAmount: true, status: true, businessId: true, saleId: true, customerId: true, dueDate: true },
+      });
+      if (!invoice) throw new Error("Invoice not found");
 
-    const paidAmount = Number(invoice.paidAmount) + amount;
-    const total = Number(invoice.total);
-    const balanceDue = total - paidAmount;
+      const newPaidAmount = Number(invoice.paidAmount) + amount;
+      if (newPaidAmount > Number(invoice.total)) {
+        throw new Error("Payment amount exceeds invoice balance");
+      }
 
-    let status = invoice.status;
-    if (balanceDue <= 0) {
-      status = "paid";
-    } else if (paidAmount > 0) {
-      status = "partial";
-    }
+      await tx.payment.create({
+        data: {
+          businessId,
+          workspaceId: workspaceId || null,
+          paymentMethodId: paymentMethodId || null,
+          customerId: customerId || invoice.customerId,
+          amount,
+          status: "completed",
+          invoiceId: invoice.id,
+          saleId: invoice.saleId || undefined,
+          paidAt: new Date(),
+          notes: notes || `Payment against invoice`,
+          createdById: createdById || null,
+        },
+      });
 
-    await prisma.invoice.update({
-      where: { id },
-      data: { paidAmount, balanceDue, status },
+      const balanceDue = Number(invoice.total) - newPaidAmount;
+      const now = new Date();
+      let status: string;
+      if (balanceDue <= 0) status = "paid";
+      else if (invoice.dueDate && invoice.dueDate < now) status = "overdue";
+      else status = "partial";
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: { paidAmount: newPaidAmount, balanceDue, status },
+      });
     });
 
     return { success: true, message: "Payment recorded successfully" };
   } catch (error) {
-    console.error("Record payment error:", error);
-    return { success: false, message: "Failed to record payment" };
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to record payment",
+    };
   }
 }
 

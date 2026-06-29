@@ -30,7 +30,7 @@ export class ProcurementAdvisor {
       include: {
         purchaseOrders: {
           where: { status: "received" },
-          select: { total: true, createdAt: true, receivedAt: true, items: { select: { quantity: true, unitCost: true } } },
+          select: { total: true, createdAt: true, updatedAt: true, items: { select: { quantity: true, unitCost: true } } },
         },
       },
     });
@@ -42,8 +42,8 @@ export class ProcurementAdvisor {
       const orderCount = orders.length;
 
       const deliveryDays = orders
-        .filter((o) => o.receivedAt && o.createdAt)
-        .map((o) => Math.ceil((o.receivedAt!.getTime() - o.createdAt.getTime()) / (1000 * 60 * 60 * 24)));
+        .filter((o) => o.updatedAt && o.createdAt)
+        .map((o) => Math.ceil((o.updatedAt.getTime() - o.createdAt.getTime()) / (1000 * 60 * 60 * 24)));
       const avgDelivery = deliveryDays.length > 0
         ? deliveryDays.reduce((sum, d) => sum + d, 0) / deliveryDays.length
         : 7;

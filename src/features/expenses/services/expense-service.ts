@@ -1,9 +1,11 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateExpenseSchema, UpdateExpenseSchema, ExpenseFilterSchema } from "../schemas";
 import type { ExpenseWithRelations } from "../types";
+import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
 
 export async function createExpense(
   data: CreateExpenseSchema,
@@ -12,27 +14,43 @@ export async function createExpense(
   createdById?: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
-    const expense = await prisma.expense.create({
-      data: {
-        workspaceId,
-        businessId,
-        branchId: data.branchId || null,
-        storeId: data.storeId || null,
-        categoryId: data.categoryId,
-        staffId: data.staffId || null,
-        amount: data.amount,
-        expenseDate: data.expenseDate ? new Date(data.expenseDate) : new Date(),
-        description: data.description || null,
-        paidTo: data.paidTo || null,
-        status: data.status ?? "draft",
-        createdById: createdById || null,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.create({
+        data: {
+          workspaceId,
+          businessId,
+          branchId: data.branchId || null,
+          storeId: data.storeId || null,
+          categoryId: data.categoryId,
+          staffId: data.staffId || null,
+          amount: data.amount,
+          expenseDate: data.expenseDate ? new Date(data.expenseDate) : new Date(),
+          description: data.description || null,
+          paidTo: data.paidTo || null,
+          status: data.status ?? "draft",
+          createdById: createdById || null,
+        },
+      });
+
+      if ((data.status ?? "draft") === "paid") {
+        await recordCashTransaction(
+          tx,
+          businessId,
+          data.branchId || null,
+          "cash_out",
+          data.amount,
+          expense.id,
+          data.description || `Expense ${expense.id}`,
+        );
+      }
+
+      return expense;
     });
 
     return {
       success: true,
       message: "Expense created successfully",
-      data: { id: expense.id },
+      data: { id: result.id },
     };
   } catch (error) {
     console.error("Create expense error:", error);
@@ -86,29 +104,20 @@ export async function listExpenses(
   businessId: string,
   filter?: ExpenseFilterSchema,
 ): Promise<ExpenseWithRelations[]> {
-  const where: Record<string, unknown> = { businessId };
+  const dateFilter: Record<string, Date> = {};
+  if (filter?.dateFrom) dateFilter.gte = new Date(filter.dateFrom);
+  if (filter?.dateTo) dateFilter.lte = new Date(filter.dateTo);
+  const hasDateFilter = filter?.dateFrom || filter?.dateTo;
 
-  if (filter?.categoryId) where.categoryId = filter.categoryId;
-  if (filter?.status) where.status = filter.status;
-  if (filter?.staffId) where.staffId = filter.staffId;
-
-  if (filter?.dateFrom || filter?.dateTo) {
-    const dateFilter: Record<string, Date> = {};
-    if (filter.dateFrom) dateFilter.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) dateFilter.lte = new Date(filter.dateTo);
-    where.expenseDate = dateFilter;
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { description: { contains: filter.search, mode: "insensitive" } },
-      { paidTo: { contains: filter.search, mode: "insensitive" } },
-      { reference: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const raw = await prisma.expense.findMany({
-    where,
+  const result = await searchService.expenses<any>({
+    query: filter?.search,
+    businessId,
+    where: {
+      ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
+      ...(filter?.status ? { status: filter.status } : {}),
+      ...(filter?.staffId ? { staffId: filter.staffId } : {}),
+      ...(hasDateFilter ? { expenseDate: dateFilter } : {}),
+    },
     include: {
       category: { select: { id: true, name: true } },
       staff: { select: { id: true, firstName: true, lastName: true } },
@@ -118,7 +127,7 @@ export async function listExpenses(
     orderBy: { expenseDate: "desc" },
   });
 
-  return raw as unknown as ExpenseWithRelations[];
+  return result.items;
 }
 
 export async function approveExpense(id: string, approvedById: string): Promise<ActionResponse> {
@@ -136,10 +145,31 @@ export async function approveExpense(id: string, approvedById: string): Promise<
 
 export async function markExpenseAsPaid(id: string): Promise<ActionResponse> {
   try {
-    await prisma.expense.update({
-      where: { id },
-      data: { status: "paid" },
+    await prisma.$transaction(async (tx) => {
+      const expense = await tx.expense.findUnique({
+        where: { id },
+        select: { id: true, amount: true, businessId: true, branchId: true, description: true, reference: true, status: true },
+      });
+
+      if (!expense) throw new Error("Expense not found");
+      if (expense.status === "paid") return;
+
+      await tx.expense.update({
+        where: { id },
+        data: { status: "paid" },
+      });
+
+      await recordCashTransaction(
+        tx,
+        expense.businessId,
+        expense.branchId,
+        "cash_out",
+        Number(expense.amount),
+        expense.reference || expense.id,
+        expense.description || `Expense ${expense.id}`,
+      );
     });
+
     return { success: true, message: "Expense marked as paid" };
   } catch (error) {
     console.error("Mark paid error:", error);

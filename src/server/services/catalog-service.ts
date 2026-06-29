@@ -89,8 +89,58 @@ export async function getBusinessCatalog(
   });
 }
 
+async function hasTransactionalHistory(id: string): Promise<boolean> {
+  const [
+    saleItemCount,
+    purchaseItemCount,
+    balanceCount,
+    stockMovementCount,
+    goodsReceivedItemCount,
+    purchaseOrderItemCount,
+    returnItemCount,
+    stockAdjustmentItemCount,
+    stockTransferItemCount,
+    quotationItemCount,
+    invoiceItemCount,
+  ] = await Promise.all([
+    prisma.saleItem.count({ where: { catalogItemId: id } }),
+    prisma.purchaseItem.count({ where: { catalogItemId: id } }),
+    prisma.inventoryBalance.count({ where: { catalogItemId: id } }),
+    prisma.stockMovement.count({ where: { catalogItemId: id } }),
+    prisma.goodsReceivedItem.count({ where: { catalogItemId: id } }),
+    prisma.purchaseOrderItem.count({ where: { catalogItemId: id } }),
+    prisma.returnItem.count({ where: { catalogItemId: id } }),
+    prisma.stockAdjustmentItem.count({ where: { catalogItemId: id } }),
+    prisma.stockTransferItem.count({ where: { catalogItemId: id } }),
+    prisma.quotationItem.count({ where: { catalogItemId: id } }),
+    prisma.invoiceItem.count({ where: { catalogItemId: id } }),
+  ]);
+
+  return (
+    saleItemCount > 0 ||
+    purchaseItemCount > 0 ||
+    balanceCount > 0 ||
+    stockMovementCount > 0 ||
+    goodsReceivedItemCount > 0 ||
+    purchaseOrderItemCount > 0 ||
+    returnItemCount > 0 ||
+    stockAdjustmentItemCount > 0 ||
+    stockTransferItemCount > 0 ||
+    quotationItemCount > 0 ||
+    invoiceItemCount > 0
+  );
+}
+
 export async function deleteCatalogItem(id: string): Promise<ActionResponse> {
   try {
+    const hasHistory = await hasTransactionalHistory(id);
+    if (hasHistory) {
+      return {
+        success: false,
+        message: "This item has transactional history and cannot be permanently deleted. Archive it instead.",
+      };
+    }
+
     await prisma.catalogItem.delete({ where: { id } });
     return { success: true, message: "Catalog item deleted successfully" };
   } catch (error) {

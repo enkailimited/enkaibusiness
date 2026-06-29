@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import { USER_PAGE_SIZE } from "@/features/users/constants";
 import type { UserProfile, UpdateProfileInput } from "@/features/users/types";
 
@@ -83,41 +84,27 @@ export async function listUsers(params?: {
 }): Promise<{ users: UserProfile[]; total: number }> {
   const page = params?.page ?? 1;
   const limit = params?.limit ?? USER_PAGE_SIZE;
-  const search = params?.search;
 
-  const where: Record<string, unknown> = {};
-
-  if (search) {
-    where.OR = [
-      { firstName: { contains: search, mode: "insensitive" } },
-      { lastName: { contains: search, mode: "insensitive" } },
-      { email: { contains: search, mode: "insensitive" } },
-    ];
-  }
-
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        userRoles: {
-          select: {
-            role: { select: { id: true, name: true, slug: true, scope: true } },
-          },
-        },
-        invites: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { status: true, createdAt: true },
+  const result = await searchService.users<any>({
+    query: params?.search,
+    include: {
+      userRoles: {
+        select: {
+          role: { select: { id: true, name: true, slug: true, scope: true } },
         },
       },
-    }),
-    prisma.user.count({ where }),
-  ]);
+      invites: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { status: true, createdAt: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    offset: (page - 1) * limit,
+    limit,
+  });
 
-  return { users: users.map(toProfile), total };
+  return { users: result.items.map(toProfile), total: result.total };
 }
 
 export async function activateUser(userId: string): Promise<UserProfile> {

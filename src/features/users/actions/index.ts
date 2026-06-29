@@ -6,13 +6,13 @@ import { updateProfileSchema } from "@/features/users/schemas";
 import * as userService from "@/features/users/services/user-service";
 import type { UserProfile } from "@/features/users/types";
 import { requireAuth, getSessionUser } from "@/server/auth";
-import { hasPermission } from "@/features/rbac";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { createInvitedUserWithStaff } from "@/features/users/services/admin-user-service";
 import { prisma } from "@/server/db";
 import {
   generateTempPassword,
   setUserPassword,
-  sendInviteEmail,
+  sendInviteEmailAsync,
   createUserInvite,
 } from "@/features/users/services/invite-service";
 
@@ -214,13 +214,11 @@ export async function reinviteUserAction(
     await createUserInvite(user.id, targetEmail, targetPhone || null, sessionUser.id);
 
     const invitedByName = `${sessionUser.firstName} ${sessionUser.lastName}`.trim() || "Admin";
-    const emailSent = await sendInviteEmail(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
+    sendInviteEmailAsync(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
 
     return {
       success: true,
-      message: emailSent
-        ? "User re-invited successfully. Invitation email sent."
-        : "User re-invited but email could not be sent.",
+      message: "User re-invited successfully. Invitation email will be sent in the background.",
     };
   } catch (error) {
     return {

@@ -133,34 +133,42 @@ function createRegistry(): ToolRegistry {
     },
   });
 
-  // ── Sell ──
+  // ── Sell (POS Standardized Flow) ──
   registry.register({
     name: "sell",
-    description: "Record a sale transaction",
-    descriptionSwahili: "Rekodi mauzo",
+    description: "Record a sale transaction following POS workflow",
+    descriptionSwahili: "Rekodi mauzo kwa mfumo wa POS",
     parameters: [
       { name: "item", type: "string", description: "Item name", required: true },
       { name: "quantity", type: "number", description: "Quantity sold", required: true },
       { name: "businessId", type: "string", description: "Business ID", required: true },
+      { name: "itemId", type: "string", description: "Catalog item ID (resolved)", required: false },
+      { name: "price", type: "number", description: "Override unit price", required: false },
+      { name: "payment_method", type: "string", description: "Payment method", required: false },
+      { name: "customer", type: "string", description: "Customer name or phone", required: false },
       { name: "staffId", type: "string", description: "Staff ID", required: false },
-      { name: "customerId", type: "string", description: "Customer ID", required: false },
     ],
     requiredPermission: "sales.create",
     handler: async (params) => {
       const item = params.item as string;
       const quantity = Number(params.quantity);
       const businessId = params.businessId as string;
+      const itemId = params.itemId as string | undefined;
       const staffId = params.staffId as string | undefined;
-      const customerId = params.customerId as string | undefined;
+      const paymentMethod = (params.payment_method as string) || "Cash";
+      const customerName = params.customer as string | undefined;
 
       if (!item || !quantity || quantity <= 0) {
         return { success: false, message: "Tafadhali toa bidhaa na idadi sahihi.", actionRequired: true };
       }
 
-      const catalogItem = await prisma.catalogItem.findFirst({
-        where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
-        include: { balances: { take: 1 } },
-      });
+      // Resolve catalog item
+      const catalogItem = itemId
+        ? await prisma.catalogItem.findUnique({ where: { id: itemId, businessId }, include: { balances: { take: 1 } } })
+        : await prisma.catalogItem.findFirst({
+            where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
+            include: { balances: { take: 1 } },
+          });
 
       if (!catalogItem) {
         return { success: false, message: `Bidhaa "${item}" haikupatikana kwenye katalogi.` };
@@ -176,16 +184,43 @@ function createRegistry(): ToolRegistry {
         return { success: false, message: "Hakuna sehemu ya stock imesanidiwa." };
       }
 
-      const unitPrice = Number(catalogItem.price);
+      const unitPrice = params.price ? Number(params.price) : Number(catalogItem.price);
       const total = quantity * unitPrice;
 
+      // Step 1: Resolve customer (walk-in if not specified)
+      let customerId: string | null = null;
+      if (customerName) {
+        const customer = await prisma.customer.findFirst({
+          where: {
+            businessId,
+            OR: [
+              { firstName: { contains: customerName, mode: "insensitive" } },
+              { lastName: { contains: customerName, mode: "insensitive" } },
+              { phone: { contains: customerName } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (customer) customerId = customer.id;
+      }
+      if (!customerId) {
+        const walkIn = await prisma.customer.findFirst({
+          where: { businessId, email: "walkin@internal" },
+          select: { id: true },
+        });
+        customerId = walkIn?.id || null;
+      }
+
+      // Step 2: Create sale
+      const biz = await prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } });
       const sale = await prisma.sale.create({
         data: {
+          workspaceId: biz?.workspaceId || "",
           businessId,
-          customerId: customerId || null,
+          customerId,
           staffId: staffId || null,
           subtotal: total,
-          total,
+          grandTotal: total,
           status: "completed",
           items: {
             create: {
@@ -198,6 +233,7 @@ function createRegistry(): ToolRegistry {
         },
       });
 
+      // Step 3: Deduct inventory (POS flow)
       await prisma.inventoryBalance.update({
         where: { locationId_catalogItemId_variantId: { locationId, catalogItemId: catalogItem.id, variantId: null } },
         data: {
@@ -206,12 +242,26 @@ function createRegistry(): ToolRegistry {
         },
       });
 
+      // Step 4: Create payment record linked to sale
+      await prisma.payment.create({
+        data: {
+          businessId,
+          customerId,
+          saleId: sale.id,
+          amount: total,
+          reference: `POS-${sale.id.slice(0, 8)}-${Date.now().toString(36).toUpperCase()}`,
+          status: "completed",
+          paidAt: new Date(),
+          createdById: staffId || undefined,
+        },
+      });
+
       const formattedTotal = total.toLocaleString("sw-TZ");
 
       return {
         success: true,
-        message: `Mauzo yamekamilika: ${quantity} x ${catalogItem.name} = TZS ${formattedTotal}.`,
-        data: { saleId: sale.id, total, itemName: catalogItem.name, quantity },
+        message: `Mauzo yamekamilika: ${quantity} x ${catalogItem.name} = TZS ${formattedTotal} (${paymentMethod})`,
+        data: { saleId: sale.id, total, itemName: catalogItem.name, quantity, paymentMethod },
       };
     },
   });
@@ -333,13 +383,16 @@ function createRegistry(): ToolRegistry {
       const category = (params.category as string) || "general";
       const businessId = params.businessId as string;
 
+      const bizExp = await prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } });
+      const expenseCat = await prisma.expenseCategory.findFirst({ where: { businessId } });
       const expense = await prisma.expense.create({
         data: {
+          workspaceId: bizExp?.workspaceId || "",
           businessId,
+          categoryId: expenseCat?.id || "",
           amount,
           description,
-          category,
-          date: new Date(),
+          expenseDate: new Date(),
           status: "approved",
         },
       });
@@ -362,7 +415,7 @@ function createRegistry(): ToolRegistry {
       { name: "item", type: "string", description: "Item name", required: true },
       { name: "quantity", type: "number", description: "Quantity purchased", required: true },
       { name: "cost", type: "number", description: "Unit cost", required: true },
-      { name: "supplierId", type: "string", description: "Supplier ID", required: false },
+      { name: "itemId", type: "string", description: "Catalog item ID (resolved)", required: false },
       { name: "businessId", type: "string", description: "Business ID", required: true },
     ],
     requiredPermission: "purchases.create",
@@ -370,25 +423,28 @@ function createRegistry(): ToolRegistry {
       const item = params.item as string;
       const quantity = Number(params.quantity);
       const cost = Number(params.cost);
-      const supplierId = params.supplierId as string | undefined;
+      const itemId = params.itemId as string | undefined;
       const businessId = params.businessId as string;
 
-      let catalogItem = await prisma.catalogItem.findFirst({
-        where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
-      });
+      let catalogItem = itemId
+        ? await prisma.catalogItem.findUnique({ where: { id: itemId, businessId } })
+        : await prisma.catalogItem.findFirst({
+            where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
+          });
 
       if (!catalogItem) {
         catalogItem = await prisma.catalogItem.create({
           data: {
             businessId,
             name: item,
+            slug: `auto-${Date.now().toString(36)}`,
             sku: `AUTO-${Date.now()}`,
             price: cost * 1.3,
             costPrice: cost,
             trackStock: true,
             isActive: true,
             currency: "TZS",
-            type: "product",
+            itemType: "PRODUCT",
           },
         });
       }
@@ -458,7 +514,7 @@ function createRegistry(): ToolRegistry {
         where: {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
-            { contactPhone: { contains: query } },
+            { phone: { contains: query } },
           ],
         },
         take: 5,
@@ -469,7 +525,7 @@ function createRegistry(): ToolRegistry {
       }
 
       const list = suppliers.map((s) =>
-        `• ${s.name} - ${s.contactPhone || "hakuna simu"} (${s.type || "N/A"})`
+        `• ${s.name} - ${s.phone || "hakuna simu"} (${s.supplierType || "N/A"})`
       ).join("\n");
 
       return {
@@ -534,7 +590,7 @@ function createRegistry(): ToolRegistry {
 
       const orderList = orders.map((o) => {
         const customerName = o.customer ? `${o.customer.firstName} ${o.customer.lastName || ""}`.trim() : "Mteja wa dukani";
-        const formattedTotal = Number(o.total).toLocaleString("sw-TZ");
+        const formattedTotal = Number(o.grandTotal).toLocaleString("sw-TZ");
         return `• TZS ${formattedTotal} - ${customerName} (${o.createdAt.toLocaleDateString("sw-TZ")})`;
       }).join("\n");
 
@@ -544,7 +600,7 @@ function createRegistry(): ToolRegistry {
         data: {
           orders: orders.map((o) => ({
             id: o.id,
-            total: Number(o.total),
+            total: Number(o.grandTotal),
             status: o.status,
             customerName: o.customer ? `${o.customer.firstName} ${o.customer.lastName || ""}`.trim() : "Walk-in",
             itemCount: o.items.length,
@@ -597,13 +653,15 @@ function createRegistry(): ToolRegistry {
         });
       }
 
+      const biz = await prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } });
       const sale = await prisma.sale.create({
         data: {
+          workspaceId: biz?.workspaceId || "",
           businessId,
           customerId: customerId || null,
           staffId: staffId || null,
           subtotal,
-          total: subtotal,
+          grandTotal: subtotal,
           status: "completed",
           items: { create: saleItems },
         },
@@ -896,10 +954,18 @@ function createRegistry(): ToolRegistry {
         return { catalogItemId: item.itemId, quantity: item.quantity, unitCost: item.unitCost, subtotal };
       });
 
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { workspaceId: true },
+      });
+      if (!biz) return { success: false, message: "Business not found" };
+
       const po = await prisma.purchaseOrder.create({
         data: {
+          workspaceId: biz.workspaceId,
           businessId,
           supplierId,
+          reference: `PO-AI-${Date.now().toString(36).toUpperCase()}`,
           subtotal: total,
           total,
           status: "draft",
@@ -962,7 +1028,7 @@ function createRegistry(): ToolRegistry {
           const sales = await prisma.sale.findMany({
             where: { businessId, createdAt: { gte: startDate } },
           });
-          const totalRevenue = sales.reduce((s, sale) => s + Number(sale.total), 0);
+          const totalRevenue = sales.reduce((s, sale) => s + Number(sale.grandTotal), 0);
           return {
             success: true,
             message: `Ripoti ya mauzo (siku ${days}): ${sales.length} mauzo, jumla ${formatCurrency(totalRevenue)}.`,
@@ -977,7 +1043,7 @@ function createRegistry(): ToolRegistry {
           });
           let revenue = 0, cost = 0;
           for (const sale of sales) {
-            revenue += Number(sale.total);
+            revenue += Number(sale.grandTotal);
             for (const item of sale.items) {
               cost += Number(item.quantity) * Number(item.catalogItem.costPrice || 0);
             }

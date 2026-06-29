@@ -25,7 +25,7 @@ export function FirdausToast({ userName }: Props) {
     const doGreeting = async () => {
       const name = userName || state.userId || "Mfanyabiashara";
 
-      let greetingMessage = `Karibu ${name}. Mimi ni Firdaus. Nipo hapa kukusaidia. Ukihitaji msaada wowote sema tu "Dausi".`;
+      let greetingMessage = `Karibu ${name}. Mimi ni Firdaus. Nipo hapa kukusaidia. Ukihitaji msaada wowote sema tu "Firdaus".`;
 
       try {
         if (state.businessId) {
@@ -62,7 +62,7 @@ export function FirdausToast({ userName }: Props) {
     if (!visible || spoken) return;
     setSpoken(true);
     const name = userName?.split(" ")[0] || "Mfanyabiashara";
-    actions.speak(`Habari ${name}. Mimi ni Firdaus. Nakusikiliza sasa. Ukihitaji msaada wakati wowote, sema tu Dausi, na nitakusaidia.`);
+    actions.speak(`Habari ${name}. Mimi ni Firdaus. Nakusikiliza sasa. Ukihitaji msaada wakati wowote, sema tu Firdaus, na nitakusaidia.`);
   }, [visible, spoken, userName, actions]);
 
   if (!visible) return null;

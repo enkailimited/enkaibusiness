@@ -33,6 +33,7 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 type Tab = "overview" | "tickets";
 type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
@@ -151,10 +152,10 @@ export default function PlatformSupportPage() {
         loadTickets();
         loadMetrics();
       } else {
-        alert(result.message || "Failed to create ticket");
+        toast({ title: "Error", description: result.message || "Failed to create ticket", variant: "destructive" });
       }
     } catch {
-      alert("Failed to create ticket");
+      toast({ title: "Error", description: "Failed to create ticket", variant: "destructive" });
     } finally {
       setCreating(false);
     }
@@ -167,7 +168,7 @@ export default function PlatformSupportPage() {
       loadTickets();
       loadMetrics();
     } catch {
-      alert("Failed to update status");
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     } finally {
       setChangingStatus((prev) => ({ ...prev, [ticketId]: false }));
     }
@@ -181,7 +182,7 @@ export default function PlatformSupportPage() {
       await assignTicketAction(ticketId, userId);
       loadTickets();
     } catch {
-      alert("Failed to assign ticket");
+      toast({ title: "Error", description: "Failed to assign ticket", variant: "destructive" });
     } finally {
       setAssigning((prev) => ({ ...prev, [ticketId]: false }));
     }

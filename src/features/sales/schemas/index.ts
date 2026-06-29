@@ -11,6 +11,8 @@ const saleItemSchema = z.object({
   subtotal: z.coerce.number().min(0, "Subtotal must be non-negative"),
 });
 
+const paymentTypeEnum = z.enum(["cash", "credit", "partial"]);
+
 export const createSaleSchema = z.object({
   branchId: z.string().uuid().optional().or(z.literal("")),
   storeId: z.string().uuid().optional().or(z.literal("")),
@@ -19,6 +21,9 @@ export const createSaleSchema = z.object({
   saleDate: z.string().optional(),
   reference: z.string().max(100).optional().or(z.literal("")),
   status: saleStatusEnum.default("completed"),
+  paymentType: paymentTypeEnum.default("cash"),
+  amountPaid: z.coerce.number().min(0).default(0),
+  dueDate: z.string().optional().or(z.literal("")),
   discountTotal: z.coerce.number().min(0).default(0),
   taxTotal: z.coerce.number().min(0).default(0),
   notes: z.string().max(2000).optional().or(z.literal("")),

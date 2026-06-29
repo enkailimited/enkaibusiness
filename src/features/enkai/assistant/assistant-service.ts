@@ -1,18 +1,12 @@
 import "server-only";
 
-import { prisma } from "@/server/db";
 import { parseCommand, getHelpText } from "../commands/command-parser";
 import { memoryStore } from "../memory/memory-store";
 import { toolRegistry } from "../tools/tool-registry";
-import { systemPrompt, greetingSwahili, helpSwahili, noPermission, incompleteTransaction, successMessage, errorMessage } from "../prompts/prompts";
-import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler, WorkflowDefinition } from "./types";
+import { systemPrompt, helpSwahili, incompleteTransaction, errorMessage } from "../prompts/prompts";
+import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler } from "./types";
 import type { IntentType } from "../commands/types";
 import { processWithBrain } from "../brain/business-brain";
-
-const config = {
-  maxHistoryLength: 50,
-  systemPrompt,
-};
 
 function generateId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -540,7 +534,7 @@ export async function processMessage(
   } catch (error) {
     console.error("Firdaus brain error:", error);
     return {
-      message: errorMessage(error instanceof Error ? error.message : "Tatizo la mfumo"),
+      message: errorMessage(),
       intent: null,
       confidence: 0,
       actionRequired: false,

@@ -24,6 +24,9 @@ export type IntentType =
   | "send-notification"
   | "setup-business"
   | "business-insights"
+  | "receive-goods"
+  | "receive-payment"
+  | "pay-supplier"
   | "unknown";
 
 export interface ParsedCommand {

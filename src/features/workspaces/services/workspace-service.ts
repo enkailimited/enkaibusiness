@@ -4,6 +4,36 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateWorkspaceSchema, AddMemberSchema } from "../schemas";
 
+export async function ensureRbacWorkspaceRole(userId: string, role: string, tx?: typeof prisma): Promise<void> {
+  const client = tx || prisma;
+  const roleSlug = `${role.toLowerCase()}-workspace`;
+  const rbacRole = await client.role.findUnique({
+    where: { slug: roleSlug },
+    select: { id: true },
+  });
+  if (!rbacRole) return;
+  const existing = await client.userRole.findFirst({
+    where: { userId, roleId: rbacRole.id, businessId: null },
+  });
+  if (!existing) {
+    await client.userRole.create({
+      data: { userId, roleId: rbacRole.id, businessId: null },
+    });
+  }
+}
+
+async function removeRbacWorkspaceRole(userId: string, role: string): Promise<void> {
+  const roleSlug = `${role.toLowerCase()}-workspace`;
+  const rbacRole = await prisma.role.findUnique({
+    where: { slug: roleSlug },
+    select: { id: true },
+  });
+  if (!rbacRole) return;
+  await prisma.userRole.deleteMany({
+    where: { userId, roleId: rbacRole.id, businessId: null },
+  });
+}
+
 export async function createWorkspace(
   data: CreateWorkspaceSchema,
   userId: string,
@@ -20,6 +50,8 @@ export async function createWorkspace(
         },
       },
     });
+
+    await ensureRbacWorkspaceRole(userId, "OWNER");
 
     return {
       success: true,
@@ -120,6 +152,8 @@ export async function addWorkspaceMember(
       },
     });
 
+    await ensureRbacWorkspaceRole(user.id, data.role);
+
     return { success: true, message: "Member added successfully" };
   } catch (error) {
     console.error("Add member error:", error);
@@ -133,12 +167,21 @@ export async function updateWorkspaceMemberRole(
   role: string,
 ): Promise<ActionResponse> {
   try {
+    const existing = await prisma.workspaceMember.findUnique({
+      where: { userId_workspaceId: { userId, workspaceId } },
+    });
+    if (!existing) {
+      return { success: false, message: "Member not found" };
+    }
+
     await prisma.workspaceMember.update({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
+      where: { userId_workspaceId: { userId, workspaceId } },
       data: { role: role as any },
     });
+
+    await removeRbacWorkspaceRole(userId, existing.role);
+    await ensureRbacWorkspaceRole(userId, role);
+
     return { success: true, message: "Member role updated successfully" };
   } catch (error) {
     console.error("Update member role error:", error);
@@ -151,11 +194,18 @@ export async function removeWorkspaceMember(
   userId: string,
 ): Promise<ActionResponse> {
   try {
-    await prisma.workspaceMember.delete({
-      where: {
-        userId_workspaceId: { userId, workspaceId },
-      },
+    const existing = await prisma.workspaceMember.findUnique({
+      where: { userId_workspaceId: { userId, workspaceId } },
     });
+
+    await prisma.workspaceMember.delete({
+      where: { userId_workspaceId: { userId, workspaceId } },
+    });
+
+    if (existing) {
+      await removeRbacWorkspaceRole(userId, existing.role);
+    }
+
     return { success: true, message: "Member removed successfully" };
   } catch (error) {
     console.error("Remove member error:", error);

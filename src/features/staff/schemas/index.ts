@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const updateStaffSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(100).optional(),
+  lastName: z.string().min(1, "Last name is required").max(100).optional(),
+  email: z.string().email("Invalid email").optional(),
+  phone: z.string().optional(),
   employeeCode: z.string().max(50, "Employee code too long").optional(),
   position: z.string().max(100, "Position too long").optional(),
   hireDate: z.string().optional(),

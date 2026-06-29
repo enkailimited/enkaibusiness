@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import {
   SUBSCRIPTION_STATUS_LABELS,
@@ -68,7 +69,7 @@ export function BusinessSubscriptionView({ businessId }: Props) {
       if (result.success) {
         await fetchData();
       } else {
-        alert(result.message);
+        toast({ title: "Error", description: result.message, variant: "destructive" });
       }
     } catch (err) {
       console.error("Toggle failed:", err);

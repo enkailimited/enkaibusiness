@@ -54,6 +54,7 @@ export type WorkspaceMemberRole = "OWNER" | "ADMIN" | "MEMBER" | "GUEST";
 export interface Business {
   id: string;
   workspaceId: string;
+  businessTypeId: string | null;
   name: string;
   slug: string;
   email: string | null;
@@ -124,14 +125,15 @@ export interface Store {
 export interface CatalogItem {
   id: string;
   businessId: string;
+  catalogTypeId: string | null;
   name: string;
   slug: string;
   description: string | null;
   sku: string | null;
   barcode: string | null;
   itemType: CatalogItemType;
-  category: string | null;
-  unit: string | null;
+  categoryId: string | null;
+  unitId: string | null;
   price: number;
   costPrice: number | null;
   taxRate: number | null;
@@ -161,7 +163,7 @@ export interface Role {
   updatedAt: string;
 }
 
-export type RoleScope = "PLATFORM" | "BUSINESS";
+export type RoleScope = "PLATFORM" | "BUSINESS" | "WORKSPACE";
 
 export interface Permission {
   id: string;
@@ -444,4 +446,136 @@ export interface SupportTicket {
   updatedAt: string;
   customer?: User;
   assignedTo?: User | null;
+}
+
+// ─── Business Type Layer ────────────────────────────────────────────────────
+
+export interface BusinessType {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BusinessTypeMode {
+  id: string;
+  businessTypeId: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BusinessTypeModule {
+  id: string;
+  businessTypeId: string;
+  module: string;
+  isRequired: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CatalogType {
+  id: string;
+  businessTypeId: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Shared Catalog Domain ──────────────────────────────────────────────────
+
+export interface CatalogAttribute {
+  id: string;
+  businessId: string;
+  catalogTypeId: string | null;
+  name: string;
+  slug: string;
+  type: string;
+  options: Record<string, unknown>[] | null;
+  isRequired: boolean;
+  isSearchable: boolean;
+  isFilterable: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CatalogItemAttribute {
+  id: string;
+  catalogItemId: string;
+  attributeId: string;
+  value: string;
+}
+
+// ─── Shared CRM Domain ──────────────────────────────────────────────────────
+
+export interface Contact {
+  id: string;
+  businessId: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  title: string | null;
+  organizationId: string | null;
+  isActive: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Organization {
+  id: string;
+  businessId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  taxId: string | null;
+  website: string | null;
+  isActive: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Address {
+  id: string;
+  contactId: string | null;
+  businessId: string | null;
+  type: string;
+  line1: string;
+  line2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunicationLog {
+  id: string;
+  contactId: string;
+  type: string;
+  subject: string | null;
+  body: string | null;
+  direction: string;
+  status: string;
+  referenceId: string | null;
+  createdAt: string;
 }

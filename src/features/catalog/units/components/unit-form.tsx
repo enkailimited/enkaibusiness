@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo } from "react";
+import { useState, useActionState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,10 +27,12 @@ interface UnitFormProps {
     type: string;
     isBase: boolean;
   };
+  onSuccess?: () => void;
 }
 
-export function UnitForm({ mode, businessId, initialData }: UnitFormProps) {
+export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormProps) {
   const [step, setStep] = useState(0);
+  const [selectedType, setSelectedType] = useState(initialData?.type ?? "count");
   const formActionRef = useMemo(
     () => (mode === "create"
       ? createUnitAction.bind(null, businessId)
@@ -38,12 +40,33 @@ export function UnitForm({ mode, businessId, initialData }: UnitFormProps) {
     [mode, businessId, initialData?.id],
   );
   const [state, formAction, pending] = useActionState<ActionResponse | null, FormData>(formActionRef, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [allowSubmit, setAllowSubmit] = useState(false);
+
+  function handleFinalSubmit() {
+    setAllowSubmit(true);
+    setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    if (step < STEPS.length - 1 || !allowSubmit) {
+      e.preventDefault();
+    }
+  }
+
+  const succeeded = state?.success === true;
+  useEffect(() => {
+    if (succeeded) {
+      const timer = setTimeout(() => onSuccess?.(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [succeeded, onSuccess]);
 
   return (
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -90,7 +113,7 @@ export function UnitForm({ mode, businessId, initialData }: UnitFormProps) {
                   <Label htmlFor="type" className="text-sm font-medium">
                     Unit Type <span className="text-red-500">*</span>
                   </Label>
-                  <select id="type" name="type" defaultValue={initialData?.type ?? "count"} required className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                  <select id="type" name="type" value={selectedType} onChange={(e) => setSelectedType(e.target.value)} required className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
                     {UNIT_TYPES.map((type) => (
                       <option key={type} value={type}>
                         {UNIT_TYPE_LABELS[type]}
@@ -105,6 +128,12 @@ export function UnitForm({ mode, businessId, initialData }: UnitFormProps) {
               </div>
             </div>
           </div>
+
+          {succeeded && (
+            <div className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700 border border-emerald-200">
+              Unit {mode === "create" ? "created" : "updated"} successfully!
+            </div>
+          )}
 
           {state?.errors && (
             <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
@@ -127,7 +156,7 @@ export function UnitForm({ mode, businessId, initialData }: UnitFormProps) {
                 Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <Button type="submit" disabled={pending} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+              <Button type="button" disabled={pending} onClick={handleFinalSubmit} className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
                 {pending ? "Saving..." : "Save"}
               </Button>
             )}

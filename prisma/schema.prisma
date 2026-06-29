@@ -25,6 +25,10 @@ enum Industry {
   MANUFACTURING
   AGRICULTURE
   SERVICES
+  EDUCATION
+  LOGISTICS
+  REAL_ESTATE
+  NON_PROFIT
 }
 
 enum CatalogItemType {
@@ -39,6 +43,7 @@ enum CatalogItemType {
 enum RoleScope {
   PLATFORM
   BUSINESS
+  WORKSPACE
 }
 
 enum SalesProfileStatus {
@@ -73,6 +78,7 @@ enum SubscriptionInterval {
 }
 
 enum SubscriptionStatus {
+  PENDING
   ACTIVE
   GRACE_PERIOD
   SUSPENDED
@@ -136,6 +142,234 @@ enum PricingTier {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// BUSINESS TYPE LAYER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── BusinessType ────────────────────────────────────────────────────────────
+
+model BusinessType {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  modes        BusinessTypeMode[]
+  modules      BusinessTypeModule[]
+  catalogTypes CatalogType[]
+  businesses   Business[]
+
+  @@map("business_types")
+}
+
+// ─── BusinessTypeMode ────────────────────────────────────────────────────────
+
+model BusinessTypeMode {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessTypeId  String   @map("business_type_id") @db.Uuid
+  slug            String
+  name            String
+  description     String?
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, slug])
+  @@map("business_type_modes")
+}
+
+// ─── BusinessTypeModule ──────────────────────────────────────────────────────
+
+model BusinessTypeModule {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessTypeId  String   @map("business_type_id") @db.Uuid
+  module          String
+  isRequired      Boolean  @default(false) @map("is_required")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, module])
+  @@map("business_type_modules")
+}
+
+// ─── CatalogType ─────────────────────────────────────────────────────────────
+
+model CatalogType {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessTypeId  String   @map("business_type_id") @db.Uuid
+  slug            String
+  name            String
+  description     String?
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  businessType     BusinessType       @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  catalogItems     CatalogItem[]
+  catalogAttributes CatalogAttribute[]
+
+  @@unique([businessTypeId, slug])
+  @@map("catalog_types")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARED CRM DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Contact ─────────────────────────────────────────────────────────────────
+
+model Contact {
+  id               String   @id @default(uuid()) @db.Uuid
+  businessId       String   @map("business_id") @db.Uuid
+  firstName        String   @map("first_name")
+  lastName         String?  @map("last_name")
+  email            String?
+  phone            String?
+  title            String?
+  organizationId   String?  @map("organization_id") @db.Uuid
+  isActive         Boolean  @default(true) @map("is_active")
+  metadata         Json?    @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  business          Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  organization      Organization?         @relation(fields: [organizationId], references: [id])
+  addresses         Address[]
+  communicationLogs CommunicationLog[]
+  customer          Customer?
+
+  @@index([businessId])
+  @@index([email])
+  @@index([phone])
+  @@map("contacts")
+}
+
+// ─── Organization ────────────────────────────────────────────────────────────
+
+model Organization {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  name        String
+  email       String?
+  phone       String?
+  taxId       String?  @map("tax_id")
+  website     String?
+  isActive    Boolean  @default(true) @map("is_active")
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+
+  @@index([businessId])
+  @@map("organizations")
+}
+
+// ─── Address ─────────────────────────────────────────────────────────────────
+
+model Address {
+  id          String   @id @default(uuid()) @db.Uuid
+  contactId   String?  @map("contact_id") @db.Uuid
+  businessId  String?  @map("business_id") @db.Uuid
+  type        String   @default("billing") // "billing" | "shipping" | "physical" | "postal"
+  line1       String
+  line2       String?
+  city        String?
+  state       String?
+  postalCode  String?  @map("postal_code")
+  country     String   @default("Tanzania")
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  contact Contact? @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+  @@index([businessId])
+  @@map("addresses")
+}
+
+// ─── CommunicationLog ────────────────────────────────────────────────────────
+
+model CommunicationLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  contactId   String   @map("contact_id") @db.Uuid
+  type        String   // "email" | "sms" | "call" | "note" | "meeting"
+  subject     String?
+  body        String?
+  direction   String   @default("outbound") // "inbound" | "outbound"
+  status      String   @default("completed")
+  referenceId String?  @map("reference_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  contact Contact @relation(fields: [contactId], references: [id])
+
+  @@index([contactId])
+  @@index([type])
+  @@map("communication_logs")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHARED CATALOG DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CatalogAttribute ────────────────────────────────────────────────────────
+
+model CatalogAttribute {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @map("business_id") @db.Uuid
+  catalogTypeId String?  @map("catalog_type_id") @db.Uuid
+  name          String
+  slug          String
+  type          String   @default("text") // "text" | "number" | "boolean" | "select" | "date"
+  options       Json?    @default("[]") // for select type
+  isRequired    Boolean  @default(false) @map("is_required")
+  isSearchable  Boolean  @default(false) @map("is_searchable")
+  isFilterable  Boolean  @default(false) @map("is_filterable")
+  sortOrder     Int      @default(0) @map("sort_order")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business   Business              @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  catalogType CatalogType?         @relation(fields: [catalogTypeId], references: [id])
+  itemValues  CatalogItemAttribute[]
+
+  @@unique([businessId, slug])
+  @@index([businessId])
+  @@index([catalogTypeId])
+  @@map("catalog_attributes")
+}
+
+// ─── CatalogItemAttribute ────────────────────────────────────────────────────
+
+model CatalogItemAttribute {
+  id             String  @id @default(uuid()) @db.Uuid
+  catalogItemId  String  @map("catalog_item_id") @db.Uuid
+  attributeId    String  @map("attribute_id") @db.Uuid
+  value          String  // JSON-encoded value
+
+  catalogItem CatalogItem      @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  attribute   CatalogAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([catalogItemId, attributeId])
+  @@index([catalogItemId])
+  @@index([attributeId])
+  @@map("catalog_item_attributes")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // PLATFORM FOUNDATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -163,7 +397,7 @@ model User {
   userRoles                         UserRole[]
   createdBusinesses                 Business[]                  @relation("BusinessCreatedBy")
   updatedBusinesses                 Business[]                  @relation("BusinessUpdatedBy")
-  staffProfile                      Staff?
+  staffProfiles                     Staff[]
   salesProfile                      SalesProfile?
   openedPOSessions                  POSSession[]                @relation("POSSessionOpenedBy")
   closedPOSessions                  POSSession[]                @relation("POSSessionClosedBy")
@@ -326,24 +560,27 @@ model WorkspaceMember {
 // ─── Business ────────────────────────────────────────────────────────────────
 
 model Business {
-  id          String   @id @default(uuid()) @db.Uuid
-  workspaceId String   @map("workspace_id") @db.Uuid
-  name        String
-  slug        String
-  email       String?
-  phone       String?
-  address     String?
-  logoUrl     String?  @map("logo_url")
-  taxId       String?  @map("tax_id")
-  currency    String   @default("TZS")
-  timezone    String   @default("Africa/Dar_es_Salaam")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdById String?  @map("created_by") @db.Uuid
-  updatedById String?  @map("updated_by") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid()) @db.Uuid
+  workspaceId    String   @map("workspace_id") @db.Uuid
+  businessTypeId String?  @map("business_type_id") @db.Uuid
+  name           String
+  slug           String
+  email          String?
+  phone          String?
+  address        String?
+  logoUrl        String?  @map("logo_url")
+  taxId          String?  @map("tax_id")
+  currency       String   @default("TZS")
+  timezone       String   @default("Africa/Dar_es_Salaam")
+  isActive       Boolean  @default(true) @map("is_active")
+  status         String   @default("ACTIVE") // PENDING_SETUP, ACTIVE, SUSPENDED, INACTIVE
+  createdById    String?  @map("created_by") @db.Uuid
+  updatedById    String?  @map("updated_by") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   workspace               Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  businessType            BusinessType?            @relation(fields: [businessTypeId], references: [id])
   createdBy               User?                    @relation("BusinessCreatedBy", fields: [createdById], references: [id])
   updatedBy               User?                    @relation("BusinessUpdatedBy", fields: [updatedById], references: [id])
   modes                   BusinessMode[]
@@ -393,6 +630,9 @@ model Business {
   userInvites             UserInvite[]
   firdausWorkflows        FirdausWorkflow[]
   businessMemories        BusinessMemory[]
+  contacts                Contact[]
+  organizations           Organization[]
+  catalogAttributes       CatalogAttribute[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -482,7 +722,7 @@ model Store {
 
 model Staff {
   id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @unique @map("user_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
   businessId   String    @map("business_id") @db.Uuid
   employeeCode String?   @map("employee_code")
   position     String?
@@ -500,6 +740,7 @@ model Staff {
   purchaseOrders PurchaseOrder[]
   goodsReceived  GoodsReceived[]
 
+  @@unique([userId])
   @@unique([businessId, employeeCode])
   @@index([businessId])
   @@map("staff")
@@ -704,14 +945,15 @@ model UnitConversion {
 // ─── CatalogItem ─────────────────────────────────────────────────────────────
 
 model CatalogItem {
-  id          String          @id @default(uuid()) @db.Uuid
-  businessId  String          @map("business_id") @db.Uuid
-  name        String
-  slug        String
-  description String?
-  sku         String?
-  barcode     String?
-  itemType    CatalogItemType
+  id            String          @id @default(uuid()) @db.Uuid
+  businessId    String          @map("business_id") @db.Uuid
+  catalogTypeId String?         @map("catalog_type_id") @db.Uuid
+  name          String
+  slug          String
+  description   String?
+  sku           String?
+  barcode       String?
+  itemType      CatalogItemType
 
   // Commerce-specific (nullable — used when itemType=PRODUCT)
   categoryId  String?  @map("category_id") @db.Uuid
@@ -732,6 +974,7 @@ model CatalogItem {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   business             Business                @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  catalogType          CatalogType?            @relation(fields: [catalogTypeId], references: [id])
   category             Category?               @relation(fields: [categoryId], references: [id])
   brand                Brand?                  @relation(fields: [brandId], references: [id])
   unit                 Unit?                   @relation(fields: [unitId], references: [id])
@@ -753,10 +996,12 @@ model CatalogItem {
   qrMenuItems          QRMenuItem[]
   createdBy            User?                   @relation("CatalogItemCreatedBy", fields: [createdById], references: [id])
   updatedBy            User?                   @relation("CatalogItemUpdatedBy", fields: [updatedById], references: [id])
+  attributes           CatalogItemAttribute[]
 
   @@unique([businessId, slug])
   @@unique([businessId, sku])
   @@index([businessId, itemType])
+  @@index([catalogTypeId])
   @@map("catalog_items")
 }
 
@@ -896,6 +1141,7 @@ model CustomerGroup {
 model Customer {
   id              String   @id @default(uuid()) @db.Uuid
   businessId      String   @map("business_id") @db.Uuid
+  contactId       String?  @unique @map("contact_id") @db.Uuid
   userId          String?  @map("user_id") @db.Uuid
   customerType    CustomerType   @default(RETAIL) @map("customer_type")
   firstName       String   @map("first_name")
@@ -912,6 +1158,7 @@ model Customer {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   business           Business               @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  contact            Contact?               @relation(fields: [contactId], references: [id])
   customerGroup      CustomerGroup?         @relation(fields: [customerGroupId], references: [id])
   creditAccount      CustomerCreditAccount?
   sales              Sale[]
@@ -921,6 +1168,7 @@ model Customer {
   campaignRecipients CampaignRecipient[]
 
   @@index([businessId])
+  @@index([contactId])
   @@index([phone])
   @@index([customerType])
   @@map("customers")
@@ -1091,6 +1339,9 @@ model Purchase {
   purchaseDate DateTime @default(now()) @map("purchase_date")
   reference    String?
   status       String   @default("completed") // draft, completed, cancelled
+  paidAmount   Decimal  @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  balanceDue   Decimal  @default(0) @map("balance_due") @db.Decimal(15, 2)
+  dueDate      DateTime? @map("due_date")
   subtotal     Decimal  @db.Decimal(15, 2)
   tax          Decimal  @default(0) @db.Decimal(15, 2)
   total        Decimal  @db.Decimal(15, 2)
@@ -1145,6 +1396,7 @@ model PurchaseOrder {
   subtotal     Decimal   @db.Decimal(15, 2)
   tax          Decimal   @default(0) @db.Decimal(15, 2)
   total        Decimal   @db.Decimal(15, 2)
+  reference    String?
   notes        String?
   createdById  String?   @map("created_by") @db.Uuid
   createdAt    DateTime  @default(now()) @map("created_at")
@@ -1512,7 +1764,7 @@ model Invoice {
   invoiceDate   DateTime  @default(now()) @map("invoice_date")
   dueDate       DateTime? @map("due_date")
   invoiceNumber String    @map("invoice_number")
-  status        String    @default("draft") // draft, sent, paid, partial, overdue, cancelled
+  status        String    @default("draft") // draft, issued, unpaid, partial, paid, overdue, cancelled
   subtotal      Decimal   @db.Decimal(15, 2)
   tax           Decimal   @default(0) @db.Decimal(15, 2)
   total         Decimal   @db.Decimal(15, 2)
@@ -1869,6 +2121,7 @@ model WalletDepositRequest {
   amount        Decimal  @db.Decimal(15, 2)
   reference     String?
   description   String?
+  paymentProof  String?  @map("payment_proof")
   status        String   @default("pending") // pending, approved, rejected
   requestedById String   @map("requested_by") @db.Uuid
   reviewedById  String?  @map("reviewed_by") @db.Uuid
@@ -2518,6 +2771,8 @@ enum MemoryType {
   POPULAR_PRODUCT
   PAYMENT_METHOD
   FREQUENT_PRODUCT
+  VOCABULARY
+  CONVERSATION_SUMMARY
 }
 
 model BusinessMemory {
@@ -2558,4 +2813,63 @@ model CampaignRecipient {
   @@index([campaignId])
   @@index([status])
   @@map("campaign_recipients")
+}
+
+model EventRecord {
+  id          String    @id @default(uuid()) @db.Uuid
+  type        String
+  businessId  String?   @map("business_id") @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  entityId    String?   @map("entity_id")
+  data        Json      @default("{}")
+  status      String    @default("pending") // pending | processing | completed | failed
+  attempts    Int       @default(0)
+  error       String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@index([status, createdAt])
+  @@index([type, businessId])
+  @@index([businessId])
+  @@map("event_records")
+}
+
+model JobRecord {
+  id          String    @id @default(uuid()) @db.Uuid
+  type        String    @map("type") // email | notification | analytics | report | pdf | sms | whatsapp
+  name        String    // human-readable job name
+  businessId  String?   @map("business_id") @db.Uuid
+  userId      String?   @map("user_id") @db.Uuid
+  payload     Json      @default("{}")
+  status      String    @default("queued") // queued | active | completed | failed | cancelled
+  priority    Int       @default(0)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?
+  scheduledAt DateTime? @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@index([type, status])
+  @@index([businessId])
+  @@index([scheduledAt])
+  @@map("job_records")
+}
+
+model NotificationTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String?
+  event     String   // "sale_completed" | "payment_received" | "low_stock" | etc.
+  title     String
+  message   String
+  type      String   @default("info") // "info" | "warning" | "success" | "alert"
+  channel   String   @default("in_app") // "in_app" | "email" | "sms" | "whatsapp"
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([event, isActive])
+  @@map("notification_templates")
 }

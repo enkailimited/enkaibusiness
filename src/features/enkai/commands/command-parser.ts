@@ -295,6 +295,47 @@ const naturalLanguagePatterns: Array<{
     extractParams: (m) => ({ item: m[1]?.trim(), quantity: parseFloat(m[2]!), from: m[3]?.trim(), to: m[4]?.trim() }),
   },
 
+  // Swahili: Supplier delivery / receiving goods
+  {
+    pattern: /(?:supplier|msambazaji)\s+(?:kaniletea|ameniletea|amenileta|ametuma|aleta|alileta)\s+(.+)/i,
+    intent: "receive-goods",
+    extractParams: (m) => ({ item: m[1]?.trim() }),
+  },
+  {
+    pattern: /(?:nimepokea|nimelipokea|nimekubali|nimepata)\s+(?:mzigo|bidhaa|goods)\s+(?:wa|za|ya\s+)?(.+)/i,
+    intent: "receive-goods",
+    extractParams: (m) => ({ item: m[1]?.trim() }),
+  },
+  {
+    pattern: /(?:receive|received)\s+(?:goods|stock|delivery|supplies)\s+(?:of\s+)?(.+)/i,
+    intent: "receive-goods",
+    extractParams: (m) => ({ item: m[1]?.trim() }),
+  },
+
+  // Swahili: Customer payment / debt payment
+  {
+    pattern: /(?:nimelipwa|amelipa|amelipwa|lipwa|paid)\s+(?:deni|debt|mkopo|credit)\s+(?:na|kutoka kwa)?\s*(.+)/i,
+    intent: "receive-payment",
+    extractParams: (m) => ({ customer: m[1]?.trim() }),
+  },
+  {
+    pattern: /(?:customer|mteja)\s+(?:amelipa|alilipa|amelipwa)\s+(?:deni|debt)?\s*(.+)/i,
+    intent: "receive-payment",
+    extractParams: (m) => ({ customer: m[1]?.trim() }),
+  },
+
+  // Swahili: Supplier payment
+  {
+    pattern: /(?:nimelipa|nimalipa|nilipa|paid)\s+(?:supplier|msambazaji)\s+(.+)/i,
+    intent: "pay-supplier",
+    extractParams: (m) => ({ supplier: m[1]?.trim() }),
+  },
+  {
+    pattern: /(?:nimemlipa|nimemlipia|nimempa)\s+(?:msambazaji|supplier)\s+(.+)/i,
+    intent: "pay-supplier",
+    extractParams: (m) => ({ supplier: m[1]?.trim() }),
+  },
+
   // Maarifa ya biashara
   {
     pattern: /(?:maarifa|insights|intelligence|uelewa)\s+(?:ya\s+)?(?:biashara|business)/i,

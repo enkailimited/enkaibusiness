@@ -66,6 +66,10 @@ export const USER_SETTING_KEYS = {
   timezone: "user.timezone",
 } as const;
 
+export const PROCUREMENT_SETTING_KEYS = {
+  advancedProcurement: "procurement.advancedProcurement",
+} as const;
+
 export const SETTING_CATEGORY_LABELS: Record<string, string> = {
   business: "Business",
   tax: "Tax",

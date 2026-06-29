@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,15 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FormStepper } from "@/components/ui/form-stepper";
-import { registerCustomerBusinessAction, listPlansForRegistrationAction, getReadyToRegisterLeadsAction } from "./actions";
-import {
-  BUSINESS_SIZE_LABELS,
-  COMMERCE_BASE_PRICE_PER_DAY,
-  QR_CODE_STICKER_COUNT,
-  QR_CODE_STICKER_PRICE,
-  calculateDailyPrice,
-  calculateSetupFee,
-} from "@/features/subscriptions/constants/pricing";
+import { listPlansForRegistrationAction, getReadyToRegisterLeadsAction } from "./actions";
+import { registerBusinessAction } from "@/features/businesses/actions";
+import type { RegisterBusinessInput } from "@/features/businesses/schemas";
+import { BUSINESS_SIZE_LABELS, COMMERCE_BASE_PRICE_PER_DAY, QR_CODE_STICKER_COUNT, QR_CODE_STICKER_PRICE, calculateDailyPrice, calculateSetupFee } from "@/features/subscriptions/constants/pricing";
+import { BUSINESS_MODES, INDUSTRIES, INDUSTRY_LABELS } from "@/features/businesses/constants";
 import {
   UserPlus, Building2, CreditCard, QrCode, ChevronLeft, ChevronRight,
   CheckCircle2, Loader2, Mail, Phone,
@@ -27,21 +23,6 @@ const STEPS = [
   { title: "Business", description: "Business details" },
   { title: "Plan", description: "Choose a pricing plan" },
   { title: "QR & Finish", description: "Setup and payment" },
-];
-
-const BUSINESS_MODES = [
-  { value: "retail", label: "Retail" },
-  { value: "wholesale", label: "Wholesale" },
-  { value: "both", label: "Both" },
-];
-
-const INDUSTRIES = [
-  { value: "COMMERCE", label: "Commerce" },
-  { value: "RESTAURANT", label: "Restaurant" },
-  { value: "HEALTHCARE", label: "Healthcare" },
-  { value: "MANUFACTURING", label: "Manufacturing" },
-  { value: "AGRICULTURE", label: "Agriculture" },
-  { value: "SERVICES", label: "Services" },
 ];
 
 interface LeadItem {
@@ -91,11 +72,20 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    businessName: string;
+    businessSlug: string;
+    businessIndustry: string;
+    businessModes: string[];
+    businessAddress: string;
+    planId: string;
+    businessSize: string;
+    qrOrderingEnabled: boolean;
+  }>({
     businessName: "",
     businessSlug: "",
     businessIndustry: "COMMERCE",
-    businessModes: ["retail"],
+    businessModes: BUSINESS_MODES["COMMERCE"]?.length ? [BUSINESS_MODES["COMMERCE"][0]!] : [],
     businessAddress: "",
     planId: "",
     businessSize: "small",
@@ -144,18 +134,18 @@ export default function RegisterPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const result = await registerCustomerBusinessAction({
-        leadId: selectedLeadId,
-        business: {
-          name: form.businessName,
-          slug: form.businessSlug,
-          industry: form.businessIndustry,
-          modes: form.businessModes,
-          address: form.businessAddress || undefined,
-        },
+      const result = await registerBusinessAction({
+        name: form.businessName,
+        slug: form.businessSlug,
+        industry: form.businessIndustry as RegisterBusinessInput["industry"],
+        modes: form.businessModes,
+        address: form.businessAddress || undefined,
         planId: form.planId,
         businessSize: form.businessSize,
         qrOrderingEnabled: form.qrOrderingEnabled,
+        leadId: selectedLeadId,
+        currency: "TZS",
+        timezone: "Africa/Dar_es_Salaam",
       });
       if (result.success) {
         setSuccess(true);
@@ -354,13 +344,17 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Industry <span className="text-red-500">*</span></Label>
-                  <select
+                    <select
                     value={form.businessIndustry}
-                    onChange={(e) => update("businessIndustry", e.target.value)}
+                    onChange={(e) => {
+                      update("businessIndustry", e.target.value);
+                      const newModes: string[] = BUSINESS_MODES[e.target.value] || [];
+                      update("businessModes", newModes.length ? [newModes[0]!] : []);
+                    }}
                     className={selectClass}
                   >
                     {INDUSTRIES.map((ind) => (
-                      <option key={ind.value} value={ind.value}>{ind.label}</option>
+                      <option key={ind} value={ind}>{INDUSTRY_LABELS[ind]}</option>
                     ))}
                   </select>
                 </div>
@@ -380,27 +374,27 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Business Type <span className="text-red-500">*</span></Label>
                 <div className="flex flex-wrap gap-2">
-                  {BUSINESS_MODES.map((mode) => (
+                  {(BUSINESS_MODES[form.businessIndustry] || []).map((mode) => (
                     <label
-                      key={mode.value}
+                      key={mode}
                       className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-sm transition-all ${
-                        form.businessModes.includes(mode.value)
+                        form.businessModes.includes(mode)
                           ? "border-blue-500 bg-blue-50 text-blue-700"
                           : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                       }`}
                     >
                       <input
                         type="checkbox"
-                        checked={form.businessModes.includes(mode.value)}
+                        checked={form.businessModes.includes(mode)}
                         onChange={() => {
-                          const modes = form.businessModes.includes(mode.value)
-                            ? form.businessModes.filter((m) => m !== mode.value)
-                            : [...form.businessModes, mode.value];
+                          const modes = form.businessModes.includes(mode)
+                            ? form.businessModes.filter((m) => m !== mode)
+                            : [...form.businessModes, mode];
                           update("businessModes", modes);
                         }}
                         className="sr-only"
                       />
-                      {mode.label}
+                      {mode.charAt(0).toUpperCase() + mode.slice(1).replace(/_/g, ' ')}
                     </label>
                   ))}
                 </div>

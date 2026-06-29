@@ -11,7 +11,7 @@ export default async function BrandsPage({ params }: Props) {
   const { businessId } = await params;
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader title="Brands" description="Manage product brands">
+      <PageHeader title="Brands" description="Manage catalog brands">
         <DialogForm title="Add Brand" description="Add a new brand">
           <BrandForm mode="create" businessId={businessId} />
         </DialogForm>

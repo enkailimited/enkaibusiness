@@ -8,6 +8,7 @@ import {
   getBusinessSales,
   updateSale,
   voidSale,
+  deleteSale,
 } from "../services/sale-service";
 import { createSaleSchema, updateSaleSchema, saleFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
@@ -51,6 +52,9 @@ export async function createSaleAction(
     saleDate: formData.get("saleDate") || undefined,
     reference: formData.get("reference") || undefined,
     status: formData.get("status") || "completed",
+    paymentType: formData.get("paymentType") || "cash",
+    amountPaid: formData.get("amountPaid") || 0,
+    dueDate: formData.get("dueDate") || undefined,
     discountTotal: formData.get("discountTotal") || 0,
     taxTotal: formData.get("taxTotal") || 0,
     notes: formData.get("notes") || undefined,
@@ -69,6 +73,9 @@ export async function createSaleAction(
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/receivables`);
+    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
   }
 
   return result;
@@ -157,10 +164,23 @@ export async function listSalesAction(
 }
 
 export async function voidSaleAction(id: string, businessId: string) {
-  await requireAuth();
-  const result = await voidSale(id);
+  const user = await requireAuth();
+  const result = await voidSale(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
   }
+
+  return result;
+}
+
+export async function deleteSaleAction(id: string, businessId: string) {
+  const user = await requireAuth();
+  const result = await deleteSale(id, user.id);
+  if (result.success) {
+    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
+  }
+
   return result;
 }

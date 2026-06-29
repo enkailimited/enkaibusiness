@@ -1,16 +1,20 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo } from "react";
+import { useState, useActionState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { FormStepper } from "@/components/ui/form-stepper";
+import { ImageUploader } from "@/components/upload/image-uploader";
 import { createProductAction, updateProductAction } from "../actions";
+import { listCategoriesAction } from "@/features/catalog/categories/actions";
+import { listUnitsAction } from "@/features/catalog/units/actions";
 import { ProductVariantForm } from "./product-variant-form";
 import type { ProductWithVariants } from "../types";
+import type { UploadedFile } from "@/types/upload";
 import { ChevronLeft, ChevronRight, Package, DollarSign, FileText } from "lucide-react";
 
 interface ProductFormProps {
@@ -28,11 +32,32 @@ const STEPS = [
 export function ProductForm({ businessId, product, onSuccess }: ProductFormProps) {
   const [step, setStep] = useState(0);
   const [variantCount, setVariantCount] = useState(product?.variants?.length ?? 0);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [units, setUnits] = useState<{ id: string; name: string; abbreviation: string }[]>([]);
+  const [imageUrl, setImageUrl] = useState(product?.imageUrl ?? "");
   const formActionRef = useMemo(
     () => (product ? updateProductAction.bind(null, product.id) : createProductAction),
     [product],
   );
   const [state, formAction, pending] = useActionState(formActionRef, null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [allowSubmit, setAllowSubmit] = useState(false);
+
+  function handleFinalSubmit() {
+    setAllowSubmit(true);
+    setTimeout(() => formRef.current?.requestSubmit(), 0);
+  }
+
+  function handleFormSubmit(e: React.FormEvent) {
+    if (step < STEPS.length - 1 || !allowSubmit) {
+      e.preventDefault();
+    }
+  }
+
+  useEffect(() => {
+    listCategoriesAction(businessId).then((data) => setCategories(data as { id: string; name: string }[]));
+    listUnitsAction(businessId).then((data) => setUnits(data as { id: string; name: string; abbreviation: string }[]));
+  }, [businessId]);
 
   if (state?.success && onSuccess) {
     onSuccess();
@@ -45,7 +70,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
     <Card className="border-0 shadow-none">
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
-        <form action={formAction} className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
           <input type="hidden" name="businessId" value={businessId} />
           <input type="hidden" name="itemType" value="PRODUCT" />
           <input type="hidden" name="isService" value="false" />
@@ -106,28 +131,36 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="category" className="text-sm font-medium">
+                    <Label htmlFor="categoryId" className="text-sm font-medium">
                       Category <span className="text-gray-400">(Optional)</span>
                     </Label>
-                    <Input
-                      id="category"
-                      name="category"
-                      defaultValue={product?.category ?? ""}
-                      placeholder="e.g. Beverages"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    />
+                    <select
+                      id="categoryId"
+                      name="categoryId"
+                      defaultValue={product?.categoryId ?? ""}
+                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                      <option value="">No category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="unit" className="text-sm font-medium">
+                    <Label htmlFor="unitId" className="text-sm font-medium">
                       Unit <span className="text-gray-400">(Optional)</span>
                     </Label>
-                    <Input
-                      id="unit"
-                      name="unit"
-                      defaultValue={product?.unit ?? ""}
-                      placeholder="pcs, kg, ltr"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    />
+                    <select
+                      id="unitId"
+                      name="unitId"
+                      defaultValue={product?.unitId ?? ""}
+                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    >
+                      <option value="">No unit</option>
+                      {units.map((u) => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -211,15 +244,16 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="imageUrl" className="text-sm font-medium">
-                    Image URL <span className="text-gray-400">(Optional)</span>
+                  <Label className="text-sm font-medium">
+                    Product Image <span className="text-gray-400">(Optional)</span>
                   </Label>
-                  <Input
-                    id="imageUrl"
-                    name="imageUrl"
-                    defaultValue={product?.imageUrl ?? ""}
-                    placeholder="https://example.com/image.jpg"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  <input type="hidden" name="imageUrl" value={imageUrl} />
+                  <ImageUploader
+                    onUpload={(files: UploadedFile[]) => {
+                      if (files[0]) setImageUrl(files[0].url);
+                    }}
+                    maxFiles={1}
+                    existingImages={imageUrl ? [{ id: "existing", url: imageUrl, name: "product-image", fileId: "existing", size: 0, mimeType: "image/jpeg", createdAt: "" }] : []}
                   />
                 </div>
                 <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-200 hover:bg-blue-50/50">
@@ -293,7 +327,8 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
               </Button>
             ) : (
               <Button
-                type="submit"
+                type="button"
+                onClick={handleFinalSubmit}
                 disabled={pending}
                 className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
               >

@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
   Trash2,
@@ -43,6 +44,7 @@ export default function SalesHierarchyPage() {
   const [newDescription, setNewDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -89,13 +91,13 @@ export default function SalesHierarchyPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this hierarchy level? This cannot be undone.")) return;
     try {
       await deleteSalesHierarchyAction(id);
       await loadData();
     } catch (err) {
       console.error("Failed to delete:", err);
     }
+    setDeleteConfirm(null);
   };
 
   const handleMoveUp = (index: number) => {
@@ -263,7 +265,7 @@ export default function SalesHierarchyPage() {
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 text-destructive"
-                    onClick={() => handleDelete(level.id)}
+                    onClick={() => setDeleteConfirm(level.id)}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -273,6 +275,16 @@ export default function SalesHierarchyPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Hierarchy Level"
+        description="Delete this hierarchy level? This cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+      />
     </div>
   );
 }

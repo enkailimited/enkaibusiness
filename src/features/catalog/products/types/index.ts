@@ -14,7 +14,7 @@ export interface ProductWithRelations extends CatalogItem {
 
 export interface ProductFilter {
   itemType: "PRODUCT";
-  category?: string;
+  categoryId?: string;
   brandId?: string;
   isActive?: boolean;
   search?: string;

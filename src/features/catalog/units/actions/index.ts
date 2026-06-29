@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { createUnit, updateUnit, deleteUnit, getBusinessUnits } from "../services/unit-service";
+import { hasPermission } from "@/features/roles/services/assignment-service";
+import { createUnit, updateUnit, deleteUnit, getBusinessUnits, getUnit } from "../services/unit-service";
 import { createUnitSchema, updateUnitSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -11,7 +12,12 @@ export async function createUnitAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "catalog.create", businessId);
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create units" };
+  }
 
   const parsed = createUnitSchema.safeParse({
     name: formData.get("name"),
@@ -42,7 +48,17 @@ export async function updateUnitAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existing = await getUnit(unitId);
+  if (!existing) {
+    return { success: false, message: "Unit not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existing.businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update units" };
+  }
 
   const parsed = updateUnitSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -62,17 +78,18 @@ export async function updateUnitAction(
   const result = await updateUnit(unitId, parsed.data);
 
   if (result.success) {
-    const unit = await import("../services/unit-service").then((m) => m.getUnit(unitId));
-    if (unit) {
-      revalidatePath(`/workspaces/businesses/${unit.businessId}/catalog`);
-    }
+    revalidatePath(`/workspaces/businesses/${existing.businessId}/catalog`);
   }
 
   return result;
 }
 
 export async function listUnitsAction(businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const canList = await hasPermission(user.id, "catalog.list", businessId);
+  if (!canList) {
+    return [];
+  }
   return getBusinessUnits(businessId);
 }
 
@@ -80,7 +97,11 @@ export async function deleteUnitAction(
   businessId: string,
   unitId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const canDelete = await hasPermission(user.id, "catalog.delete", businessId);
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete units" };
+  }
   const result = await deleteUnit(unitId);
 
   if (result.success) {

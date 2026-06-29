@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   },
   description: APP_DESCRIPTION,
   keywords: ["business", "ERP", "POS", "CRM", "Africa", "SaaS"],
+};
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

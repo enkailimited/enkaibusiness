@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateCustomerSchema, UpdateCustomerSchema, CustomerFilterSchema } from "../schemas";
 import type { Customer, CustomerWithGroup, CustomerWithRelations } from "../types";
@@ -25,12 +26,13 @@ export async function createCustomer(
   businessId: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
-    const { customerGroupId, metadata, ...rest } = data;
+    const { customerGroupId, contactId, metadata, ...rest } = data;
 
     const customer = await prisma.customer.create({
       data: {
         ...rest,
         businessId,
+        contactId: contactId || null,
         customerGroupId: customerGroupId || null,
         metadata: metadata ?? undefined,
       },
@@ -89,36 +91,19 @@ export async function listCustomers(
   businessId: string,
   filter?: CustomerFilterSchema,
 ): Promise<CustomerWithGroup[]> {
-  const where: Record<string, unknown> = { businessId };
-
-  if (filter?.customerType) {
-    where.customerType = filter.customerType;
-  }
-
-  if (filter?.customerGroupId) {
-    where.customerGroupId = filter.customerGroupId;
-  }
-
-  if (filter?.isActive !== undefined) {
-    where.isActive = filter.isActive;
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { firstName: { contains: filter.search, mode: "insensitive" } },
-      { lastName: { contains: filter.search, mode: "insensitive" } },
-      { email: { contains: filter.search, mode: "insensitive" } },
-      { phone: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const raw = await prisma.customer.findMany({
-    where,
+  const result = await searchService.customers<any>({
+    query: filter?.search,
+    businessId,
+    where: {
+      ...(filter?.customerType ? { customerType: filter.customerType } : {}),
+      ...(filter?.customerGroupId ? { customerGroupId: filter.customerGroupId } : {}),
+      ...(filter?.isActive !== undefined ? { isActive: filter.isActive } : {}),
+    },
     include: { customerGroup: true },
     orderBy: { createdAt: "desc" },
   });
 
-  return (raw as unknown as Record<string, unknown>[]).map(toCustomerWithGroup);
+  return result.items.map(toCustomerWithGroup);
 }
 
 export async function deleteCustomer(id: string): Promise<ActionResponse> {

@@ -1,11 +1,32 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import { slugify } from "@/lib/utils";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateCatalogItemSchema, UpdateCatalogItemSchema } from "../schemas";
 import type { CatalogItemWithRelations, CatalogItemFilter } from "../types";
 import { DEFAULT_PAGE_SIZE } from "../constants";
+
+function serializeCatalogItem(item: Record<string, unknown>): CatalogItemWithRelations {
+  return {
+    ...item,
+    price: Number(item.price),
+    costPrice: item.costPrice ? Number(item.costPrice) : null,
+    taxRate: item.taxRate ? Number(item.taxRate) : null,
+  } as unknown as CatalogItemWithRelations;
+}
+
+function getOrCreateDefaultLocation(businessId: string) {
+  return prisma.inventoryLocation.findFirst({
+    where: { businessId, type: "business" },
+  }).then((loc) => {
+    if (loc) return loc;
+    return prisma.inventoryLocation.create({
+      data: { businessId, name: "Main Store", type: "business" },
+    });
+  });
+}
 
 export async function createCatalogItem(
   businessId: string,
@@ -14,31 +35,43 @@ export async function createCatalogItem(
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
     const slug = slugify(data.name);
+    const { variants, ...itemData } = data;
 
     const item = await prisma.catalogItem.create({
       data: {
-        name: data.name,
+        ...itemData,
         slug,
-        description: data.description || null,
-        sku: data.sku || null,
-        barcode: data.barcode || null,
-        itemType: data.itemType,
-        categoryId: data.categoryId || null,
-        brandId: data.brandId || null,
-        unitId: data.unitId || null,
-        price: data.price,
-        costPrice: data.costPrice ?? null,
-        taxRate: data.taxRate ?? null,
-        currency: data.currency,
-        isService: data.isService ?? false,
-        trackStock: data.trackStock ?? true,
-        imageUrl: data.imageUrl || null,
-        isActive: data.isActive ?? true,
-        metadata: data.metadata ?? {},
+        description: itemData.description || null,
+        sku: itemData.sku || null,
+        barcode: itemData.barcode || null,
+        catalogTypeId: itemData.catalogTypeId || null,
+        categoryId: itemData.categoryId || null,
+        brandId: itemData.brandId || null,
+        unitId: itemData.unitId || null,
+        isService: itemData.isService ?? false,
+        trackStock: itemData.trackStock ?? true,
+        imageUrl: itemData.imageUrl || null,
+        isActive: itemData.isActive ?? true,
+        metadata: itemData.metadata ?? {},
         businessId,
         createdById: userId,
         updatedById: userId,
+        variants: variants && variants.length > 0
+          ? {
+              create: variants.map((v, idx) => ({
+                name: v.name,
+                sku: v.sku || undefined,
+                barcode: v.barcode || undefined,
+                sortOrder: v.sortOrder ?? idx,
+              })),
+            }
+          : undefined,
       },
+    });
+
+    const location = await getOrCreateDefaultLocation(businessId);
+    await prisma.inventoryBalance.create({
+      data: { locationId: location.id, catalogItemId: item.id },
     });
 
     return {
@@ -86,7 +119,7 @@ export async function updateCatalogItem(
     return {
       success: true,
       message: "Catalog item updated successfully",
-      data: item as unknown as CatalogItemWithRelations,
+      data: serializeCatalogItem(item as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error("Update catalog item error:", error);
@@ -94,17 +127,21 @@ export async function updateCatalogItem(
   }
 }
 
-export async function getCatalogItem(id: string) {
-  return prisma.catalogItem.findUnique({
+const fullInclude = {
+  category: { select: { id: true, name: true, slug: true } },
+  brand: { select: { id: true, name: true, slug: true } },
+  unit: { select: { id: true, name: true, abbreviation: true } },
+  createdBy: { select: { id: true, firstName: true, lastName: true } },
+  updatedBy: { select: { id: true, firstName: true, lastName: true } },
+  variants: { orderBy: { sortOrder: "asc" as const } },
+} as const;
+
+export async function getCatalogItem(id: string): Promise<CatalogItemWithRelations | null> {
+  const item = await prisma.catalogItem.findUnique({
     where: { id },
-    include: {
-      category: { select: { id: true, name: true, slug: true } },
-      brand: { select: { id: true, name: true, slug: true } },
-      unit: { select: { id: true, name: true, abbreviation: true } },
-      createdBy: { select: { id: true, firstName: true, lastName: true } },
-      updatedBy: { select: { id: true, firstName: true, lastName: true } },
-    },
+    include: fullInclude,
   });
+  return item ? serializeCatalogItem(item as unknown as Record<string, unknown>) : null;
 }
 
 export async function getBusinessCatalog(
@@ -113,51 +150,96 @@ export async function getBusinessCatalog(
 ): Promise<{ items: CatalogItemWithRelations[]; total: number; page: number; totalPages: number }> {
   const page = filter?.page ?? 1;
   const limit = filter?.limit ?? DEFAULT_PAGE_SIZE;
-  const skip = (page - 1) * limit;
 
-  const where: Record<string, unknown> = { businessId };
-
-  if (filter?.itemType) where.itemType = filter.itemType;
-  if (filter?.categoryId) where.categoryId = filter.categoryId;
-  if (filter?.brandId) where.brandId = filter.brandId;
-  if (filter?.unitId) where.unitId = filter.unitId;
-  if (filter?.isActive !== undefined) where.isActive = filter.isActive;
-  if (filter?.search) {
-    where.OR = [
-      { name: { contains: filter.search, mode: "insensitive" } },
-      { sku: { contains: filter.search, mode: "insensitive" } },
-      { barcode: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const [items, total] = await Promise.all([
-    prisma.catalogItem.findMany({
-      where,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        brand: { select: { id: true, name: true, slug: true } },
-        unit: { select: { id: true, name: true, abbreviation: true } },
-        createdBy: { select: { id: true, firstName: true, lastName: true } },
-        updatedBy: { select: { id: true, firstName: true, lastName: true } },
-      },
-      orderBy: { name: "asc" },
-      skip,
-      take: limit,
-    }),
-    prisma.catalogItem.count({ where }),
-  ]);
+  const result = await searchService.catalogItems<any>({
+    query: filter?.search,
+    businessId,
+    where: {
+      ...(filter?.itemType ? { itemType: filter.itemType } : {}),
+      ...(filter?.categoryId ? { categoryId: filter.categoryId } : {}),
+      ...(filter?.brandId ? { brandId: filter.brandId } : {}),
+      ...(filter?.unitId ? { unitId: filter.unitId } : {}),
+      ...(filter?.isActive !== undefined ? { isActive: filter.isActive } : {}),
+    },
+    include: fullInclude,
+    orderBy: { name: "asc" },
+    offset: (page - 1) * limit,
+    limit,
+  });
 
   return {
-    items: items as unknown as CatalogItemWithRelations[],
-    total,
+    items: result.items.map((item) => serializeCatalogItem(item as unknown as Record<string, unknown>)),
+    total: result.total,
     page,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(result.total / limit),
   };
 }
 
-export async function deleteCatalogItem(id: string): Promise<ActionResponse> {
+async function hasTransactionalHistory(id: string): Promise<boolean> {
+  const [
+    saleItemCount,
+    purchaseItemCount,
+    balanceCount,
+    stockMovementCount,
+    goodsReceivedItemCount,
+    purchaseOrderItemCount,
+    returnItemCount,
+    stockAdjustmentItemCount,
+    stockTransferItemCount,
+    quotationItemCount,
+    invoiceItemCount,
+    qrMenuItemCount,
+  ] = await Promise.all([
+    prisma.saleItem.count({ where: { catalogItemId: id } }),
+    prisma.purchaseItem.count({ where: { catalogItemId: id } }),
+    prisma.inventoryBalance.count({ where: { catalogItemId: id } }),
+    prisma.stockMovement.count({ where: { catalogItemId: id } }),
+    prisma.goodsReceivedItem.count({ where: { catalogItemId: id } }),
+    prisma.purchaseOrderItem.count({ where: { catalogItemId: id } }),
+    prisma.returnItem.count({ where: { catalogItemId: id } }),
+    prisma.stockAdjustmentItem.count({ where: { catalogItemId: id } }),
+    prisma.stockTransferItem.count({ where: { catalogItemId: id } }),
+    prisma.quotationItem.count({ where: { catalogItemId: id } }),
+    prisma.invoiceItem.count({ where: { catalogItemId: id } }),
+    prisma.qRMenuItem.count({ where: { catalogItemId: id } }),
+  ]);
+
+  return (
+    saleItemCount > 0 ||
+    purchaseItemCount > 0 ||
+    balanceCount > 0 ||
+    stockMovementCount > 0 ||
+    goodsReceivedItemCount > 0 ||
+    purchaseOrderItemCount > 0 ||
+    returnItemCount > 0 ||
+    stockAdjustmentItemCount > 0 ||
+    stockTransferItemCount > 0 ||
+    quotationItemCount > 0 ||
+    invoiceItemCount > 0 ||
+    qrMenuItemCount > 0
+  );
+}
+
+export async function deleteCatalogItem(
+  id: string,
+  userId?: string,
+): Promise<ActionResponse> {
   try {
+    const hasHistory = await hasTransactionalHistory(id);
+    if (hasHistory) {
+      return {
+        success: false,
+        message: "This item has transactional history and cannot be permanently deleted. Archive it instead.",
+      };
+    }
+
     await prisma.catalogItem.delete({ where: { id } });
+
+    if (userId) {
+      const { createAuditLog } = await import("@/server/services/audit-service");
+      await createAuditLog(userId, "DELETE", "catalog_item", id);
+    }
+
     return { success: true, message: "Catalog item deleted successfully" };
   } catch (error) {
     console.error("Delete catalog item error:", error);

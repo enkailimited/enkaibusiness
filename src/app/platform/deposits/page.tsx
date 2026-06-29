@@ -20,6 +20,7 @@ import {
   rejectDepositRequestAction,
 } from "@/features/subscriptions/wallet-deposits/actions";
 import type { DepositRequestListItem } from "@/features/subscriptions/wallet-deposits/types";
+import { toast } from "@/hooks/use-toast";
 import {
   Loader2,
   CheckCircle,
@@ -66,7 +67,7 @@ export default function PlatformDepositsPage() {
       if (result.success) {
         setRequests((prev) => prev.filter((r) => r.id !== id));
       } else {
-        alert(result.message);
+        toast({ title: "Error", description: result.message, variant: "destructive" });
       }
     } catch (e) {
       console.error("Approve error:", e);
@@ -85,7 +86,7 @@ export default function PlatformDepositsPage() {
         setRejectDialog(null);
         setRejectNotes("");
       } else {
-        alert(result.message);
+        toast({ title: "Error", description: result.message, variant: "destructive" });
       }
     } catch (e) {
       console.error("Reject error:", e);

@@ -16,11 +16,20 @@ export async function checkPermission(
   if (!requiredPermission) return { allowed: true };
 
   try {
+    const userRole = await prisma.userRole.findFirst({
+      where: { userId, businessId, role: { slug: "owner" } },
+      select: { id: true, role: { select: { name: true } } },
+    });
+
+    if (userRole) {
+      return { allowed: true, role: userRole.role.name };
+    }
+
     const staff = await prisma.staff.findFirst({
       where: { userId, businessId },
       include: {
         assignments: {
-          include: { role: { include: { permissions: { include: { permission: true } } } } },
+          include: { role: { include: { rolePermissions: { include: { permission: true } } } } },
         },
       },
     });
@@ -29,7 +38,7 @@ export async function checkPermission(
 
     for (const assignment of staff.assignments) {
       if (!assignment.role) continue;
-      const perms = assignment.role.permissions.map((rp) => rp.permission.key);
+      const perms = assignment.role.rolePermissions.map((rp) => rp.permission.key);
       if (perms.includes(requiredPermission) || perms.includes("*")) {
         return { allowed: true, role: assignment.role.name };
       }
@@ -66,4 +75,26 @@ export async function checkSalesHierarchy(
   } catch {
     return { level: null };
   }
+}
+
+export async function isBusinessOwner(userId: string, businessId: string): Promise<boolean> {
+  try {
+    const role = await prisma.userRole.findFirst({
+      where: { userId, businessId, role: { slug: "owner" } },
+      select: { id: true },
+    });
+    return !!role;
+  } catch {
+    return false;
+  }
+}
+
+export async function requireOwnerOrPermission(
+  userId: string,
+  businessId: string,
+  requiredPermission: string,
+): Promise<PermissionCheck> {
+  const ownerCheck = await isBusinessOwner(userId, businessId);
+  if (ownerCheck) return { allowed: true, role: "Owner" };
+  return checkPermission(userId, businessId, requiredPermission);
 }

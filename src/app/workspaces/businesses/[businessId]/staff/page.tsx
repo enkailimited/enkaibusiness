@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
-import { StaffList } from "@/features/staff/components/staff-list";
 import { StaffForm } from "@/features/staff/components/staff-form";
+import { StaffManageSection } from "@/features/staff/components/staff-manage-section";
 import { DialogForm } from "@/components/ui/dialog-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireAuth } from "@/server/auth";
@@ -12,7 +12,7 @@ interface Props { params: Promise<{ businessId: string }> }
 async function StaffSection({ businessId }: { businessId: string }) {
   await requireAuth();
   const staff = await getBusinessStaff(businessId);
-  return <StaffList staff={staff} />;
+  return <StaffManageSection businessId={businessId} staff={staff} />;
 }
 
 export default async function StaffPage({ params }: Props) {

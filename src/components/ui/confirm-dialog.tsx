@@ -1,8 +1,15 @@
 "use client";
 
-import { Modal, ModalContent } from "@/components/ui/modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { TriangleAlert, Loader2 } from "lucide-react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -11,7 +18,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  variant?: "default" | "destructive";
+  variant?: "destructive" | "default";
   onConfirm: () => void;
   loading?: boolean;
 }
@@ -28,28 +35,37 @@ export function ConfirmDialog({
   loading,
 }: ConfirmDialogProps) {
   return (
-    <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent title={title} description={description}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-            className="w-full sm:w-auto"
-          >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${
+              variant === "destructive" ? "bg-red-100" : "bg-blue-100"
+            }`}>
+              <TriangleAlert className={`h-5 w-5 ${
+                variant === "destructive" ? "text-red-600" : "text-blue-600"
+              }`} />
+            </div>
+            <div>
+              <DialogTitle>{title}</DialogTitle>
+              <DialogDescription>{description}</DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button
-            variant={variant}
-            onClick={onConfirm}
+            variant={variant === "destructive" ? "destructive" : "default"}
             disabled={loading}
-            className="w-full sm:w-auto"
+            onClick={() => { onConfirm(); }}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {confirmLabel}
           </Button>
-        </div>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

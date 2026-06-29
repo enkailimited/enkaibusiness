@@ -63,8 +63,8 @@ async function computeLiveMemory(businessId: string): Promise<BusinessMemory> {
     prisma.sale.groupBy({
       by: ["customerId"],
       where: { businessId, customerId: { not: null } },
-      _sum: { total: true },
-      orderBy: { _sum: { total: "desc" } },
+      _sum: { grandTotal: true },
+      orderBy: { _sum: { grandTotal: "desc" } },
       take: 5,
     }),
     prisma.purchaseOrder.findMany({

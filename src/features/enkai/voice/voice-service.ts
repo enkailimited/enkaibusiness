@@ -1,19 +1,20 @@
-import "server-only";
-
 import { parseCommand } from "../commands/command-parser";
 import type { ParsedCommand } from "../commands/types";
+import { analyzeVoiceIntent, formatPipelineLog, type VoiceIntentResult } from "./voice-intent";
+import { detectWakeWord, removeWakeWord } from "../utils/wake-word";
 
 export interface VoiceInputResult {
   transcript: string;
   confidence: number;
   parsed: ParsedCommand;
+  analysis: VoiceIntentResult;
+  normalized: string;
 }
 
 const commonVoicePatterns: Array<{
   pattern: RegExp;
   replacement: string;
 }> = [
-  // Swahili patterns
   { pattern: /stock ya (.+) imebaki/gi, replacement: "/stock $1" },
   { pattern: /stock ya (.+) zimebaki/gi, replacement: "/stock $1" },
   { pattern: /nimeuza/gi, replacement: "/sell" },
@@ -31,8 +32,6 @@ const commonVoicePatterns: Array<{
   { pattern: /hamisha stock/gi, replacement: "/transfer" },
   { pattern: /angalia pochi/gi, replacement: "/wallet" },
   { pattern: /maarifa ya biashara/gi, replacement: "/insights" },
-
-  // English patterns (existing)
   { pattern: /what's the stock of/gi, replacement: "/stock" },
   { pattern: /how much stock of/gi, replacement: "/stock" },
   { pattern: /check stock for/gi, replacement: "/stock" },
@@ -49,7 +48,15 @@ const commonVoicePatterns: Array<{
 ];
 
 export function processVoiceInput(transcript: string): VoiceInputResult {
-  let normalized = transcript.trim().toLowerCase();
+  let cleanedTranscript = transcript.trim().toLowerCase();
+
+  const wakeResult = detectWakeWord(cleanedTranscript);
+  if (wakeResult.detected) {
+    cleanedTranscript = removeWakeWord(cleanedTranscript, wakeResult.wakeWord);
+  }
+
+  const analysis = analyzeVoiceIntent(cleanedTranscript);
+  let normalized = cleanedTranscript;
 
   for (const vp of commonVoicePatterns) {
     normalized = normalized.replace(vp.pattern, vp.replacement);
@@ -57,10 +64,15 @@ export function processVoiceInput(transcript: string): VoiceInputResult {
 
   const parsed = parseCommand(normalized);
 
+  console.log(formatPipelineLog(analysis));
+  console.log(`[Firdaus] Command normalized: "${normalized}"`);
+
   return {
     transcript,
-    confidence: parsed.confidence > 0 ? 0.85 : 0.3,
+    confidence: parsed.confidence > 0 ? Math.max(parsed.confidence, analysis.confidence) : analysis.confidence,
     parsed,
+    analysis,
+    normalized,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
+import { CategoryList } from "@/features/catalog/categories/components/category-list";
 import { CategoryForm } from "@/features/catalog/categories/components/category-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,7 +53,7 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader title="Categories" description="Organize products into categories">
+      <PageHeader title="Categories" description="Organize catalog items into categories">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm">
@@ -82,7 +83,7 @@ export default function CategoriesPage() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <CategoryList categories={categories} />
+        <CategoryList categories={categories} businessId={businessId} categoryOptions={flattenCategories(categories)} onRefresh={fetchData} />
       )}
     </div>
   );

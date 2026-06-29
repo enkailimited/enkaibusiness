@@ -4,6 +4,9 @@ import type { LeadStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import { OnboardingStep } from "@/types/enums";
+import { UserRegistrationEngine, BusinessRegistrationEngine } from "@/server/registrations";
+import { RegistrationContext } from "@/server/registrations/context";
+import { ensureRbacWorkspaceRole } from "@/features/workspaces/services/workspace-service";
 
 export interface OnboardingStepInfo {
   step: OnboardingStep;
@@ -182,14 +185,24 @@ export async function createWorkspaceForLead(
     let user = await prisma.user.findUnique({ where: { email: userEmail } });
 
     if (!user) {
-      user = await prisma.user.create({
-        data: {
+      const userResult = await UserRegistrationEngine.register(
+        RegistrationContext.WORKSPACE,
+        lead.assignedToId || "system",
+        {
           email: userEmail,
           firstName: lead.firstName,
           lastName: lead.lastName,
           phone: lead.phone || undefined,
+          invite: false,
         },
-      });
+      );
+      if (!userResult.success) {
+        return { success: false, message: userResult.message };
+      }
+      user = await prisma.user.findUnique({ where: { email: userEmail } });
+      if (!user) {
+        return { success: false, message: "User was created but could not be retrieved" };
+      }
     }
 
     const workspace = await prisma.workspace.create({
@@ -206,16 +219,47 @@ export async function createWorkspaceForLead(
       },
     });
 
-    const business = await prisma.business.create({
-      data: {
-        workspaceId: workspace.id,
+    await ensureRbacWorkspaceRole(user.id, "OWNER");
+
+    const defaultPlan = await prisma.subscriptionPlan.findFirst({
+      where: { isActive: true },
+      orderBy: { amount: "asc" },
+    });
+
+    if (!defaultPlan) {
+      return { success: false, message: "No active subscription plan found. Please contact administrator." };
+    }
+
+    const dailyRate = Number(defaultPlan.amount) / (defaultPlan.interval === "WEEKLY" ? 7 : defaultPlan.interval === "MONTHLY" ? 30 : 1);
+    const { calculateDailyPrice, calculateSetupFee } = await import("@/features/subscriptions/constants/pricing");
+    const dailyPrice = calculateDailyPrice(dailyRate, "small", false);
+    const { total: totalSetupFee } = calculateSetupFee(false, ["retail"]);
+
+    const bizResult = await BusinessRegistrationEngine.register(
+      {
         name: lead.businessName || `${lead.firstName} ${lead.lastName}'s Business`,
         slug: `${lead.firstName.toLowerCase()}-${lead.lastName.toLowerCase()}-business`,
+        workspaceId: workspace.id,
+        createdById: user.id,
         email: lead.email || undefined,
         phone: lead.phone || undefined,
-        createdById: user.id,
+        industry: "RETAIL" as any,
+        modes: ["retail"],
+        planId: defaultPlan.id,
+        businessSize: "small",
       },
-    });
+      {
+        id: defaultPlan.id,
+        amount: Number(defaultPlan.amount),
+        interval: defaultPlan.interval,
+        name: defaultPlan.name,
+      },
+      { dailyPrice, setupFee: 0, qrPrintingFee: 0, totalSetupFee },
+    );
+
+    if (!bizResult.success) {
+      return { success: false, message: bizResult.message };
+    }
 
     if (lead.status !== "CONVERTED") {
       await prisma.lead.update({
@@ -232,7 +276,7 @@ export async function createWorkspaceForLead(
       data: {
         leadId,
         action: "WORKSPACE_CREATED",
-        detail: `Workspace "${workspace.name}" and business "${business.name}" created`,
+        detail: `Workspace "${workspace.name}" and business created`,
         createdById: user.id,
       },
     });
@@ -240,7 +284,7 @@ export async function createWorkspaceForLead(
     return {
       success: true,
       message: "Workspace and business created successfully",
-      data: { workspaceId: workspace.id, businessId: business.id },
+      data: { workspaceId: workspace.id, businessId: bizResult.data!.businessId },
     };
   } catch (error) {
     console.error("Create workspace for lead error:", error);

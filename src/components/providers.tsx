@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AuthProvider, useAuth } from "@/features/auth/components/auth-provider";
 import { FirdausProvider, FirdausGlobalListener, FirdausToast, FirdausResponseToast } from "@/features/enkai";
 import { LauncherSound } from "@/components/launcher-sound";
+import { Toaster } from "@/components/ui/toaster";
 
 function FirdausGreeter() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <FirdausGlobalListener />
             <FirdausGreeter />
             <FirdausResponseToast />
+            <Toaster />
             <LauncherSound />
           </FirdausProvider>
         </AuthProvider>

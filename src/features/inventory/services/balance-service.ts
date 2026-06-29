@@ -10,13 +10,11 @@ export async function getOrCreateBalance(
   catalogItemId: string,
   variantId?: string,
 ) {
-  const existing = await prisma.inventoryBalance.findUnique({
+  const existing = await prisma.inventoryBalance.findFirst({
     where: {
-      locationId_catalogItemId_variantId: {
-        locationId,
-        catalogItemId,
-        variantId: variantId ?? "",
-      },
+      locationId,
+      catalogItemId,
+      variantId: variantId ?? null,
     },
     include: {
       catalogItem: {
@@ -161,13 +159,11 @@ export async function transferStock(
     if (!fromLocation) return { success: false, message: "Source location not found" };
     if (!toLocation) return { success: false, message: "Destination location not found" };
 
-    const sourceBalance = await prisma.inventoryBalance.findUnique({
+    const sourceBalance = await prisma.inventoryBalance.findFirst({
       where: {
-        locationId_catalogItemId_variantId: {
-          locationId: data.fromLocationId,
-          catalogItemId: data.catalogItemId,
-          variantId: data.variantId ?? "",
-        },
+        locationId: data.fromLocationId,
+        catalogItemId: data.catalogItemId,
+        variantId: data.variantId ?? null,
       },
     });
 
@@ -207,7 +203,7 @@ export async function transferStock(
         data: {
           locationId: data.fromLocationId,
           catalogItemId: data.catalogItemId,
-          variantId: data.variantId,
+          variantId: data.variantId ?? null,
           quantityChange: -data.quantity,
           balanceBefore: currentQty,
           balanceAfter: newSourceQty,
@@ -220,7 +216,7 @@ export async function transferStock(
         data: {
           locationId: data.toLocationId,
           catalogItemId: data.catalogItemId,
-          variantId: data.variantId,
+          variantId: data.variantId ?? null,
           quantityChange: data.quantity,
           balanceBefore: currentDestQty,
           balanceAfter: newDestQty,

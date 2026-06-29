@@ -27,11 +27,12 @@ export async function createPurchaseOrder(
           orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
           expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
           status: data.status ?? "draft",
-          subtotal,
-          tax,
-          total,
-          notes: data.notes || null,
-          createdById: createdById || null,
+      subtotal,
+      tax,
+      total,
+      reference: `PO-${businessId.substring(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`,
+      notes: data.notes || null,
+      createdById: createdById || null,
           items: {
             create: data.items.map((item) => ({
               catalogItemId: item.catalogItemId,
@@ -142,6 +143,7 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithRel
     expectedDate: raw.expectedDate?.toISOString() ?? null,
     createdAt: raw.createdAt.toISOString(),
     updatedAt: raw.updatedAt.toISOString(),
+    reference: raw.reference,
     subtotal: Number(raw.subtotal),
     tax: Number(raw.tax),
     total: Number(raw.total),
@@ -200,6 +202,7 @@ export async function getBusinessPurchaseOrders(
     ...p,
     orderDate: p.orderDate.toISOString(),
     expectedDate: p.expectedDate?.toISOString() ?? null,
+    reference: p.reference,
     subtotal: Number(p.subtotal),
     tax: Number(p.tax),
     total: Number(p.total),
@@ -267,19 +270,131 @@ export async function markPurchaseOrderAsReceived(id: string): Promise<ActionRes
       return { success: false, message: "Only approved orders can be received" };
     }
 
+    const goodsReceivedCount = await prisma.goodsReceived.count({
+      where: { purchaseOrderId: id },
+    });
+
+    if (goodsReceivedCount > 0) {
+      await prisma.purchaseOrder.update({
+        where: { id },
+        data: { status: "received" },
+      });
+      return { success: true, message: "Purchase order marked as received (already received via goods received)" };
+    }
+
+    const location = await prisma.inventoryLocation.findFirst({
+      where: { businessId: existing.businessId, isActive: true, ...(existing.branchId ? { branchId: existing.branchId } : {}) },
+      orderBy: { createdAt: "asc" },
+    });
+
     await prisma.$transaction(async (tx) => {
       await tx.purchaseOrder.update({
         where: { id },
-        data: {
-          status: "received",
-          items: {
-            updateMany: {
-              where: { purchaseOrderId: id },
-              data: { receivedQuantity: { equals: prisma.purchaseOrderItem.fields.quantity } },
+        data: { status: "received" },
+      });
+
+      let totalItemsCost = 0;
+      const purchaseItems: Array<{
+        catalogItemId: string;
+        variantId: string | null;
+        quantity: number;
+        unitCost: number;
+        subtotal: number;
+      }> = [];
+
+      for (const item of existing.items) {
+        const qty = Number(item.quantity);
+        await tx.purchaseOrderItem.update({
+          where: { id: item.id },
+          data: { receivedQuantity: qty },
+        });
+
+        if (!location) continue;
+
+        const catalogItem = await tx.catalogItem.findUnique({
+          where: { id: item.catalogItemId },
+          select: { trackStock: true, costPrice: true },
+        });
+
+        const unitCost = catalogItem?.costPrice ? Number(catalogItem.costPrice) : 0;
+        const subtotal = qty * unitCost;
+        totalItemsCost += subtotal;
+        purchaseItems.push({ catalogItemId: item.catalogItemId, variantId: item.variantId ?? null, quantity: qty, unitCost, subtotal });
+
+        if (!catalogItem?.trackStock) continue;
+
+        let balance = await tx.inventoryBalance.findFirst({
+          where: {
+            locationId: location.id,
+            catalogItemId: item.catalogItemId,
+            variantId: item.variantId ?? null,
+          },
+        });
+
+        if (!balance) {
+          balance = await tx.inventoryBalance.create({
+            data: {
+              locationId: location.id,
+              catalogItemId: item.catalogItemId,
+              variantId: item.variantId || null,
+              quantityOnHand: 0,
+              quantityAvailable: 0,
+              quantityCommitted: 0,
+            },
+          });
+        }
+
+        const currentQty = Number(balance.quantityOnHand);
+        const newQty = currentQty + qty;
+
+        await tx.inventoryBalance.update({
+          where: { id: balance.id },
+          data: { quantityOnHand: newQty, quantityAvailable: newQty },
+        });
+
+        await tx.stockMovement.create({
+          data: {
+            locationId: location.id,
+            catalogItemId: item.catalogItemId,
+            variantId: item.variantId || null,
+            quantityChange: qty,
+            balanceBefore: currentQty,
+            balanceAfter: newQty,
+            referenceType: "purchase",
+            reference: id,
+            notes: `Purchase order received ${existing.reference || existing.id}`,
+          },
+        });
+      }
+
+      if (purchaseItems.length > 0) {
+        await tx.purchase.create({
+          data: {
+            workspaceId: existing.workspaceId,
+            businessId: existing.businessId,
+            branchId: existing.branchId || null,
+            supplierId: existing.supplierId,
+            purchaseDate: new Date(),
+            reference: existing.reference || undefined,
+            status: "unpaid",
+            paidAmount: 0,
+            balanceDue: totalItemsCost,
+            subtotal: totalItemsCost,
+            tax: 0,
+            total: totalItemsCost,
+            notes: `Auto-created from PO received ${existing.reference || existing.id}`,
+            items: {
+              create: purchaseItems.map((pi) => ({
+                catalogItemId: pi.catalogItemId,
+                variantId: pi.variantId,
+                quantity: pi.quantity,
+                unitCost: pi.unitCost,
+                subtotal: pi.subtotal,
+              })),
             },
           },
-        },
-      });
+        });
+      }
     });
 
     return { success: true, message: "Purchase order marked as received" };

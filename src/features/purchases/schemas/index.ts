@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const purchaseStatusEnum = z.enum(["draft", "completed", "cancelled"]);
+const purchaseStatusEnum = z.enum(["unpaid", "partial", "paid", "overdue", "cancelled", "draft", "completed"]);
 
 const purchaseItemSchema = z.object({
   catalogItemId: z.string().uuid("Invalid catalog item"),
@@ -17,7 +17,9 @@ export const createPurchaseSchema = z.object({
   staffId: z.string().uuid().optional().or(z.literal("")),
   purchaseDate: z.string().optional(),
   reference: z.string().max(100).optional().or(z.literal("")),
-  status: purchaseStatusEnum.default("completed"),
+  status: purchaseStatusEnum.default("unpaid"),
+  paidAmount: z.coerce.number().min(0).default(0),
+  dueDate: z.string().optional().or(z.literal("")),
   tax: z.coerce.number().min(0).default(0),
   notes: z.string().max(2000).optional().or(z.literal("")),
   items: z.array(purchaseItemSchema).min(1, "At least one item is required"),
@@ -26,6 +28,7 @@ export const createPurchaseSchema = z.object({
 export const updatePurchaseSchema = createPurchaseSchema.partial();
 
 export const purchaseFilterSchema = z.object({
+  branchId: z.string().uuid().optional(),
   supplierId: z.string().uuid().optional(),
   status: z.string().optional(),
   dateFrom: z.string().optional(),

@@ -14,7 +14,7 @@ import {
   addLeadActivity,
   convertLead,
   getLeadMetrics,
-} from "@/server/services/lead-service";
+} from "@/features/leads/services/lead-service";
 import {
   createLeadSchema,
   updateLeadSchema,
@@ -22,7 +22,7 @@ import {
   createLeadActivitySchema,
 } from "@/lib/validations/lead";
 import type { ActionResponse } from "@/types/relationships";
-import type { LeadFilters } from "@/server/services/lead-service";
+import type { LeadFilters } from "@/features/leads/types";
 import { generateTempPassword, setUserPassword, sendInviteEmail } from "@/features/users/services/invite-service";
 
 export async function createLeadAction(

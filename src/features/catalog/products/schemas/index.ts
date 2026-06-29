@@ -17,23 +17,23 @@ export const createProductSchema = z.object({
   sku: z.string().max(100).optional().or(z.literal("")),
   barcode: z.string().max(100).optional().or(z.literal("")),
   itemType: z.literal("PRODUCT"),
-  category: z.string().max(100).optional().or(z.literal("")),
+  categoryId: z.string().uuid().optional().or(z.literal("")),
   brandId: z.string().uuid().optional().or(z.literal("")),
-  unit: z.string().max(50).optional().or(z.literal("")),
+  unitId: z.string().uuid().optional().or(z.literal("")),
   price: z.number().min(0, "Price must be non-negative"),
   costPrice: z.number().min(0).optional(),
   taxRate: z.number().min(0).max(100).optional(),
   currency: z.string().default("TZS"),
   isService: z.literal(false).default(false),
   trackStock: z.boolean().default(true),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().optional(),
   variants: z.array(variantSchema).optional().default([]),
 });
 
 export const updateProductSchema = createProductSchema.partial().omit({ variants: true });
 
 export const productFilterSchema = z.object({
-  category: z.string().optional(),
+  categoryId: z.string().uuid().optional(),
   brandId: z.string().uuid().optional(),
   isActive: z.boolean().optional(),
   search: z.string().optional(),

@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
 import {
-  getSalesHierarchy,
-  createSalesHierarchy,
-  deleteSalesHierarchy,
-  getSalesProfiles,
-  createSalesProfile,
-  updateSalesProfile,
+  getHierarchyLevels as getSalesHierarchy,
+  createHierarchyLevel as createSalesHierarchy,
+  deleteHierarchyLevel as deleteSalesHierarchy,
+} from "@/features/sales-network/services/hierarchy-service";
+import {
+  listProfiles as getSalesProfiles,
+  createProfile as createSalesProfile,
+  updateProfile as updateSalesProfile,
   getTeamTree,
-} from "@/server/services/sales-service";
+} from "@/features/sales-network/services/profile-service";
 import {
   createSalesHierarchySchema,
   createSalesProfileSchema,

@@ -24,13 +24,11 @@ async function getOrCreateBalance(
   catalogItemId: string,
   variantId?: string,
 ) {
-  const existing = await prisma.inventoryBalance.findUnique({
+  const existing = await prisma.inventoryBalance.findFirst({
     where: {
-      locationId_catalogItemId_variantId: {
-        locationId,
-        catalogItemId,
-        variantId: variantId ?? "",
-      },
+      locationId,
+      catalogItemId,
+      variantId: variantId ?? null,
     },
   });
 
@@ -232,13 +230,11 @@ export async function receiveTransfer(
           : requestedQty;
         const clampedQty = Math.min(receivedQty, requestedQty);
 
-        const fromBalance = await tx.inventoryBalance.findUnique({
+        const fromBalance = await tx.inventoryBalance.findFirst({
           where: {
-            locationId_catalogItemId_variantId: {
-              locationId: transfer.fromLocationId,
-              catalogItemId: transferItem.catalogItemId,
-              variantId: transferItem.variantId ?? "",
-            },
+            locationId: transfer.fromLocationId,
+            catalogItemId: transferItem.catalogItemId,
+            variantId: transferItem.variantId ?? null,
           },
         });
 

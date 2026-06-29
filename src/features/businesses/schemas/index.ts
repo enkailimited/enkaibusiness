@@ -27,6 +27,7 @@ export const createBusinessSchema = z.object({
   taxId: z.string().optional().or(z.literal("")),
   industry: industryEnum,
   modes: z.array(z.string()).min(1, "At least one mode is required"),
+  businessTypeId: z.string().uuid().optional().or(z.literal("")),
 });
 
 export const updateBusinessSchema = createBusinessSchema.partial();
@@ -36,6 +37,17 @@ export const businessModeSchema = z.object({
   mode: z.string().min(1, "Mode is required"),
 });
 
+export const registerBusinessSchema = createBusinessSchema.extend({
+  businessSize: z.string().default("small"),
+  planId: z.string().min(1, "Subscription plan is required"),
+  qrOrderingEnabled: z.boolean().default(false),
+  workspaceId: z.string().optional(),
+  leadId: z.string().optional(),
+}).refine(data => data.workspaceId || data.leadId, {
+  message: "Either workspaceId or leadId is required",
+});
+
 export type CreateBusinessSchema = z.infer<typeof createBusinessSchema>;
 export type UpdateBusinessSchema = z.infer<typeof updateBusinessSchema>;
 export type BusinessModeSchema = z.infer<typeof businessModeSchema>;
+export type RegisterBusinessInput = z.infer<typeof registerBusinessSchema>;

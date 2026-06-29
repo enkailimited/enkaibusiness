@@ -34,6 +34,11 @@ const CREATE_STEPS = [
 
 export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
   const [step, setStep] = useState(0);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [roles, setRoles] = useState<RoleOption[]>([]);
@@ -63,6 +68,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
   }
 
   function canProceed(): boolean {
+    if (step === 0) return !!firstName && !!lastName && !!email && !!phone && !!username;
     if (step === 1) return !!selectedGender;
     return true;
   }
@@ -105,6 +111,53 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </div>
               </div>
               <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-sm font-medium">
+                      First Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input id="firstName" name="firstName" defaultValue={staff?.user.firstName ?? ""}
+                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      onKeyDown={handleKeyDown} />
+                    {state?.errors?.firstName && (
+                      <p className="text-sm text-red-500">{state.errors.firstName[0]}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-sm font-medium">
+                      Last Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input id="lastName" name="lastName" defaultValue={staff?.user.lastName ?? ""}
+                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      onKeyDown={handleKeyDown} />
+                    {state?.errors?.lastName && (
+                      <p className="text-sm text-red-500">{state.errors.lastName[0]}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input id="email" name="email" type="email" defaultValue={staff?.user.email ?? ""}
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    onKeyDown={handleKeyDown} />
+                  {state?.errors?.email && (
+                    <p className="text-sm text-red-500">{state.errors.email[0]}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-medium">
+                    Phone
+                  </Label>
+                  <Input id="phone" name="phone" type="tel" defaultValue={staff?.user.phone ?? ""}
+                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    onKeyDown={handleKeyDown} />
+                  {state?.errors?.phone && (
+                    <p className="text-sm text-red-500">{state.errors.phone[0]}</p>
+                  )}
+                </div>
+                <hr className="border-gray-100" />
                 <div className="space-y-2">
                   <Label htmlFor="employeeCode" className="text-sm font-medium">
                     Employee Code <span className="text-gray-400">(Optional)</span>
@@ -123,7 +176,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="position" className="text-sm font-medium">
-                    Position <span className="text-gray-400">(Optional)</span>
+                    Position <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="position"
@@ -190,6 +243,11 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
         <FormStepper steps={CREATE_STEPS} currentStep={step} />
         <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={handleKeyDown}>
           <input type="hidden" name="businessId" value={businessId} />
+          <input type="hidden" name="firstName" value={firstName} />
+          <input type="hidden" name="lastName" value={lastName} />
+          <input type="hidden" name="email" value={email} />
+          <input type="hidden" name="phone" value={phone} />
+          <input type="hidden" name="username" value={username} />
           <input type="hidden" name="gender" value={selectedGender} />
           <input type="hidden" name="roleId" value={selectedRole} />
 
@@ -211,6 +269,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     First Name <span className="text-red-500">*</span>
                   </Label>
                   <Input id="firstName" name="firstName" required autoComplete="given-name" onKeyDown={handleKeyDown}
+                    value={firstName} onChange={(e) => setFirstName(e.target.value)}
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
@@ -218,6 +277,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     Last Name <span className="text-red-500">*</span>
                   </Label>
                   <Input id="lastName" name="lastName" required autoComplete="family-name" onKeyDown={handleKeyDown}
+                    value={lastName} onChange={(e) => setLastName(e.target.value)}
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
@@ -227,6 +287,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   Email <span className="text-red-500">*</span>
                 </Label>
                 <Input id="email" name="email" type="email" required autoComplete="email" onKeyDown={handleKeyDown}
+                  value={email} onChange={(e) => setEmail(e.target.value)}
                   className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -236,6 +297,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     Phone <span className="text-red-500">*</span>
                   </Label>
                   <Input id="phone" name="phone" type="tel" autoComplete="tel" required onKeyDown={handleKeyDown}
+                    value={phone} onChange={(e) => setPhone(e.target.value)}
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
@@ -244,7 +306,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     Username <span className="text-red-500">*</span>
                   </Label>
                   <Input id="username" name="username" autoComplete="username" required onKeyDown={handleKeyDown}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                    value={username} onChange={(e) => setUsername(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -352,11 +414,11 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="position" className="text-sm font-medium">
-                    Position <span className="text-gray-400">(Optional)</span>
+                    Position <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="position" name="position"
-                    placeholder="e.g. Cashier"
+                    placeholder="e.g. Cashier" required
                     className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />

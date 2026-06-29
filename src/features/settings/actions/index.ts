@@ -35,6 +35,7 @@ import {
 } from "../services/setting-service";
 import { createSettingSchema, updateSettingSchema, settingFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { z } from "zod";
 import type { BusinessProfileSettings, TaxSettings, ReceiptSettings, NumberingSettings, PaymentSettings, UserPreferences } from "../types";
 
 export async function getBusinessProfileSettingsAction(
@@ -227,6 +228,8 @@ export async function getSettingAction(
   scope: { businessId?: string; userId?: string },
 ) {
   await requireAuth();
+  const keyParsed = stringSchema.safeParse(key);
+  if (!keyParsed.success) return null;
   return getSetting(key, scope);
 }
 
@@ -254,8 +257,16 @@ export async function setSettingAction(
   return setSetting(key, value as string | number | boolean | Record<string, unknown>, options);
 }
 
+const uuidSchema = z.string().uuid("Invalid ID");
+const stringSchema = z.string().min(1, "Required").max(500);
+
+const workspaceNameSchema = z.string().min(1, "Name is required").max(200);
+const workspaceDescSchema = z.string().max(1000);
+
 export async function deleteSettingAction(id: string): Promise<ActionResponse> {
   await requireAuth();
+  const parsed = uuidSchema.safeParse(id);
+  if (!parsed.success) return { success: false, message: "Invalid setting ID" };
   return deleteSetting(id);
 }
 
@@ -280,6 +291,12 @@ export async function getWorkspaceSettingsAction() {
 
 export async function saveWorkspaceSettingsAction(id: string, name: string, description: string) {
   await requireAuth();
+  const idParsed = uuidSchema.safeParse(id);
+  const nameParsed = workspaceNameSchema.safeParse(name);
+  const descParsed = workspaceDescSchema.safeParse(description);
+  if (!idParsed.success) return { success: false, message: "Invalid workspace ID" };
+  if (!nameParsed.success) return { success: false, message: nameParsed.error.errors[0].message };
+  if (!descParsed.success) return { success: false, message: descParsed.error.errors[0].message };
   await prisma.workspace.update({ where: { id }, data: { name, description } });
   return { success: true };
 }

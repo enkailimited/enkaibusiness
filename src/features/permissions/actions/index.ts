@@ -4,26 +4,30 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
 import { createPermission, updatePermission, deletePermission } from "../services/permission-service";
 import type { ActionResponse } from "@/types/relationships";
+import { createPermissionSchema, updatePermissionSchema } from "../schemas";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createPermissionAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "permissions.create");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const data = {
-    name: formData.get("name") as string,
-    slug: formData.get("slug") as string,
-    description: (formData.get("description") as string) || undefined,
-    module: formData.get("module") as string,
-    action: formData.get("action") as string,
-  };
+  const parsed = createPermissionSchema.safeParse({
+    name: formData.get("name"),
+    slug: formData.get("slug"),
+    description: formData.get("description") || undefined,
+    module: formData.get("module"),
+    action: formData.get("action"),
+  });
 
-  if (!data.name || !data.slug || !data.module || !data.action) {
-    return { success: false, message: "Missing required fields" };
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
   }
 
-  const result = await createPermission(data);
+  const result = await createPermission(parsed.data);
 
   if (result.success) revalidatePath("/platform/permissions");
 
@@ -35,21 +39,23 @@ export async function updatePermissionAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "permissions.update");
+  if (!can) return { success: false, message: "Unauthorized" };
 
-  const data: Record<string, string | undefined> = {
-    name: (formData.get("name") as string) || undefined,
-    slug: (formData.get("slug") as string) || undefined,
-    description: (formData.get("description") as string) || undefined,
-    module: (formData.get("module") as string) || undefined,
-    action: (formData.get("action") as string) || undefined,
-  };
+  const parsed = updatePermissionSchema.safeParse({
+    name: formData.get("name") || undefined,
+    slug: formData.get("slug") || undefined,
+    description: formData.get("description") || undefined,
+    module: formData.get("module") || undefined,
+    action: formData.get("action") || undefined,
+  });
 
-  const cleaned = Object.fromEntries(
-    Object.entries(data).filter(([_, v]) => v !== undefined && v !== ""),
-  );
+  if (!parsed.success) {
+    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+  }
 
-  const result = await updatePermission(id, cleaned);
+  const result = await updatePermission(id, parsed.data);
 
   if (result.success) revalidatePath("/platform/permissions");
 
@@ -59,7 +65,9 @@ export async function updatePermissionAction(
 export async function deletePermissionAction(
   id: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "permissions.delete");
+  if (!can) return { success: false, message: "Unauthorized" };
 
   const result = await deletePermission(id);
 

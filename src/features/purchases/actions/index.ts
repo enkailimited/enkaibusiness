@@ -8,6 +8,7 @@ import {
   getPurchase,
   getBusinessPurchases,
   deletePurchase,
+  cancelPurchase,
 } from "../services/purchase-service";
 import { createPurchaseSchema, updatePurchaseSchema, purchaseFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
@@ -48,7 +49,7 @@ export async function createPurchaseAction(
     staffId: formData.get("staffId") || undefined,
     purchaseDate: formData.get("purchaseDate") || undefined,
     reference: formData.get("reference") || undefined,
-    status: formData.get("status") || "completed",
+    status: formData.get("status") || undefined,
     tax: formData.get("tax") || 0,
     notes: formData.get("notes") || undefined,
     items,
@@ -77,7 +78,7 @@ export async function updatePurchaseAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const items: Array<{
     catalogItemId: string;
@@ -108,7 +109,8 @@ export async function updatePurchaseAction(
     purchaseDate: formData.get("purchaseDate") || undefined,
     reference: formData.get("reference") || undefined,
     status: formData.get("status") || undefined,
-    tax: formData.get("tax") !== null ? formData.get("tax") : undefined,
+    paidAmount: formData.get("paidAmount") !== null ? parseFloat(formData.get("paidAmount") as string) : undefined,
+    tax: formData.get("tax") !== null ? parseFloat(formData.get("tax") as string) : undefined,
     notes: formData.get("notes") || undefined,
     items: items.length > 0 ? items : undefined,
   });
@@ -121,7 +123,7 @@ export async function updatePurchaseAction(
     };
   }
 
-  const result = await updatePurchase(id, parsed.data);
+  const result = await updatePurchase(id, parsed.data, user.id);
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
@@ -151,8 +153,17 @@ export async function listPurchasesAction(
 }
 
 export async function deletePurchaseAction(id: string, businessId: string) {
-  await requireAuth();
-  const result = await deletePurchase(id);
+  const user = await requireAuth();
+  const result = await deletePurchase(id, user.id);
+  if (result.success) {
+    revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
+  }
+  return result;
+}
+
+export async function cancelPurchaseAction(id: string, businessId: string) {
+  const user = await requireAuth();
+  const result = await cancelPurchase(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/purchases`);
   }

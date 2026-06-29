@@ -35,6 +35,17 @@ export {
 } from "./services/notification-service";
 
 export {
+  dispatch,
+  dispatchToMany,
+  dispatchByEvent,
+} from "./services/dispatch-service";
+export type {
+  DispatchInput,
+  DispatchResult,
+  NotificationChannel,
+} from "./services/dispatch-service";
+
+export {
   createNotificationAction,
   getNotificationsAction,
   markAsReadAction,

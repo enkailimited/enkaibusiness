@@ -22,7 +22,7 @@ import {
 import { getLeadsAction } from "@/server/actions/leads";
 import Link from "next/link";
 import { formatDate, getInitials } from "@/lib/utils";
-import type { LeadFilters } from "@/server/services/lead-service";
+import type { LeadFilters } from "@/features/leads/types";
 interface Lead {
   id: string;
   firstName: string;

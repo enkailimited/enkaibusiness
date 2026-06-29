@@ -4,6 +4,13 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateSaleSchema, UpdateSaleSchema, SaleFilterSchema } from "../schemas";
 import type { SaleWithRelations, SaleListItem } from "../types";
+import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
+import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
+import { emitSaleCreated, emitSaleUpdated, emitSaleVoided } from "@/modules/ai/events/event-bus";
+
+function log(area: string, msg: string, meta?: Record<string, unknown>) {
+  console.log(`[DIAG:${area}] ${msg}`, meta ?? "");
+}
 
 export async function createSale(
   data: CreateSaleSchema,
@@ -11,11 +18,31 @@ export async function createSale(
   workspaceId: string,
   createdById?: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
+  log("sale.create", "start", { businessId, branchId: data.branchId, itemCount: data.items.length });
   try {
+    if (!data.branchId) {
+      return { success: false, message: "Branch is required for sales" };
+    }
+
     const subtotal = data.items.reduce((sum, item) => sum + item.subtotal, 0);
     const discountTotal = data.discountTotal ?? 0;
     const taxTotal = data.taxTotal ?? 0;
     const grandTotal = subtotal - discountTotal + taxTotal;
+    const isCompleted = data.status === "completed" || !data.status;
+    const paymentType = data.paymentType ?? "cash";
+    const amountPaid = paymentType === "cash" ? grandTotal : (data.amountPaid ?? 0);
+    const isCredit = paymentType === "credit";
+    const isPartial = paymentType === "partial";
+    const invoiceStatus: string = isCredit ? "unpaid" : isPartial ? "partial" : "paid";
+    const paidAmount = isCredit ? 0 : amountPaid;
+    const balanceDue = grandTotal - paidAmount;
+
+    const catalogItemIds = [...new Set(data.items.map((i) => i.catalogItemId))];
+    const catalogItems = await prisma.catalogItem.findMany({
+      where: { id: { in: catalogItemIds } },
+      select: { id: true, name: true, costPrice: true, trackStock: true },
+    });
+    const catalogMap = new Map(catalogItems.map((ci) => [ci.id, ci]));
 
     const sale = await prisma.$transaction(async (tx) => {
       const created = await tx.sale.create({
@@ -36,20 +63,197 @@ export async function createSale(
           notes: data.notes || null,
           createdById: createdById || null,
           items: {
-            create: data.items.map((item) => ({
-              catalogItemId: item.catalogItemId,
-              variantId: item.variantId || null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              discount: item.discount,
-              subtotal: item.subtotal,
-            })),
+            create: data.items.map((item) => {
+              const catalogItem = catalogMap.get(item.catalogItemId);
+              return {
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId || null,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                discount: item.discount,
+                subtotal: item.subtotal,
+                costPrice: catalogItem?.costPrice ?? null,
+              };
+            }),
           },
         },
         include: { items: true },
       });
 
+      log("sale.create", "isCompleted", { isCompleted, branchId: data.branchId });
+      if (isCompleted) {
+        const location = await resolveInventoryLocation(businessId, data.branchId);
+        log("sale.create", "resolvedLocation", { locationId: location?.id });
+
+        if (location) {
+          for (const item of data.items) {
+            const catalogItem = catalogMap.get(item.catalogItemId);
+            if (!catalogItem?.trackStock) continue;
+
+            let balance = await tx.inventoryBalance.findFirst({
+              where: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId ?? null,
+              },
+            });
+
+            if (!balance) {
+              balance = await tx.inventoryBalance.create({
+                data: {
+                  locationId: location.id,
+                  catalogItemId: item.catalogItemId,
+                  variantId: item.variantId || null,
+                  quantityOnHand: 0,
+                  quantityAvailable: 0,
+                  quantityCommitted: 0,
+                },
+              });
+            }
+
+            const currentQty = Number(balance.quantityOnHand);
+            if (currentQty < item.quantity) {
+              throw new Error(`Insufficient stock for "${catalogItem.name || item.catalogItemId}". Available: ${currentQty}, requested: ${item.quantity}`);
+            }
+            const newQty = currentQty - item.quantity;
+
+            await tx.inventoryBalance.update({
+              where: { id: balance.id },
+              data: { quantityOnHand: newQty, quantityAvailable: newQty },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId || null,
+                quantityChange: -item.quantity,
+                balanceBefore: currentQty,
+                balanceAfter: newQty,
+                referenceType: "sale",
+                reference: created.id,
+                notes: `Sale ${created.reference || created.id}`,
+                createdById: createdById || null,
+              },
+            });
+          }
+        }
+
+        let effectiveCustomerId = data.customerId;
+        if (!effectiveCustomerId) {
+          const walkIn = await tx.customer.findFirst({
+            where: { businessId, email: "walkin@internal" },
+            select: { id: true },
+          });
+          if (walkIn) {
+            effectiveCustomerId = walkIn.id;
+          } else {
+            const c = await tx.customer.create({
+              data: {
+                workspaceId,
+                businessId,
+                name: "Walk-In Customer",
+                email: "walkin@internal",
+                phone: "",
+                isActive: true,
+              },
+              select: { id: true },
+            });
+            effectiveCustomerId = c.id;
+          }
+        }
+
+        const invoiceNumber = `INV-${businessId.substring(0, 4).toUpperCase()}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+        const invoice = await tx.invoice.create({
+          data: {
+            workspaceId,
+            businessId,
+            branchId: data.branchId || null,
+            customerId: effectiveCustomerId,
+            saleId: created.id,
+            invoiceNumber,
+            status: invoiceStatus,
+            subtotal,
+            tax: taxTotal,
+            total: grandTotal,
+            paidAmount,
+            balanceDue,
+            dueDate: data.dueDate ? new Date(data.dueDate) : null,
+            notes: data.customerId ? (data.notes || null) : `Walk-in sale — ${data.notes || ""}`.trim(),
+            items: {
+              create: data.items.map((item) => ({
+                catalogItemId: item.catalogItemId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                subtotal: item.subtotal,
+              })),
+            },
+          },
+        });
+
+        if (!isCredit && paidAmount > 0) {
+          const paymentMethod = await tx.paymentMethod.findFirst({
+            where: { businessId, isActive: true },
+            orderBy: { createdAt: "asc" },
+          });
+
+          if (!paymentMethod) {
+            await tx.paymentMethod.create({
+              data: {
+                businessId,
+                name: "Cash",
+                type: "cash",
+                isActive: true,
+              },
+            });
+          }
+
+          const pm = paymentMethod ?? await tx.paymentMethod.findFirst({
+            where: { businessId, isActive: true },
+          });
+
+          if (pm) {
+            await tx.payment.create({
+              data: {
+                businessId,
+                workspaceId,
+                branchId: data.branchId || null,
+                storeId: data.storeId || null,
+                paymentMethodId: pm.id,
+                customerId: effectiveCustomerId,
+                amount: paidAmount,
+                status: "completed",
+                saleId: created.id,
+                invoiceId: invoice.id,
+                paidAt: new Date(),
+                notes: `Payment for sale ${created.reference || created.id}`,
+                createdById: createdById || null,
+              },
+            });
+          }
+
+          if (paymentType === "cash" && paidAmount > 0) {
+            await recordCashTransaction(
+              tx,
+              businessId,
+              data.branchId || null,
+              "cash_in",
+              paidAmount,
+              created.reference || created.id,
+              `Cash payment for sale ${created.reference || created.id}`,
+            );
+          }
+        }
+      }
+
       return created;
+    });
+
+    emitSaleCreated(businessId, createdById ?? "", sale.id, {
+      reference: sale.reference ?? sale.id,
+      grandTotal: grandTotal,
+      paymentType: paymentType,
     });
 
     return {
@@ -153,10 +357,66 @@ export async function getBusinessSales(
 export async function updateSale(
   id: string,
   data: UpdateSaleSchema,
+  businessId?: string,
+  createdById?: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
     await prisma.$transaction(async (tx) => {
+      const existing = await tx.sale.findUnique({
+        where: { id },
+        select: { grandTotal: true, status: true, branchId: true, businessId: true },
+      });
+      if (!existing) throw new Error("Sale not found");
+
+      const isCompleted = existing.status === "completed";
+
       if (data.items) {
+        const oldItems = await tx.saleItem.findMany({ where: { saleId: id } });
+
+        if (isCompleted && oldItems.length > 0) {
+          const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
+          if (location) {
+            for (const oldItem of oldItems) {
+              const catalogItem = await tx.catalogItem.findUnique({
+                where: { id: oldItem.catalogItemId },
+                select: { trackStock: true },
+              });
+              if (!catalogItem?.trackStock) continue;
+
+              let balance = await tx.inventoryBalance.findFirst({
+                where: {
+                  locationId: location.id,
+                  catalogItemId: oldItem.catalogItemId,
+                  variantId: oldItem.variantId ?? null,
+                },
+              });
+
+              if (balance) {
+                const currentQty = Number(balance.quantityOnHand);
+                const newQty = currentQty + Number(oldItem.quantity);
+                await tx.inventoryBalance.update({
+                  where: { id: balance.id },
+                  data: { quantityOnHand: newQty, quantityAvailable: newQty },
+                });
+                await tx.stockMovement.create({
+                  data: {
+                    locationId: location.id,
+                    catalogItemId: oldItem.catalogItemId,
+                    variantId: oldItem.variantId || null,
+                    quantityChange: Number(oldItem.quantity),
+                    balanceBefore: currentQty,
+                    balanceAfter: newQty,
+                    referenceType: "sale",
+                    reference: id,
+                    notes: `Restore: sale update reversal ${id}`,
+                    createdById: createdById || null,
+                  },
+                });
+              }
+            }
+          }
+        }
+
         await tx.saleItem.deleteMany({ where: { saleId: id } });
       }
 
@@ -164,7 +424,7 @@ export async function updateSale(
       const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
       const discountTotal = data.discountTotal ?? 0;
       const taxTotal = data.taxTotal ?? 0;
-      const grandTotal = subtotal - discountTotal + taxTotal;
+      const grandTotal = items.length > 0 ? subtotal - discountTotal + taxTotal : Number(existing.grandTotal);
 
       await tx.sale.update({
         where: { id },
@@ -195,7 +455,94 @@ export async function updateSale(
             : undefined,
         },
       });
+
+      if (isCompleted && data.items) {
+        const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
+        if (location) {
+          for (const item of data.items) {
+            const catalogItem = await tx.catalogItem.findUnique({
+              where: { id: item.catalogItemId },
+              select: { name: true, trackStock: true },
+            });
+            if (!catalogItem?.trackStock) continue;
+
+            let balance = await tx.inventoryBalance.findFirst({
+              where: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId ?? null,
+              },
+            });
+
+            if (!balance) {
+              balance = await tx.inventoryBalance.create({
+                data: {
+                  locationId: location.id,
+                  catalogItemId: item.catalogItemId,
+                  variantId: item.variantId || null,
+                  quantityOnHand: 0,
+                  quantityAvailable: 0,
+                  quantityCommitted: 0,
+                },
+              });
+            }
+
+            const currentQty = Number(balance.quantityOnHand);
+            if (currentQty < item.quantity) {
+              throw new Error(`Insufficient stock for "${catalogItem.name || item.catalogItemId}". Available: ${currentQty}, requested: ${item.quantity}`);
+            }
+            const newQty = currentQty - item.quantity;
+
+            await tx.inventoryBalance.update({
+              where: { id: balance.id },
+              data: { quantityOnHand: newQty, quantityAvailable: newQty },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId || null,
+                quantityChange: -item.quantity,
+                balanceBefore: currentQty,
+                balanceAfter: newQty,
+                referenceType: "sale",
+                reference: id,
+                notes: `Sale update deduction ${id}`,
+                createdById: createdById || null,
+              },
+            });
+          }
+        }
+      }
+
+      const linkedInvoice = await tx.invoice.findFirst({
+        where: { saleId: id },
+        select: { id: true, paidAmount: true, total: true, balanceDue: true },
+      });
+
+      if (linkedInvoice && items.length > 0) {
+        const invoicePaidAmount = Number(linkedInvoice.paidAmount);
+        const newTotal = grandTotal;
+        const newBalanceDue = Math.max(0, newTotal - invoicePaidAmount);
+
+        await tx.invoice.update({
+          where: { id: linkedInvoice.id },
+          data: {
+            subtotal,
+            tax: taxTotal,
+            total: newTotal,
+            balanceDue: newBalanceDue,
+          },
+        });
+      }
     });
+
+    if (businessId && createdById) {
+      emitSaleUpdated(businessId, createdById, id, {
+        status: data.status ?? "completed",
+      });
+    }
 
     return { success: true, message: "Sale updated successfully", data: { id } };
   } catch (error) {
@@ -204,22 +551,168 @@ export async function updateSale(
   }
 }
 
-export async function voidSale(id: string): Promise<ActionResponse> {
+export async function voidSale(
+  id: string,
+  userId?: string,
+): Promise<ActionResponse> {
   try {
-    const existing = await prisma.sale.findUnique({ where: { id } });
+    const existing = await prisma.sale.findUnique({
+      where: { id },
+      include: { items: true },
+    });
     if (!existing) return { success: false, message: "Sale not found" };
-    if (existing.status === "cancelled") {
-      return { success: false, message: "Sale is already cancelled" };
+    if (existing.status === "cancelled" || existing.status === "refunded") {
+      return { success: false, message: "Sale is already voided" };
     }
 
-    await prisma.sale.update({
-      where: { id },
-      data: { status: "cancelled" },
+    await prisma.$transaction(async (tx) => {
+      await tx.sale.update({
+        where: { id },
+        data: { status: "refunded" },
+      });
+
+      const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
+
+      if (location) {
+        for (const item of existing.items) {
+          const catalogItem = await tx.catalogItem.findUnique({
+            where: { id: item.catalogItemId },
+            select: { trackStock: true },
+          });
+          if (!catalogItem?.trackStock) continue;
+
+          let balance = await tx.inventoryBalance.findFirst({
+            where: {
+              locationId: location.id,
+              catalogItemId: item.catalogItemId,
+              variantId: item.variantId ?? null,
+            },
+          });
+
+          if (balance) {
+            const currentQty = Number(balance.quantityOnHand);
+            const newQty = currentQty + Number(item.quantity);
+
+            await tx.inventoryBalance.update({
+              where: { id: balance.id },
+              data: { quantityOnHand: newQty, quantityAvailable: newQty },
+            });
+
+            await tx.stockMovement.create({
+              data: {
+                locationId: location.id,
+                catalogItemId: item.catalogItemId,
+                variantId: item.variantId || null,
+                quantityChange: Number(item.quantity),
+                balanceBefore: currentQty,
+                balanceAfter: newQty,
+                referenceType: "sale",
+                reference: id,
+                notes: `Reversal: voided sale ${existing.reference || id}`,
+              },
+            });
+          }
+        }
+      }
+
+      const invoice = await tx.invoice.findFirst({
+        where: { saleId: id },
+        select: { id: true, status: true },
+      });
+
+      if (invoice && invoice.status !== "refunded") {
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { status: "refunded", balanceDue: 0 },
+        });
+      }
+
+      const payments = await tx.payment.findMany({
+        where: { saleId: id, status: "completed" },
+        include: { paymentMethod: { select: { type: true } } },
+      });
+
+      for (const payment of payments) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { status: "refunded" },
+        });
+
+        if (payment.paymentMethod?.type === "cash") {
+          await recordCashTransaction(
+            tx,
+            existing.businessId,
+            existing.branchId,
+            "cash_out",
+            Number(payment.amount),
+            existing.reference || id,
+            `Reversal: voided sale ${existing.reference || id}`,
+          );
+        }
+
+        if (invoice) {
+          const inv = await tx.invoice.findUnique({ where: { id: invoice.id }, select: { paidAmount: true, total: true } });
+          if (inv) {
+            const newPaid = Math.max(0, Number(inv.paidAmount) - Number(payment.amount));
+            const newBalance = Number(inv.total) - newPaid;
+            const newStatus = newPaid <= 0 ? "unpaid" : "partial";
+            await tx.invoice.update({
+              where: { id: invoice.id },
+              data: { paidAmount: newPaid, balanceDue: newBalance, status: newStatus },
+            });
+          }
+        }
+      }
     });
 
-    return { success: true, message: "Sale cancelled successfully" };
+    if (userId) {
+      const { createAuditLog } = await import("@/server/services/audit-service");
+      await createAuditLog(userId, "VOID", "sale", id, {
+        before: { status: existing.status },
+        after: { status: "refunded" },
+      });
+    }
+
+    emitSaleVoided(existing.businessId, userId ?? "", id, {
+      reference: existing.reference ?? id,
+      grandTotal: Number(existing.grandTotal),
+    });
+
+    return { success: true, message: "Sale refunded successfully" };
   } catch (error) {
     console.error("Void sale error:", error);
-    return { success: false, message: "Failed to cancel sale" };
+    return { success: false, message: "Failed to refund sale" };
+  }
+}
+
+export async function deleteSale(
+  id: string,
+  userId?: string,
+): Promise<ActionResponse> {
+  try {
+    const existing = await prisma.sale.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+    if (!existing) return { success: false, message: "Sale not found" };
+
+    if (existing.status !== "draft") {
+      return {
+        success: false,
+        message: "Cannot delete a completed or cancelled sale. Void it instead to preserve historical data.",
+      };
+    }
+
+    await prisma.sale.delete({ where: { id } });
+
+    if (userId) {
+      const { createAuditLog } = await import("@/server/services/audit-service");
+      await createAuditLog(userId, "DELETE", "sale", id);
+    }
+
+    return { success: true, message: "Sale deleted successfully" };
+  } catch (error) {
+    console.error("Delete sale error:", error);
+    return { success: false, message: "Failed to delete sale" };
   }
 }

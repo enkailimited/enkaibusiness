@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select } from "@/components/ui/select";
 import {
   PhoneCall,
@@ -59,6 +60,7 @@ export default function SalesTeamLeadsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,9 +88,9 @@ export default function SalesTeamLeadsPage() {
   }
 
   async function handleDelete(leadId: string) {
-    if (!confirm("Delete this lead permanently?")) return;
     await deleteLeadAction(leadId);
     fetchData();
+    setDeleteConfirm(null);
   }
 
   const metricCards = metrics ? [
@@ -265,7 +267,7 @@ export default function SalesTeamLeadsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 ml-auto"
-                          onClick={() => handleDelete(lead.id)}
+                          onClick={() => setDeleteConfirm(lead.id)}
                         >
                           Delete
                         </Button>
@@ -278,6 +280,16 @@ export default function SalesTeamLeadsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+        title="Delete Lead"
+        description="Delete this lead permanently? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+      />
     </div>
   );
 }

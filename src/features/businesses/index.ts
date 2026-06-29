@@ -21,12 +21,14 @@ export {
 export {
   createBusinessSchema,
   updateBusinessSchema,
+  registerBusinessSchema,
   businessModeSchema,
   industryEnum,
 } from "./schemas";
 export type {
   CreateBusinessSchema,
   UpdateBusinessSchema,
+  RegisterBusinessInput,
   BusinessModeSchema,
 } from "./schemas";
 
@@ -42,6 +44,7 @@ export {
 // Actions
 export {
   createBusinessAction,
+  registerBusinessAction,
   updateBusinessAction,
   getBusinessAction,
   getWorkspaceBusinessesAction,

@@ -1,17 +1,15 @@
 "use server";
 
-import { headers } from "next/headers";
-import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/server/db";
 import {
   generateTempPassword as genTempPassword,
   setUserPassword,
-  sendInviteEmail as sendReinviteEmail,
+  sendInviteEmailAsync as sendReinviteEmailAsync,
   createUserInvite,
 } from "@/features/users/services/invite-service";
+import { UserRegistrationEngine, RegistrationContext } from "@/server/registrations";
 
 const ROLE_TO_HIERARCHY: Record<string, string> = {
   "national-sales-manager": "national-sales-manager",
@@ -52,55 +50,6 @@ async function seedHierarchies() {
       update: {},
       create: l,
     });
-  }
-}
-
-function generateTempPassword(): string {
-  const part = () => randomBytes(2).toString("hex").toUpperCase();
-  return `ENK-${part()}-${part()}`;
-}
-
-function generateToken(): string {
-  return randomBytes(16).toString("hex");
-}
-
-async function sendInviteEmail(
-  email: string,
-  tempPassword: string,
-  firstName: string,
-  lastName: string,
-  invitedByName: string,
-  isReinvite: boolean,
-) {
-  try {
-    const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
-    const { renderTemplate, SYSTEM_TEMPLATES } = await import("@/notifications/email/services/template-service");
-
-    const tpl = SYSTEM_TEMPLATES.find((t) => t.slug === "staff-invitation") || SYSTEM_TEMPLATES[0];
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-    const rendered = await renderTemplate(tpl, {
-      businessName: "Enkai Business",
-      inviteUrl: `${baseUrl}/login?invite=pending`,
-      invitedBy: invitedByName,
-      loginUrl: `${baseUrl}/login`,
-      temporaryPassword: tempPassword,
-      email,
-      username: email,
-      changePasswordUrl: `${baseUrl}/change-password`,
-    });
-
-    const result = await sendEmailWithDefaultConfig({
-      to: email,
-      subject: isReinvite ? "Re-invitation to Enkai Business" : "Invitation to Enkai Business",
-      html: rendered.html,
-      text: rendered.text,
-    });
-
-    return result.success;
-  } catch (err) {
-    console.error("Failed to send invite email:", err);
-    return false;
   }
 }
 
@@ -198,120 +147,56 @@ export async function inviteSalesTeamMemberAction(
         return { success: false, message: "User already has a sales profile. You can manage them from the team list below." };
       }
 
-      const tempPassword = generateTempPassword();
-
-      await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
+      const result = await UserRegistrationEngine.assignUserToContext(
+        RegistrationContext.SALES_TEAM,
+        existingUser.id,
+        authUser.id,
+        {
+          email,
           firstName,
           lastName,
-          email,
           phone: phone || null,
           username: username || null,
           gender: gender || null,
-        },
-      });
-
-      await prisma.salesProfile.create({
-        data: {
-          userId: existingUser.id,
           hierarchyId,
           managerId: managerProfile.id,
-          status: "ACTIVE",
         },
-      });
+      );
 
-      const hdrs = await headers();
-      const invitedByName = `${authUser.firstName || ""} ${authUser.lastName || ""}`.trim() || "Admin";
-
-      const emailSent = await sendInviteEmail(email, tempPassword, firstName, lastName, invitedByName, false);
-
-      if (!emailSent) {
-        await prisma.userInvite.create({
-          data: {
-            userId: existingUser.id,
-            email,
-            invitedById: authUser.id,
-            inviteToken: generateToken(),
-            status: "PENDING",
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          },
-        });
+      if (!result.success) {
+        return { success: false, message: result.message };
       }
 
       revalidatePath("/platform/sales-team/team");
       return {
         success: true,
-        message: emailSent
-          ? `Invitation sent to ${email}`
-          : `Team member added. Temp password: ${tempPassword}`,
+        message: `Invitation sent to ${email}`,
       };
     }
 
-    const tempPassword = generateTempPassword();
-
-    const hdrs = await headers();
-    const signUpRes = await auth.api.signUpEmail({
-      body: {
+    const result = await UserRegistrationEngine.register(
+      RegistrationContext.SALES_TEAM,
+      authUser.id,
+      {
         email,
-        password: tempPassword,
-        name: `${firstName} ${lastName}`,
         firstName,
         lastName,
-        gender: gender || null,
-      },
-      headers: hdrs,
-    } as any);
-
-    if (!signUpRes || (signUpRes as any).error) {
-      return { success: false, message: "Failed to create user account" };
-    }
-
-    const newUser = await prisma.user.findUnique({ where: { email } });
-    if (!newUser) {
-      return { success: false, message: "User could not be loaded after creation" };
-    }
-
-    await prisma.user.update({
-      where: { id: newUser.id },
-      data: {
         phone: phone || null,
         username: username || null,
-      },
-    });
-
-    await prisma.salesProfile.create({
-      data: {
-        userId: newUser.id,
+        gender: gender || null,
         hierarchyId,
         managerId: managerProfile.id,
-        status: "ACTIVE",
       },
-    });
+    );
 
-    const invitedByName = `${authUser.firstName || ""} ${authUser.lastName || ""}`.trim() || "Admin";
-    const emailSent = await sendInviteEmail(email, tempPassword, firstName, lastName, invitedByName, false);
-
-    if (!emailSent) {
-      await prisma.userInvite.create({
-        data: {
-          userId: newUser.id,
-          email,
-          phone: phone || null,
-          invitedById: authUser.id,
-          inviteToken: generateToken(),
-          status: "PENDING",
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        },
-      });
+    if (!result.success) {
+      return { success: false, message: result.message };
     }
 
     revalidatePath("/platform/sales-team/team");
     return {
       success: true,
-      message: emailSent
-        ? `Invitation sent to ${email}`
-        : `User created. Share temp password: ${tempPassword}`,
+      message: `Invitation sent to ${email}`,
     };
   } catch (error) {
     console.error("Invite team member error:", error);
@@ -356,14 +241,12 @@ export async function reinviteTeamMemberAction(
     await createUserInvite(userId, targetEmail, targetPhone || null, authUser.id);
 
     const invitedByName = `${authUser.firstName || ""} ${authUser.lastName || ""}`.trim() || "Admin";
-    const emailSent = await sendReinviteEmail(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
+    sendReinviteEmailAsync(targetEmail, tempPassword, invitedByName, "Enkai Business", true);
 
     revalidatePath("/platform/sales-team/team");
     return {
       success: true,
-      message: emailSent
-        ? `Re-invitation sent to ${targetEmail}`
-        : `Password reset. New temp password: ${tempPassword}`,
+      message: `Re-invitation sent to ${targetEmail}`,
     };
   } catch (error) {
     console.error("Re-invite error:", error);

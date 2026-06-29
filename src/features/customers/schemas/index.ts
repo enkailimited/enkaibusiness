@@ -10,6 +10,7 @@ export const createCustomerSchema = z.object({
   address: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
   customerType: customerTypeEnum.default("RETAIL"),
+  contactId: z.string().uuid().optional().or(z.literal("")),
   customerGroupId: z.string().uuid().optional().or(z.literal("")),
   creditLimit: z.coerce.number().min(0).default(0),
   isActive: z.coerce.boolean().default(true),

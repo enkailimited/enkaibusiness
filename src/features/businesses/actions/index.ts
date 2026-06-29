@@ -4,17 +4,85 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { serialize } from "@/lib/utils";
-import {
-  updateBusiness,
-  getBusiness,
-  getWorkspaceBusinesses,
-  deleteBusiness,
-} from "../services/business-service";
-import { createBusinessSchema, updateBusinessSchema } from "../schemas";
+import { createBusinessSchema, registerBusinessSchema, updateBusinessSchema } from "../schemas";
+import type { CreateBusinessSchema, RegisterBusinessInput } from "../schemas";
 import { calculateDailyPrice, calculateSetupFee, QR_CODE_STICKER_COUNT, QR_CODE_STICKER_PRICE } from "@/features/subscriptions/constants/pricing";
-import { setBusinessSetting, getBusinessSettingsMap } from "@/features/businesses/services/setting-service";
+import { getBusinessSetting, setBusinessSetting, getBusinessSettingsMap } from "@/features/businesses/services/setting-service";
 import { recordTransaction } from "@/features/subscriptions/wallet/services/wallet-service";
+import { BusinessRegistrationEngine } from "@/server/registrations";
+import { ensureRbacWorkspaceRole } from "@/features/workspaces/services/workspace-service";
 import type { ActionResponse } from "@/types/relationships";
+
+async function getBusiness(id: string) {
+  return prisma.business.findUnique({
+    where: { id },
+    include: {
+      modes: true,
+      branches: {
+        include: { _count: { select: { stores: true } } },
+      },
+      _count: { select: { branches: true } },
+    },
+  });
+}
+
+async function getWorkspaceBusinesses(workspaceId: string) {
+  return prisma.business.findMany({
+    where: { workspaceId },
+    include: {
+      modes: true,
+      _count: { select: { branches: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+async function updateBusiness(
+  id: string,
+  data: Partial<CreateBusinessSchema>,
+  userId: string,
+) {
+  try {
+    const { industry, modes, ...businessData } = data;
+
+    await prisma.business.update({
+      where: { id },
+      data: {
+        ...businessData,
+        updatedById: userId,
+      },
+    });
+
+    if (industry && modes) {
+      await prisma.businessMode.deleteMany({
+        where: { businessId: id },
+      });
+
+      await prisma.businessMode.createMany({
+        data: modes.map((mode) => ({
+          businessId: id,
+          industry: industry,
+          mode,
+        })),
+      });
+    }
+
+    return { success: true, message: "Business updated successfully" };
+  } catch (error) {
+    console.error("Update business error:", error);
+    return { success: false, message: "Failed to update business" };
+  }
+}
+
+async function deleteBusiness(id: string) {
+  try {
+    await prisma.business.delete({ where: { id } });
+    return { success: true, message: "Business deleted successfully" };
+  } catch (error) {
+    console.error("Delete business error:", error);
+    return { success: false, message: "Failed to delete business" };
+  }
+}
 
 export async function createBusinessAction(
   workspaceId: string,
@@ -62,94 +130,123 @@ export async function createBusinessAction(
   const dailyPrice = calculateDailyPrice(dailyRate, businessSize, false);
   const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(false, modes);
 
-  const business = await prisma.business.create({
-    data: {
+  const result = await BusinessRegistrationEngine.register(
+    {
       ...businessData,
       workspaceId,
       createdById: user.id,
-      updatedById: user.id,
-      modes: {
-        create: modes.map((mode) => ({
-          industry,
-          mode,
-        })),
-      },
-    },
-  });
-
-  const ownerRole = await prisma.role.findUnique({ where: { slug: "owner" } });
-  if (ownerRole) {
-    const existing = await prisma.userRole.findFirst({
-      where: { userId: user.id, roleId: ownerRole.id, businessId: business.id },
-    });
-    if (!existing) {
-      await prisma.userRole.create({
-        data: { userId: user.id, roleId: ownerRole.id, businessId: business.id },
-      });
-    }
-  }
-
-  const now = new Date();
-  let endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  if (plan.interval === "WEEKLY") {
-    endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  } else if (plan.interval === "MONTHLY") {
-    endDate = new Date(now);
-    endDate.setMonth(endDate.getMonth() + 1);
-  } else if (plan.interval === "YEARLY") {
-    endDate = new Date(now);
-    endDate.setFullYear(endDate.getFullYear() + 1);
-  }
-  const graceEndDate = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  const subscription = await prisma.subscription.create({
-    data: {
+      industry,
+      modes,
       planId,
-      businessId: business.id,
-      startDate: now,
-      endDate,
-      graceEndDate,
+      businessSize,
     },
-  });
+    { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
+    { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
+  );
 
-  await prisma.subscriptionWallet.create({
-    data: {
-      businessId: business.id,
-      totalDeposited: totalSetupFee,
-      balance: totalSetupFee,
-    },
-  });
-
-  if (totalSetupFee > 0) {
-    const wallet = await prisma.subscriptionWallet.findUnique({ where: { businessId: business.id } });
-    if (wallet) {
-      const descParts: string[] = [];
-      if (setupFee > 0) descParts.push(`Setup fee (${setupFee} TZS)`);
-      if (qrPrintingFee > 0) descParts.push(`QR sticker printing ${QR_CODE_STICKER_COUNT} × ${QR_CODE_STICKER_PRICE} (${qrPrintingFee} TZS)`);
-      await prisma.subscriptionTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: "deposit",
-          amount: totalSetupFee,
-          balanceBefore: 0,
-          balanceAfter: totalSetupFee,
-          reference: "SETUP_FEE",
-          description: descParts.join(" + "),
-        },
-      });
-    }
+  if (!result.success) {
+    return { success: false, message: result.message };
   }
-
-  await setBusinessSetting(business.id, "business_size", businessSize, "string", "Business size category");
-  await setBusinessSetting(business.id, "daily_price", String(dailyPrice), "number", "Calculated daily subscription price");
-  await setBusinessSetting(business.id, "setup_fee", String(totalSetupFee), "number", "One-time setup fee");
 
   revalidatePath(`/workspaces/${workspaceId}`);
 
   return {
     success: true,
-    message: `Business "${business.name}" created successfully with ${plan.name}`,
-    data: { id: business.id, subscriptionId: subscription.id },
+    message: result.message,
+    data: { id: result.data!.businessId, subscriptionId: result.data!.subscriptionId },
+  };
+}
+
+export async function registerBusinessAction(
+  input: RegisterBusinessInput,
+): Promise<ActionResponse & { data?: { businessId: string; workspaceId?: string; subscriptionId: string } }> {
+  const user = await requireAuth();
+
+  const parsed = registerBusinessSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Validation failed",
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const { workspaceId, leadId, qrOrderingEnabled, modes, industry, ...rest } = parsed.data;
+
+  let targetWorkspaceId = workspaceId;
+  let createdById = user.id;
+
+  if (leadId) {
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead) return { success: false, message: "Lead not found" };
+    if (!lead.convertedToUserId) return { success: false, message: "Lead has not been converted to a user yet" };
+
+    const leadUser = await prisma.user.findUnique({ where: { id: lead.convertedToUserId } });
+    if (!leadUser) return { success: false, message: "Converted user not found" };
+    createdById = leadUser.id;
+
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: `${rest.name} Workspace`,
+        slug: `${rest.slug}-${Date.now()}`,
+        description: `Workspace for ${rest.name}`,
+        members: { create: { userId: leadUser.id, role: "OWNER" } },
+      },
+    });
+    await ensureRbacWorkspaceRole(leadUser.id, "OWNER");
+    targetWorkspaceId = workspace.id;
+  }
+
+  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: parsed.data.planId } });
+  if (!plan || !plan.isActive) {
+    return { success: false, message: "Invalid or inactive subscription plan" };
+  }
+
+  const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
+  const dailyPrice = calculateDailyPrice(dailyRate, parsed.data.businessSize, qrOrderingEnabled);
+  const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(qrOrderingEnabled, modes);
+
+  const result = await BusinessRegistrationEngine.register(
+    {
+      ...rest,
+      workspaceId: targetWorkspaceId!,
+      createdById,
+      updatedById: leadId ? user.id : undefined,
+      email: rest.email || undefined,
+      phone: rest.phone || undefined,
+      industry: industry as any,
+      modes,
+      planId: parsed.data.planId,
+      businessSize: parsed.data.businessSize,
+    },
+    { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
+    { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
+  );
+
+  if (!result.success) return { success: false, message: result.message };
+
+  if (leadId) {
+    await prisma.leadActivity.create({
+      data: {
+        leadId,
+        action: "REGISTERED",
+        detail: `Business "${rest.name}" registered with ${plan.name} plan at ${dailyPrice} TZS/day`,
+        createdById: user.id,
+      },
+    });
+    revalidatePath("/platform/sales-team/clients");
+  } else {
+    revalidatePath(`/workspaces/${targetWorkspaceId}`);
+  }
+
+  return {
+    success: true,
+    message: result.message,
+    data: {
+      businessId: result.data!.businessId,
+      workspaceId: targetWorkspaceId,
+      subscriptionId: result.data!.subscriptionId,
+    },
   };
 }
 
@@ -223,7 +320,7 @@ export async function toggleQrOrderingAction(
   businessId: string,
   enable: boolean,
 ): Promise<ActionResponse & { data?: { dailyPrice: number; setupFee: number; qrPrintingFee: number } }> {
-  const user = await requireAuth();
+  await requireAuth();
 
   try {
     const business = await prisma.business.findUnique({
@@ -243,7 +340,9 @@ export async function toggleQrOrderingAction(
       return { success: false, message: "No active subscription found" };
     }
 
-    const plan = business.subscriptions[0].plan;
+    const sub = business.subscriptions[0];
+    if (!sub) return { success: false, message: "No active subscription found" };
+    const plan = sub.plan;
     const businessSize = await getBusinessSetting(businessId, "business_size") ?? "small";
     const modes = business.modes.map((m) => m.mode);
 

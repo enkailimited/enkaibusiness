@@ -3,6 +3,7 @@ import type { CustomerGroup } from "@/types/models";
 export interface Customer {
   id: string;
   businessId: string;
+  contactId: string | null;
   userId: string | null;
   customerType: "RETAIL" | "WHOLESALE" | "WALK_IN";
   firstName: string;
@@ -43,6 +44,7 @@ export interface CreateCustomerInput {
   address?: string;
   city?: string;
   customerType: "RETAIL" | "WHOLESALE" | "WALK_IN";
+  contactId?: string;
   customerGroupId?: string;
   creditLimit?: number;
   isActive?: boolean;

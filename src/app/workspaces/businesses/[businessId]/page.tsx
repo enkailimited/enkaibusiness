@@ -30,26 +30,26 @@ async function BusinessOverview({ businessId }: { businessId: string }) {
   }
 
   const stats = [
-    { label: "Branches", value: business._count.branches, icon: GitBranch },
-    { label: "Staff", value: business._count.staff, icon: Users },
-    { label: "Customers", value: business._count.customers, icon: CircleUser },
+    { label: "Branches", value: business._count.branches, icon: GitBranch, color: "text-blue-600" },
+    { label: "Staff", value: business._count.staff, icon: Users, color: "text-indigo-600" },
+    { label: "Customers", value: business._count.customers, icon: CircleUser, color: "text-violet-600" },
   ];
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-6 pb-10">
       <PageHeader
         title={business.name}
         description={`${business.slug}${business.modes[0] ? ` · ${business.modes[0].industry} · ${business.modes[0].mode}` : ""}`}
       />
 
-      <div className="grid gap-4 grid-cols-3 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
             <Card key={stat.label}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
@@ -63,10 +63,8 @@ async function BusinessOverview({ businessId }: { businessId: string }) {
 
       {business.email || business.phone ? (
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-1">
+          <CardHeader className="pb-3"><CardTitle className="text-sm">Contact Information</CardTitle></CardHeader>
+          <CardContent className="space-y-1 text-sm text-muted-foreground">
             {business.email && <p>Email: {business.email}</p>}
             {business.phone && <p>Phone: {business.phone}</p>}
             {business.address && <p>Address: {business.address}</p>}
@@ -83,14 +81,13 @@ export default async function BusinessDashboardPage({ params }: Props) {
   return (
     <Suspense
       fallback={
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
           <Skeleton className="h-8 w-64" />
           <div className="grid gap-4 grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
-            ))}
+            {Array.from({ length: 3 }).map((_, i) => (<Skeleton key={i} className="h-24 w-full rounded-xl" />))}
           </div>
           <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-96 w-full rounded-xl" />
         </div>
       }
     >

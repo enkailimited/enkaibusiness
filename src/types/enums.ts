@@ -11,7 +11,7 @@ export const INDUSTRIES = [
 
 export const CATALOG_ITEM_TYPES = ["PRODUCT", "SERVICE", "MEDICINE", "MENU_ITEM"] as const;
 
-export const ROLE_SCOPES = ["PLATFORM", "BUSINESS"] as const;
+export const ROLE_SCOPES = ["PLATFORM", "BUSINESS", "WORKSPACE"] as const;
 
 export type WorkspaceMemberRole = (typeof WORKSPACE_MEMBER_ROLES)[number];
 export type Industry = (typeof INDUSTRIES)[number];

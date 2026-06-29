@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/server/auth";
-import { createWorkspace, getWorkspace, getUserWorkspaces, addWorkspaceMember, removeWorkspaceMember } from "@/server/services/workspace-service";
+import { createWorkspace, getWorkspace, getUserWorkspaces, addWorkspaceMember, removeWorkspaceMember } from "@/features/workspaces/services/workspace-service";
 import { createWorkspaceSchema, addMemberSchema } from "@/lib/validations/workspace";
 import type { ActionResponse } from "@/types/relationships";
 

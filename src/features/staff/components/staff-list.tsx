@@ -2,17 +2,21 @@
 
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { Pencil, MailX } from "lucide-react";
 import type { StaffWithUser, StaffAssignmentWithDetails } from "../types";
 
 interface StaffListProps {
   staff: (StaffWithUser & { assignments?: StaffAssignmentWithDetails[] })[];
   isLoading?: boolean;
   onRowClick?: (staff: StaffWithUser) => void;
+  onEdit?: (staff: StaffWithUser) => void;
+  onReinvite?: (staff: StaffWithUser) => void;
 }
 
-export function StaffList({ staff, isLoading, onRowClick }: StaffListProps) {
+export function StaffList({ staff, isLoading, onRowClick, onEdit, onReinvite }: StaffListProps) {
   const columns = [
     {
       key: "name",
@@ -40,6 +44,14 @@ export function StaffList({ staff, isLoading, onRowClick }: StaffListProps) {
       ),
     },
     {
+      key: "role",
+      header: "Role",
+      cell: (item: StaffWithUser & { assignments?: StaffAssignmentWithDetails[] }) => {
+        const role = item.assignments?.find((a) => a.role)?.role;
+        return <span className="text-sm">{role?.name || "-"}</span>;
+      },
+    },
+    {
       key: "employeeCode",
       header: "Code",
       cell: (item: StaffWithUser) => (
@@ -53,6 +65,24 @@ export function StaffList({ staff, isLoading, onRowClick }: StaffListProps) {
         <Badge variant={item.isActive ? "success" : "secondary"}>
           {item.isActive ? "Active" : "Inactive"}
         </Badge>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      cell: (item: StaffWithUser) => (
+        <div className="flex items-center gap-1">
+          {onEdit && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)} title="Edit">
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {onReinvite && (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReinvite(item)} title="Re-invite">
+              <MailX className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       ),
     },
   ];

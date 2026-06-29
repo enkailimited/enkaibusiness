@@ -17,13 +17,11 @@ export async function createLocation(
   try {
     const type = deriveType(data.branchId, data.storeId);
 
-    const existing = await prisma.inventoryLocation.findUnique({
+    const existing = await prisma.inventoryLocation.findFirst({
       where: {
-        businessId_branchId_storeId: {
-          businessId: data.businessId,
-          branchId: data.branchId ?? "",
-          storeId: data.storeId ?? "",
-        },
+        businessId: data.businessId,
+        branchId: data.branchId ?? null,
+        storeId: data.storeId ?? null,
       },
     });
 
@@ -34,8 +32,8 @@ export async function createLocation(
     const location = await prisma.inventoryLocation.create({
       data: {
         businessId: data.businessId,
-        branchId: data.branchId,
-        storeId: data.storeId,
+        branchId: data.branchId ?? null,
+        storeId: data.storeId ?? null,
         name: data.name,
         type,
       },
@@ -133,9 +131,11 @@ export async function getLocationWithBalances(id: string) {
 export async function getBusinessLocations(
   businessId: string,
   typeFilter?: string,
+  branchId?: string,
 ): Promise<LocationWithBalances[]> {
   const where: Record<string, unknown> = { businessId };
   if (typeFilter) where.type = typeFilter;
+  if (branchId) where.branchId = branchId;
 
   const locations = await prisma.inventoryLocation.findMany({
     where,

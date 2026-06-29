@@ -1,14 +1,15 @@
 "use client";
 
-import { useActionState, useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createBusinessAction, listActivePlansAction } from "../actions";
+import { registerBusinessAction, listActivePlansAction } from "../actions";
+import type { RegisterBusinessInput } from "../schemas";
 import { BUSINESS_SIZE_LABELS, calculateSetupFee, calculateDailyPrice, calculateWeeklyPrice, calculateMonthlyPrice } from "@/features/subscriptions/constants/pricing";
 import { INDUSTRIES, INDUSTRY_LABELS, BUSINESS_MODES } from "../constants";
-import { Check, ChevronLeft, ChevronRight, Building2, Settings, CreditCard, Loader2, UserPlus } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Building2, Settings, CreditCard, Loader2, UserPlus, QrCode } from "lucide-react";
 
 type Plan = { id: string; name: string; amount: number; currency: string; interval: string };
 
@@ -34,20 +35,21 @@ const initialFormData = {
   modes: [] as string[],
   businessSize: "small" as string,
   planId: "" as string,
+  qrOrderingEnabled: false,
 };
 
 export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
-  const createAction = useMemo(() => createBusinessAction.bind(null, workspaceId), [workspaceId]);
-  const [state, formAction, pending] = useActionState(createAction, null);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     listActivePlansAction().then((data) => setPlans(data as unknown as Plan[]));
   }, []);
 
-  const updateField = useCallback((field: string, value: string) => {
+  const updateField = useCallback((field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
@@ -62,12 +64,6 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
     }));
   };
 
-  useEffect(() => {
-    if (state?.success && onSuccess) {
-      onSuccess();
-    }
-  }, [state, onSuccess]);
-
   const canNext = () => {
     if (step === 1) return formData.name.trim() && formData.slug.trim();
     if (step === 2) return formData.modes.length > 0 && !!formData.planId;
@@ -81,6 +77,38 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
   const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
   const selectedPlan = plans.find((p) => p.id === formData.planId);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await registerBusinessAction({
+        name: formData.name,
+        slug: formData.slug,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        taxId: formData.taxId || undefined,
+        industry: formData.industry as RegisterBusinessInput["industry"],
+        modes: formData.modes,
+        businessSize: formData.businessSize,
+        planId: formData.planId,
+        qrOrderingEnabled: formData.qrOrderingEnabled,
+        workspaceId,
+        currency: "TZS",
+        timezone: "Africa/Dar_es_Salaam",
+      });
+      if (result.success) {
+        onSuccess?.();
+      } else {
+        setErrorMessage(result.message || "Failed to create business");
+      }
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <Card className="border-0 shadow-none">
@@ -120,282 +148,270 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
           {step === 3 && "Verify everything looks correct"}
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-0">
-        <form action={formAction} onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
-          <input type="hidden" name="name" value={formData.name} />
-          <input type="hidden" name="slug" value={formData.slug} />
-          <input type="hidden" name="email" value={formData.email} />
-          <input type="hidden" name="phone" value={formData.phone} />
-          <input type="hidden" name="address" value={formData.address} />
-          <input type="hidden" name="taxId" value={formData.taxId} />
-          <input type="hidden" name="industry" value={formData.industry} />
-          <input type="hidden" name="modes" value={JSON.stringify(formData.modes)} />
-          <input type="hidden" name="businessSize" value={formData.businessSize} />
-          <input type="hidden" name="planId" value={formData.planId} />
-
-          {step === 1 && (
-            <div className="space-y-4">
+      <CardContent className="px-0" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Business Name</Label>
+              <Input
+                id="name"
+                required
+                value={formData.name}
+                onChange={(e) => updateField("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                required
+                value={formData.slug}
+                onChange={(e) => updateField("slug", e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Business Name</Label>
+                <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <Input
-                  id="name"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={(e) => updateField("name", e.target.value)}
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => updateField("email", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
+                <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <Input
-                  id="slug"
-                  name="slug"
-                  required
-                  value={formData.slug}
-                  onChange={(e) => updateField("slug", e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateField("email", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={(e) => updateField("phone", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="address">Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={(e) => updateField("address", e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="taxId">Tax ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                <Input
-                  id="taxId"
-                  name="taxId"
-                  value={formData.taxId}
-                  onChange={(e) => updateField("taxId", e.target.value)}
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => updateField("phone", e.target.value)}
                 />
               </div>
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="address">Address <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => updateField("address", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="taxId">Tax ID <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="taxId"
+                value={formData.taxId}
+                onChange={(e) => updateField("taxId", e.target.value)}
+              />
+            </div>
+          </div>
+        )}
 
-          {step === 2 && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="industry">Industry</Label>
-                <select
-                  id="industry"
-                  name="industry"
-                  value={formData.industry}
-                  onChange={(e) => {
-                    updateField("industry", e.target.value);
-                    setFormData((prev) => ({ ...prev, modes: [] }));
-                  }}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                >
-                  {INDUSTRIES.map((ind) => (
-                    <option key={ind} value={ind}>{INDUSTRY_LABELS[ind]}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label>Modes</Label>
-                <div className="flex flex-wrap gap-2">
-                  {availableModes.map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => toggleMode(mode)}
-                      className={`rounded-md px-3 py-1.5 text-sm border transition-colors ${
-                        formData.modes.includes(mode)
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-background border-input hover:bg-accent"
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="businessSize">Business Size</Label>
-                <select
-                  id="businessSize"
-                  name="businessSize"
-                  value={formData.businessSize}
-                  onChange={(e) => updateField("businessSize", e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                >
-                  {Object.entries(BUSINESS_SIZE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="planId">Subscription Plan</Label>
-                <select
-                  id="planId"
-                  name="planId"
-                  required
-                  value={formData.planId}
-                  onChange={(e) => updateField("planId", e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                >
-                  <option value="">Select a plan...</option>
-                  {plans.map((plan) => (
-                    <option key={plan.id} value={plan.id}>
-                      {plan.name} — {plan.interval} ({new Intl.NumberFormat().format(plan.amount)} {plan.currency})
-                    </option>
-                  ))}
-                </select>
+        {step === 2 && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="industry">Industry</Label>
+              <select
+                id="industry"
+                value={formData.industry}
+                onChange={(e) => {
+                  updateField("industry", e.target.value);
+                  setFormData((prev) => ({ ...prev, modes: [] }));
+                }}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                {INDUSTRIES.map((ind) => (
+                  <option key={ind} value={ind}>{INDUSTRY_LABELS[ind]}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Modes</Label>
+              <div className="flex flex-wrap gap-2">
+                {availableModes.map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => toggleMode(mode)}
+                    className={`rounded-md px-3 py-1.5 text-sm border transition-colors ${
+                      formData.modes.includes(mode)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background border-input hover:bg-accent"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
-                <h4 className="font-semibold text-base">Business Info</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-xs text-muted-foreground">Name</span>
-                    <p className="font-medium">{formData.name}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Slug</span>
-                    <p className="font-medium">{formData.slug}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Industry</span>
-                    <p className="font-medium">{INDUSTRY_LABELS[formData.industry]}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Modes</span>
-                    <p className="font-medium">{formData.modes.join(", ")}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Size</span>
-                    <p className="font-medium">{BUSINESS_SIZE_LABELS[formData.businessSize]}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Plan</span>
-                    <p className="font-medium">{selectedPlan?.name ?? "—"}</p>
-                  </div>
+            <div className="space-y-2">
+              <Label htmlFor="businessSize">Business Size</Label>
+              <select
+                id="businessSize"
+                value={formData.businessSize}
+                onChange={(e) => updateField("businessSize", e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                {Object.entries(BUSINESS_SIZE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="planId">Subscription Plan</Label>
+              <select
+                id="planId"
+                required
+                value={formData.planId}
+                onChange={(e) => updateField("planId", e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                <option value="">Select a plan...</option>
+                {plans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} — {plan.interval} ({new Intl.NumberFormat().format(plan.amount)} {plan.currency})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className="flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-all">
+              <input
+                type="checkbox"
+                checked={formData.qrOrderingEnabled}
+                onChange={(e) => updateField("qrOrderingEnabled", e.target.checked)}
+                className="mt-1 h-5 w-5 rounded-lg border-gray-300 text-blue-600"
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  <span className="font-medium">Enable QR Ordering</span>
                 </div>
-                {(formData.email || formData.phone) && (
-                  <>
-                    <hr />
-                    <div className="grid grid-cols-2 gap-2">
-                      {formData.email && (
-                        <div>
-                          <span className="text-xs text-muted-foreground">Email</span>
-                          <p className="font-medium">{formData.email}</p>
-                        </div>
-                      )}
-                      {formData.phone && (
-                        <div>
-                          <span className="text-xs text-muted-foreground">Phone</span>
-                          <p className="font-medium">{formData.phone}</p>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Allow customers to order by scanning QR codes. Adds QR sticker printing fees.
+                </p>
               </div>
+            </label>
+          </div>
+        )}
 
-              {selectedPlan && (
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
-                  <h4 className="font-semibold text-base">Pricing Summary</h4>
-                  {(() => {
-                    const basePrice = Number(selectedPlan.amount);
-                    const dailyRate = basePrice / (selectedPlan.interval === "WEEKLY" ? 7 : selectedPlan.interval === "MONTHLY" ? 30 : 1);
-                    const dailyPrice = calculateDailyPrice(dailyRate, formData.businessSize, false);
-                    const weeklyPrice = calculateWeeklyPrice(dailyPrice);
-                    const monthlyPrice = calculateMonthlyPrice(dailyPrice);
-                    const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(false, formData.modes);
-                    return (
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Daily price</span>
-                          <span className="font-medium">{new Intl.NumberFormat().format(dailyPrice)} TZS</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Weekly price</span>
-                          <span className="font-medium">{new Intl.NumberFormat().format(weeklyPrice)} TZS</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Monthly price</span>
-                          <span className="font-medium">{new Intl.NumberFormat().format(monthlyPrice)} TZS</span>
-                        </div>
-                        <hr />
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Setup fee</span>
-                          <span className="font-medium">{new Intl.NumberFormat().format(setupFee)} TZS</span>
-                        </div>
-                        {qrPrintingFee > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">QR sticker printing</span>
-                            <span className="font-medium">{new Intl.NumberFormat().format(qrPrintingFee)} TZS</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between font-semibold border-t pt-1">
-                          <span>Total setup cost</span>
-                          <span>{new Intl.NumberFormat().format(totalSetupFee)} TZS</span>
-                        </div>
+        {step === 3 && (
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
+              <h4 className="font-semibold text-base">Business Info</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-xs text-muted-foreground">Name</span>
+                  <p className="font-medium">{formData.name}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Slug</span>
+                  <p className="font-medium">{formData.slug}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Industry</span>
+                  <p className="font-medium">{INDUSTRY_LABELS[formData.industry]}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Modes</span>
+                  <p className="font-medium">{formData.modes.join(", ")}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Size</span>
+                  <p className="font-medium">{BUSINESS_SIZE_LABELS[formData.businessSize]}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Plan</span>
+                  <p className="font-medium">{selectedPlan?.name ?? "—"}</p>
+                </div>
+                {formData.qrOrderingEnabled && <div><span className="text-xs text-muted-foreground">QR Ordering</span><p className="font-medium">Enabled</p></div>}
+              </div>
+              {(formData.email || formData.phone) && (
+                <>
+                  <hr />
+                  <div className="grid grid-cols-2 gap-2">
+                    {formData.email && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">Email</span>
+                        <p className="font-medium">{formData.email}</p>
                       </div>
-                    );
-                  })()}
-                </div>
+                    )}
+                    {formData.phone && (
+                      <div>
+                        <span className="text-xs text-muted-foreground">Phone</span>
+                        <p className="font-medium">{formData.phone}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-
-              <Button type="submit" className="w-full gap-2" size="lg" disabled={pending}>
-                {pending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4" />
-                    Create Business
-                  </>
-                )}
-              </Button>
             </div>
-          )}
 
-          {state?.errors && (
-            <div className="text-sm text-destructive space-y-1 mt-4">
-              {Object.entries(state.errors).map(([field, msgs]) => (
-                <p key={field}>{field}: {msgs.join(", ")}</p>
-              ))}
-            </div>
-          )}
+            {selectedPlan && (
+              <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-2">
+                <h4 className="font-semibold text-base">Pricing Summary</h4>
+                {(() => {
+                  const basePrice = Number(selectedPlan.amount);
+                  const dailyRate = basePrice / (selectedPlan.interval === "WEEKLY" ? 7 : selectedPlan.interval === "MONTHLY" ? 30 : 1);
+                  const dailyPrice = calculateDailyPrice(dailyRate, formData.businessSize, formData.qrOrderingEnabled);
+                  const weeklyPrice = calculateWeeklyPrice(dailyPrice);
+                  const monthlyPrice = calculateMonthlyPrice(dailyPrice);
+                  const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(formData.qrOrderingEnabled, formData.modes);
+                  return (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Daily price</span>
+                        <span className="font-medium">{new Intl.NumberFormat().format(dailyPrice)} TZS</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Weekly price</span>
+                        <span className="font-medium">{new Intl.NumberFormat().format(weeklyPrice)} TZS</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Monthly price</span>
+                        <span className="font-medium">{new Intl.NumberFormat().format(monthlyPrice)} TZS</span>
+                      </div>
+                      <hr />
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Setup fee</span>
+                        <span className="font-medium">{new Intl.NumberFormat().format(setupFee)} TZS</span>
+                      </div>
+                      {qrPrintingFee > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">QR sticker printing</span>
+                          <span className="font-medium">{new Intl.NumberFormat().format(qrPrintingFee)} TZS</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-semibold border-t pt-1">
+                        <span>Total setup cost</span>
+                        <span>{new Intl.NumberFormat().format(totalSetupFee)} TZS</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
-          {state?.message && !state.errors && (
-            <p className={state.success ? "text-sm text-green-600 mt-4" : "text-sm text-destructive mt-4"}>
-              {state.message}
-            </p>
-          )}
-        </form>
+            {errorMessage && (
+              <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            )}
+
+            <Button type="button" className="w-full gap-2" size="lg" disabled={submitting} onClick={handleSubmit}>
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Create Business
+                </>
+              )}
+            </Button>
+          </div>
+        )}
 
         <div className="mt-6 flex items-center justify-between">
           {step > 1 ? (

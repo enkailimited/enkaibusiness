@@ -55,8 +55,8 @@ export const confirmAction = (description: string): string =>
 export const successMessage = (operation: string, details: string): string =>
   `Imefanikiwa! ${operation}: ${details}`;
 
-export const errorMessage = (error: string): string =>
-  `Samahani, tatizo limetokea: ${error}. Tafadhali jaribu tena.`;
+export const errorMessage = (_error?: string): string =>
+  "Samahani, kuna tatizo la muda mfupi. Tafadhali jaribu tena.";
 
 export const proactiveStockAlert = (item: string, quantity: number): string =>
   `Tahadhari! "${item}" imebaki ${quantity} tu. Inashauriwa kuongeza stock.`;

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { prisma } from "@/server/db";
 import { updateStaffSchema, createAssignmentSchema } from "../schemas";
 import {
   updateStaff,
@@ -20,6 +21,10 @@ export async function updateStaffAction(
   await requireAuth();
 
   const parsed = updateStaffSchema.safeParse({
+    firstName: formData.get("firstName") || undefined,
+    lastName: formData.get("lastName") || undefined,
+    email: formData.get("email") || undefined,
+    phone: formData.get("phone") || undefined,
     employeeCode: formData.get("employeeCode") || undefined,
     position: formData.get("position") || undefined,
     hireDate: formData.get("hireDate") || undefined,
@@ -39,7 +44,18 @@ export async function updateStaffAction(
     return { success: false, message: "Staff not found" };
   }
 
-  const result = await updateStaff(staffId, parsed.data);
+  const { firstName, lastName, email, phone, ...staffData } = parsed.data;
+
+  if (firstName !== undefined || lastName !== undefined || email !== undefined || phone !== undefined) {
+    const userUpdate: Record<string, string | null | undefined> = {};
+    if (firstName !== undefined) userUpdate.firstName = firstName;
+    if (lastName !== undefined) userUpdate.lastName = lastName;
+    if (email !== undefined) userUpdate.email = email;
+    if (phone !== undefined) userUpdate.phone = phone || null;
+    await prisma.user.update({ where: { id: staff.userId }, data: userUpdate });
+  }
+
+  const result = await updateStaff(staffId, staffData);
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${staff.businessId}/staff`);

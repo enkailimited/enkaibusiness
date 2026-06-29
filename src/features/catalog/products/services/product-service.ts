@@ -123,7 +123,7 @@ export async function listProducts(
       itemType: "PRODUCT",
     };
 
-    if (filters?.category) where.category = filters.category;
+    if (filters?.categoryId) where.categoryId = filters.categoryId;
     if (filters?.brandId) where.brandId = filters.brandId;
     if (filters?.isActive !== undefined) where.isActive = filters.isActive;
     if (filters?.search) {

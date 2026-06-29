@@ -16,6 +16,7 @@ export interface StaffWithUser {
     lastName: string;
     email: string;
     avatarUrl: string | null;
+    phone?: string | null;
   };
 }
 

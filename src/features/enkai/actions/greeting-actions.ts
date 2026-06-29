@@ -1,12 +1,21 @@
 "use server";
 
+import { z } from "zod";
 import { getLoginGreetingData, scanBusiness } from "../services/proactive-advisor";
 import { revenueEngine } from "@/modules/ai/revenue/revenue-engine";
 import { reorderEngine } from "@/modules/ai/inventory/reorder-engine";
 import { debtCollectionEngine } from "@/modules/ai/credit/debt-collection-engine";
 import { healthScoreService } from "@/modules/ai/health/health-score";
 
+const bizId = z.string().uuid("Invalid business ID");
+const uid = z.string().uuid("Invalid user ID");
+
 export async function getGreetingDataAction(businessId: string, userId: string) {
+  const bParsed = bizId.safeParse(businessId);
+  const uParsed = uid.safeParse(userId);
+  if (!bParsed.success || !uParsed.success) {
+    throw new Error("Invalid business or user ID");
+  }
   const [base, revenue, reorder, debts, health] = await Promise.all([
     getLoginGreetingData(businessId, userId),
     revenueEngine.getDailySummary(businessId),
@@ -35,6 +44,8 @@ export async function getGreetingDataAction(businessId: string, userId: string) 
 }
 
 export async function getBusinessScanAction(businessId: string) {
+  const bParsed = bizId.safeParse(businessId);
+  if (!bParsed.success) throw new Error("Invalid business ID");
   const [scan, revenue, health, debts, reorder] = await Promise.all([
     scanBusiness(businessId),
     revenueEngine.generateInsights(businessId),

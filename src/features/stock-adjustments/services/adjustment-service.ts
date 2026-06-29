@@ -22,13 +22,11 @@ async function getOrCreateBalance(
   catalogItemId: string,
   variantId?: string,
 ) {
-  const existing = await prisma.inventoryBalance.findUnique({
+  const existing = await prisma.inventoryBalance.findFirst({
     where: {
-      locationId_catalogItemId_variantId: {
-        locationId,
-        catalogItemId,
-        variantId: variantId ?? "",
-      },
+      locationId,
+      catalogItemId,
+      variantId: variantId ?? null,
     },
   });
 
