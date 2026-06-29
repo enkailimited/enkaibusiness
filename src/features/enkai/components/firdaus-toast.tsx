@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useFirdausContext } from "../provider/firdaus-context";
+
+const PUBLIC_ROUTES = new Set([
+  "/login", "/register", "/forgot-password", "/reset-password",
+  "/landing", "/marketing",
+]);
 
 interface Props {
   userName?: string;
 }
 
 export function FirdausToast({ userName }: Props) {
+  const pathname = usePathname();
+  if (PUBLIC_ROUTES.has(pathname) || pathname.startsWith("/public/")) return null;
   const { state, actions } = useFirdausContext();
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState("");

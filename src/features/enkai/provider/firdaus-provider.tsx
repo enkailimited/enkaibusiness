@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FirdausContext, type FirdausState, DEFAULT_CONVERSATION_CONTEXT } from "./firdaus-context";
+import { FirdausContext, type FirdausState, type FirdausStatus, DEFAULT_CONVERSATION_CONTEXT } from "./firdaus-context";
 import { sendVoiceMessageAction } from "../actions/service-actions";
-import { VoiceState } from "../voice/voice-state-machine";
+import { VoiceState, getStatusLabel } from "../voice/voice-state-machine";
+
+const MAX_MESSAGES = 50;
 
 const VOICE_SAFE_ERRORS = [
   "Samahani, kuna tatizo la muda mfupi lakini naendelea kukusikiliza.",
@@ -23,7 +25,9 @@ const initialState: FirdausState = {
   isListening: false,
   isSpeaking: false,
   isAwake: false,
-  voiceState: VoiceState.SLEEPING,
+  voiceState: VoiceState.BOOTING,
+  status: "uninitialized",
+  statusMessage: "",
   messages: [],
   currentWorkflow: null,
   currentStep: null,
@@ -34,7 +38,13 @@ const initialState: FirdausState = {
   staffId: null,
   hasGreeted: false,
   mode: "generic",
+  initialized: false,
 };
+
+function trimMessages(messages: AssistantMessage[]): AssistantMessage[] {
+  if (messages.length <= MAX_MESSAGES) return messages;
+  return messages.slice(messages.length - MAX_MESSAGES);
+}
 
 export function FirdausProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<FirdausState>(initialState);
@@ -47,19 +57,22 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         isAwake: true,
         voiceState: VoiceState.WAKE_DETECTED,
-        messages: prev.messages.length === 0
-          ? [{
-              id: `firdaus_wake_${Date.now()}`,
-              role: "assistant",
-              content: "Ndio, nakusikiliza. Nikusaidie nini?",
-              timestamp: new Date(),
-            }]
-          : [...prev.messages, {
-              id: `firdaus_wake_${Date.now()}`,
-              role: "assistant",
-              content: "Ndio, nakusikiliza. Nikusaidie nini?",
-              timestamp: new Date(),
-            }],
+        statusMessage: getStatusLabel(VoiceState.WAKE_DETECTED),
+        messages: trimMessages(
+          prev.messages.length === 0
+            ? [{
+                id: `firdaus_wake_${Date.now()}`,
+                role: "assistant",
+                content: "Ndio, nakusikiliza. Nikusaidie nini?",
+                timestamp: new Date(),
+              }]
+            : [...prev.messages, {
+                id: `firdaus_wake_${Date.now()}`,
+                role: "assistant",
+                content: "Ndio, nakusikiliza. Nikusaidie nini?",
+                timestamp: new Date(),
+              }]
+        ),
       };
     });
   }, []);
@@ -69,6 +82,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       isAwake: false,
       voiceState: VoiceState.SLEEPING,
+      statusMessage: "",
     }));
   }, []);
 
@@ -98,7 +112,11 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateVoiceState = useCallback((vs: VoiceState) => {
-    setState((prev) => ({ ...prev, voiceState: vs }));
+    setState((prev) => ({
+      ...prev,
+      voiceState: vs,
+      statusMessage: getStatusLabel(vs),
+    }));
   }, []);
 
   const updateWorkflow = useCallback((wf: string | null, step: string | null) => {
@@ -171,12 +189,17 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       timestamp: new Date(),
     };
 
-    setState((prev) => ({ ...prev, messages: [...prev.messages, userMsg], voiceState: VoiceState.UNDERSTANDING }));
+    setState((prev) => ({
+      ...prev,
+      messages: trimMessages([...prev.messages, userMsg]),
+      voiceState: VoiceState.UNDERSTANDING,
+      statusMessage: getStatusLabel(VoiceState.UNDERSTANDING),
+    }));
 
     const waitId = `wait_${Date.now()}`;
     setState((prev) => ({
       ...prev,
-      messages: [
+      messages: trimMessages([
         ...prev.messages,
         {
           id: waitId,
@@ -184,7 +207,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
           content: "Subiri kidogo, ninafanyia kazi...",
           timestamp: new Date(),
         },
-      ],
+      ]),
     }));
 
     try {
@@ -192,7 +215,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error("Timeout")), 20000)
       );
 
-      setState((prev) => ({ ...prev, voiceState: VoiceState.EXECUTING }));
+      setState((prev) => ({ ...prev, voiceState: VoiceState.EXECUTING, statusMessage: getStatusLabel(VoiceState.EXECUTING) }));
 
       const response = await Promise.race([
         sendVoiceMessageAction(text, assistantContext.current),
@@ -201,7 +224,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
 
       setState((prev) => ({
         ...prev,
-        messages: [
+        messages: trimMessages([
           ...prev.messages.filter((m) => m.id !== waitId),
           {
             id: `asst_${Date.now()}`,
@@ -209,7 +232,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
             content: response.message,
             timestamp: new Date(),
           },
-        ],
+        ]),
         currentWorkflow: response.actionData?.currentWorkflow as string || prev.currentWorkflow,
         currentStep: response.actionData?.currentStep as string || prev.currentStep,
         collectedParams: response.actionData?.collectedParams as Record<string, unknown> || prev.collectedParams,
@@ -221,8 +244,9 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
       const errMsg = getRandomSafeError();
       setState((prev) => ({
         ...prev,
-        voiceState: VoiceState.SLEEPING,
-        messages: [
+        voiceState: VoiceState.READY,
+        statusMessage: getStatusLabel(VoiceState.READY),
+        messages: trimMessages([
           ...prev.messages.filter((m) => m.id !== waitId),
           {
             id: `err_${Date.now()}`,
@@ -230,7 +254,7 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
             content: errMsg,
             timestamp: new Date(),
           },
-        ],
+        ]),
       }));
       speak(errMsg);
     } finally {

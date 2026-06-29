@@ -4,6 +4,8 @@ import { createContext, useContext } from "react";
 import type { AssistantMessage, AssistantContext, FirdausMode } from "../assistant/types";
 import { VoiceState } from "../voice/voice-state-machine";
 
+export type FirdausStatus = "uninitialized" | "booting" | "ready" | "error" | "disabled" | "unauthorized";
+
 export interface ConversationContext {
   business: string | null;
   branch: string | null;
@@ -29,6 +31,8 @@ export interface FirdausState {
   isSpeaking: boolean;
   isAwake: boolean;
   voiceState: VoiceState;
+  status: FirdausStatus;
+  statusMessage: string;
   messages: AssistantMessage[];
   currentWorkflow: string | null;
   currentStep: string | null;
@@ -39,6 +43,7 @@ export interface FirdausState {
   staffId: string | null;
   hasGreeted: boolean;
   mode: FirdausMode;
+  initialized: boolean;
 }
 
 export const DEFAULT_CONVERSATION_CONTEXT: ConversationContext = {

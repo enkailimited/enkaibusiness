@@ -13,12 +13,28 @@ import {
 } from "../utils/wake-word";
 import { analyzeVoiceIntent, formatPipelineLog } from "../voice/voice-intent";
 import type { VoiceIntentResult } from "../voice/voice-intent";
-import { VoiceState, voiceStateMachine } from "../voice/voice-state-machine";
+import { VoiceState, getStatusLabel, getVoiceStateMachine, isStandby } from "../voice/voice-state-machine";
 
-interface AudioResult {
-  transcript: string;
-  confidence: number;
+const PUBLIC_ROUTES = new Set([
+  "/login", "/register", "/forgot-password", "/reset-password",
+  "/landing", "/marketing",
+]);
+
+const AUTH_ROUTE_PREFIXES = [
+  "/workspaces", "/workspace", "/dashboard", "/business",
+];
+
+function isPublicRoute(pathname: string): boolean {
+  if (PUBLIC_ROUTES.has(pathname)) return true;
+  if (pathname.startsWith("/public/")) return true;
+  return false;
 }
+
+function isAuthenticatedRoute(pathname: string): boolean {
+  return AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+let instanceCount = 0;
 
 export function FirdausGlobalListener() {
   const { state, actions } = useFirdausContext();
@@ -26,25 +42,31 @@ export function FirdausGlobalListener() {
   const pathname = usePathname();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const restartTimer = useRef<NodeJS.Timeout | null>(null);
-  const [businessScanned, setBusinessScanned] = useState(false);
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isSupported = typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
-
+  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
   const stateRef = useRef(state);
   stateRef.current = state;
-
   const lastWakeTimeRef = useRef(0);
   const isSpeakingRef = useRef(false);
+  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const instanceId = useRef(++instanceCount);
+
+  useEffect(() => {
+    if (instanceId.current > 1) {
+      console.warn(`[Firdaus] Singleton violation — killing instance ${instanceId.current}`);
+      return;
+    }
+    setMounted(true);
+    return () => { instanceCount = 0; };
+  }, []);
+
+  const isSupported = typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+
+  const shouldRender = mounted && isSupported && !isPublicRoute(pathname);
 
   const NOISE_TRANSCRIPTS = new Set([
     "subscribe", "like", "share", "comment", "play", "pause",
@@ -72,8 +94,12 @@ export function FirdausGlobalListener() {
     return true;
   }
 
+  const vsm = getVoiceStateMachine(user?.id || "anon");
+
   const startRecognition = useCallback(() => {
     if (!isSupported || recognitionRef.current || permissionDenied) return;
+    if (isPublicRoute(pathname)) return;
+    if (!user?.id) return;
 
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
@@ -107,67 +133,39 @@ export function FirdausGlobalListener() {
 
       if (!finalTranscript) return;
 
-      if (!isMicrophoneAudio(finalTranscript)) {
-        console.log("[Firdaus] Skipping non-microphone audio:", finalTranscript);
-        return;
-      }
+      if (!isMicrophoneAudio(finalTranscript)) return;
 
       const now = Date.now();
+      const vs = vsm.state;
 
-      if (voiceStateMachine.state === VoiceState.SLEEPING) {
+      if (isStandby(vs) || vs === VoiceState.SLEEPING) {
         if (now - lastWakeTimeRef.current < COOLDOWN_MS) return;
 
         const wakeResult = detectWakeWord(finalTranscript);
-        console.log(
-          `[Firdaus] Wake check: "${finalTranscript}" confidence=${wakeResult.confidence.toFixed(2)} detected=${wakeResult.detected}`
-        );
 
         if (wakeResult.detected && wakeResult.confidence >= HIGH_CONFIDENCE) {
           lastWakeTimeRef.current = now;
-
-          console.log("[Firdaus] Wake detected (high):", wakeResult);
-
-          voiceStateMachine.transition({
-            from: VoiceState.SLEEPING,
-            to: VoiceState.WAKE_DETECTED,
-            reason: "wake_word_detected",
-          });
+          vsm.transition({ from: vs, to: VoiceState.WAKE_DETECTED, reason: "wake_word_detected" });
           actionsRef.current.updateVoiceState(VoiceState.WAKE_DETECTED);
+          actionsRef.current.wake();
 
           const cleanedCommand = removeWakeWord(finalTranscript, wakeResult.wakeWord);
-          console.log("[Firdaus] Wake word removed:", cleanedCommand);
-
-          actionsRef.current.wake();
 
           if (cleanedCommand) {
             const analysis = analyzeVoiceIntent(cleanedCommand);
-            console.log(formatPipelineLog(analysis));
-
             if (analysis.intent !== "UNKNOWN" && analysis.confidence >= 0.5) {
-              voiceStateMachine.transition({
-                from: VoiceState.WAKE_DETECTED,
-                to: VoiceState.UNDERSTANDING,
-                reason: "speech_detected",
-              });
               actionsRef.current.updateVoiceState(VoiceState.UNDERSTANDING);
               actionsRef.current.sendMessage(cleanedCommand);
-            } else {
-              actionsRef.current.speak("Ndio, nakusikiliza. Nikusaidie nini?");
+              return;
             }
-          } else {
-            actionsRef.current.speak("Ndio, nakusikiliza. Nikusaidie nini?");
           }
+
+          actionsRef.current.speak("Ndio, nakusikiliza. Nikusaidie nini?");
           return;
         }
 
         if (wakeResult.detected && wakeResult.confidence >= MEDIUM_CONFIDENCE && wakeResult.confidence < HIGH_CONFIDENCE) {
           lastWakeTimeRef.current = now;
-          console.log("[Firdaus] Wake detected (medium):", wakeResult);
-          voiceStateMachine.transition({
-            from: VoiceState.SLEEPING,
-            to: VoiceState.WAKE_DETECTED,
-            reason: "wake_word_detected",
-          });
           actionsRef.current.wake();
           actionsRef.current.speak("Ulisema Firdausi?");
           return;
@@ -175,21 +173,13 @@ export function FirdausGlobalListener() {
         return;
       }
 
-      if (voiceStateMachine.isAwake) {
+      if (vsm.isAwake) {
         const wakeResult = detectWakeWord(finalTranscript);
         if (wakeResult.detected && wakeResult.confidence >= HIGH_CONFIDENCE) {
           const cleanedCommand = removeWakeWord(finalTranscript, wakeResult.wakeWord);
           if (cleanedCommand) {
             const analysis = analyzeVoiceIntent(cleanedCommand);
-            console.log(formatPipelineLog(analysis));
             if (analysis.intent !== "UNKNOWN" && analysis.confidence >= 0.5) {
-              if (voiceStateMachine.state !== VoiceState.UNDERSTANDING && voiceStateMachine.state !== VoiceState.EXECUTING) {
-                voiceStateMachine.transition({
-                  from: voiceStateMachine.state as any,
-                  to: VoiceState.UNDERSTANDING,
-                  reason: "speech_detected",
-                });
-              }
               actionsRef.current.updateVoiceState(VoiceState.UNDERSTANDING);
               actionsRef.current.sendMessage(cleanedCommand);
               return;
@@ -197,19 +187,9 @@ export function FirdausGlobalListener() {
           }
         }
 
-        if (voiceStateMachine.isListening) {
+        if (vsm.isListening) {
           const analysis = analyzeVoiceIntent(finalTranscript);
-          console.log(formatPipelineLog(analysis));
-
           if (analysis.intent !== "UNKNOWN" && analysis.confidence >= 0.5) {
-            const fromState = voiceStateMachine.state === VoiceState.WAKE_DETECTED
-              ? VoiceState.WAKE_DETECTED
-              : VoiceState.LISTENING;
-            voiceStateMachine.transition({
-              from: fromState,
-              to: VoiceState.UNDERSTANDING,
-              reason: "speech_detected",
-            });
             actionsRef.current.sendMessage(finalTranscript);
           }
         }
@@ -222,95 +202,97 @@ export function FirdausGlobalListener() {
 
       if (event.error === "not-allowed") {
         setPermissionDenied(true);
+        actionsRef.current.updateVoiceState(VoiceState.DISCONNECTED);
+        clearInactivityTimer();
         return;
       }
 
-      restartTimer.current = setTimeout(() => {
-        if (mountedRef.current) startRecognition();
-      }, 1000);
+      actionsRef.current.updateVoiceState(VoiceState.ERROR);
+      scheduleRestart();
     };
 
     recognition.onend = () => {
       recognitionRef.current = null;
       if (permissionDenied || !mountedRef.current) return;
-      restartTimer.current = setTimeout(() => {
-        if (mountedRef.current && !isSpeakingRef.current) startRecognition();
-      }, 500);
+      if (isPublicRoute(pathname)) return;
+      scheduleRestart();
     };
 
     recognitionRef.current = recognition;
     try {
       recognition.start();
+      if (vsm.state === VoiceState.INITIALIZING) {
+        vsm.transition({ from: VoiceState.INITIALIZING, to: VoiceState.READY, reason: "initialized" });
+      }
     } catch (err) {
       console.warn("[Firdaus] Failed to start recognition:", err);
       recognitionRef.current = null;
     }
-  }, [isSupported, permissionDenied]);
+  }, [isSupported, permissionDenied, pathname, user?.id, vsm]);
 
   const stopRecognition = useCallback(() => {
-    mountedRef.current = false;
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch {}
-      recognitionRef.current = null;
-    }
     if (restartTimer.current) {
       clearTimeout(restartTimer.current);
       restartTimer.current = null;
     }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
+    clearInactivityTimer();
   }, []);
 
+  function scheduleRestart() {
+    if (restartTimer.current) clearTimeout(restartTimer.current);
+    if (!mountedRef.current) return;
+    restartTimer.current = setTimeout(() => {
+      if (mountedRef.current && !isPublicRoute(pathname) && user?.id && !permissionDenied) {
+        vsm.transition({ from: vsm.state, to: VoiceState.INITIALIZING, reason: "recover" });
+        startRecognition();
+      }
+    }, 1000);
+  }
+
+  function clearInactivityTimer() {
+    if (inactivityTimer.current) {
+      clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = null;
+    }
+  }
+
   useEffect(() => {
-    if (!isSupported) return;
-    mountedRef.current = true;
+    if (!mountedRef.current) return;
+    if (instanceId.current > 1) return;
+
+    if (isPublicRoute(pathname)) {
+      stopRecognition();
+      return;
+    }
+
+    if (!user?.id) return;
+
+    if (vsm.state === VoiceState.BOOTING) {
+      vsm.transition({ from: VoiceState.BOOTING, to: VoiceState.INITIALIZING, reason: "start_init" });
+    }
+
     startRecognition();
 
     const handleVoiceStart = () => {
       isSpeakingRef.current = true;
-      const current = voiceStateMachine.state;
-      if (current === VoiceState.UNDERSTANDING) {
-        voiceStateMachine.transition({
-          from: VoiceState.UNDERSTANDING,
-          to: VoiceState.RESPONDING,
-          reason: "action_complete",
-        });
-      } else if (current === VoiceState.EXECUTING) {
-        voiceStateMachine.transition({
-          from: VoiceState.EXECUTING,
-          to: VoiceState.RESPONDING,
-          reason: "action_complete",
-        });
-      } else if (current === VoiceState.LISTENING || current === VoiceState.WAKE_DETECTED) {
-        voiceStateMachine.transition({
-          from: current,
-          to: VoiceState.RESPONDING,
-          reason: "action_complete",
-        } as any);
-      }
       actionsRef.current.updateVoiceState(VoiceState.RESPONDING);
-      if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch {}
-        recognitionRef.current = null;
-      }
+      stopRecognition();
     };
 
     const handleVoiceEnd = () => {
       isSpeakingRef.current = false;
       const hasActiveWorkflow = stateRef.current.currentWorkflow;
+
       if (hasActiveWorkflow) {
-        voiceStateMachine.transition({
-          from: VoiceState.RESPONDING,
-          to: VoiceState.LISTENING,
-          reason: "follow_up_needed",
-        });
         actionsRef.current.updateVoiceState(VoiceState.LISTENING);
       } else {
-        voiceStateMachine.transition({
-          from: VoiceState.RESPONDING,
-          to: VoiceState.SLEEPING,
-          reason: "response_complete",
-        });
-        actionsRef.current.sleep();
+        actionsRef.current.updateVoiceState(VoiceState.READY);
       }
+
       if (mountedRef.current) {
         setTimeout(() => startRecognition(), 300);
       }
@@ -324,102 +306,58 @@ export function FirdausGlobalListener() {
       window.removeEventListener("firdaus:voice-start", handleVoiceStart);
       window.removeEventListener("firdaus:voice-end", handleVoiceEnd);
     };
-  }, [isSupported, startRecognition, stopRecognition]);
+  }, [pathname, user?.id, isSupported, startRecognition, stopRecognition, vsm]);
 
   useEffect(() => {
-    if (!state.isAwake) return;
-    const timer = setTimeout(() => {
+    if (!state.isAwake || state.currentWorkflow) return;
+
+    clearInactivityTimer();
+    inactivityTimer.current = setTimeout(() => {
       actionsRef.current.sleep();
+      actionsRef.current.updateVoiceState(VoiceState.READY);
     }, 30000);
-    return () => clearTimeout(timer);
-  }, [state.isAwake, state.messages.length, state.currentWorkflow]);
 
-  const modeRef = useRef<"platform" | "workspace" | "generic">("generic");
-  useEffect(() => {
-    const segments = pathname.split("/").filter(Boolean);
-    const mode = segments[0] === "platform" ? "platform" as const
-      : segments[0] === "workspaces" ? "workspace" as const
-      : "generic" as const;
-    modeRef.current = mode;
-  }, [pathname]);
-
-  const contextKeyRef = useRef<string>("");
-  useEffect(() => {
-    if (!user?.id) return;
-    const key = `${user.id}|${user.currentBusinessId || ""}|${modeRef.current}`;
-    if (key === contextKeyRef.current) return;
-    contextKeyRef.current = key;
-    actions.setBusinessContext({
-      userId: user.id,
-      businessId: user.currentBusinessId || undefined,
-      mode: modeRef.current,
-    });
-  });
-
-  useEffect(() => {
-    const segments = pathname.split("/").filter(Boolean);
-    const businessIdx = segments.indexOf("businesses");
-    if (businessIdx >= 1 && segments[businessIdx - 1] === "workspaces" && segments[businessIdx + 1]) {
-      const businessId = segments[businessIdx + 1];
-
-      actions.setBusinessContext({
-        businessId: businessId as string,
-        userId: user?.id,
-        mode: "workspace",
-      });
-
-      if (!businessScanned) {
-        setBusinessScanned(true);
-      }
-    }
-  }, [pathname, businessScanned, user?.id]);
+    return clearInactivityTimer;
+  }, [state.isAwake, state.currentWorkflow]);
 
   if (!mounted) return null;
+  if (!isSupported) return null;
+  if (isPublicRoute(pathname)) return null;
 
-  if (!isSupported) {
-    return (
-      <div className="fixed bottom-20 right-4 z-50 md:bottom-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/80 text-xs text-muted-foreground">
-          <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
-          Firdaus voice unavailable in this browser
-        </div>
-      </div>
-    );
-  }
+  const statusMsg = state.statusMessage || getStatusLabel(state.voiceState);
 
   if (permissionDenied) {
     return (
       <div className="fixed bottom-20 right-4 z-50 md:bottom-4">
         <button
           type="button"
-          onClick={() => setPermissionDenied(false)}
+          onClick={() => {
+            setPermissionDenied(false);
+            actions.updateVoiceState(VoiceState.READY);
+            startRecognition();
+          }}
           className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 hover:bg-amber-500/20 transition-colors"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          Firdaus imezima sauti. Bonyeza kuruhusu mikrofoni
+          Microphone blocked. Click to allow
         </button>
       </div>
     );
   }
 
-  const modeLabel = modeRef.current === "platform" ? "Platform"
-    : modeRef.current === "workspace" ? "Workspace"
-    : "";
-
-  const stateLabel = state.voiceState === VoiceState.SLEEPING ? "amelala"
-    : state.voiceState === VoiceState.WAKE_DETECTED ? "ameamka"
-    : state.voiceState === VoiceState.LISTENING ? "anasikiliza"
-    : state.voiceState === VoiceState.UNDERSTANDING ? "anaelewa"
-    : state.voiceState === VoiceState.EXECUTING ? "anafanya"
-    : state.voiceState === VoiceState.RESPONDING ? "anazungumza"
-    : "";
+  const isSleeping = state.voiceState === VoiceState.SLEEPING;
+  const isOnline = state.voiceState !== VoiceState.DISCONNECTED
+    && state.voiceState !== VoiceState.ERROR;
 
   return (
     <div className="fixed bottom-20 right-4 z-50 md:bottom-4">
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/80 text-xs text-muted-foreground">
-        <span className={`w-1.5 h-1.5 rounded-full ${state.voiceState === VoiceState.SLEEPING ? "bg-muted-foreground/50" : "bg-emerald-500"} ${state.voiceState !== VoiceState.SLEEPING ? "animate-pulse" : ""}`} />
-        {modeLabel && <span className="font-medium text-[10px] uppercase tracking-wider opacity-70">{modeLabel}</span>}
-        Firdaus {stateLabel}
+        <span
+          className={`w-1.5 h-1.5 rounded-full ${
+            isSleeping ? "bg-muted-foreground/50" : isOnline ? "bg-emerald-500" : "bg-red-500"
+          } ${!isSleeping && isOnline ? "animate-pulse" : ""}`}
+        />
+        Firdaus {statusMsg.toLowerCase()}
       </div>
     </div>
   );
