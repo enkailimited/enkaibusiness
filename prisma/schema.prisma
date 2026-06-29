@@ -437,6 +437,8 @@ model User {
   invites                          UserInvite[]
   depositRequestsRequested         WalletDepositRequest[] @relation("DepositRequestRequestedBy")
   depositRequestsReviewed          WalletDepositRequest[] @relation("DepositRequestReviewedBy")
+  requestedApprovals               ApprovalRequest[]      @relation("ApprovalRequestRequestedBy")
+  approvalActions                  ApprovalAction[]       @relation("ApprovalActionApprover")
 
   @@map("users")
 }
@@ -633,6 +635,13 @@ model Business {
   contacts                Contact[]
   organizations           Organization[]
   catalogAttributes       CatalogAttribute[]
+  taxRates                TaxRate[]
+  promotions              Promotion[]
+  coupons                 Coupon[]
+  couponRedemptions       CouponRedemption[]
+  automationRules         AutomationRule[]
+  approvalWorkflows       ApprovalWorkflow[]
+  approvalRequests        ApprovalRequest[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -997,6 +1006,7 @@ model CatalogItem {
   createdBy            User?                   @relation("CatalogItemCreatedBy", fields: [createdById], references: [id])
   updatedBy            User?                   @relation("CatalogItemUpdatedBy", fields: [updatedById], references: [id])
   attributes           CatalogItemAttribute[]
+  promotionItems       PromotionItem[]
 
   @@unique([businessId, slug])
   @@unique([businessId, sku])
@@ -2872,4 +2882,248 @@ model NotificationTemplate {
 
   @@index([event, isActive])
   @@map("notification_templates")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TAXES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── TaxRate ──────────────────────────────────────────────────────────────────
+
+model TaxRate {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @map("business_id") @db.Uuid
+  name         String   // "VAT 18%", "Withholding 5%", "GST 16%"
+  type         String   // "vat" | "gst" | "sales-tax" | "withholding" | "import-duty" | "export-tax"
+  rate         Decimal  @db.Decimal(5, 2)
+  countryCode  String   @default("TZ") @map("country_code") // ISO 3166-1 alpha-2
+  isCompound   Boolean  @default(false) @map("is_compound")
+  isWithholding Boolean @default(false) @map("is_withholding")
+  taxMode      String   @default("exclusive") @map("tax_mode") // "inclusive" | "exclusive"
+  isActive     Boolean  @default(true) @map("is_active")
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, name])
+  @@index([businessId, isActive])
+  @@index([countryCode])
+  @@map("tax_rates")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROMOTIONS & COUPONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Promotion ────────────────────────────────────────────────────────────────
+
+model Promotion {
+  id                String    @id @default(uuid()) @db.Uuid
+  businessId        String    @map("business_id") @db.Uuid
+  name              String
+  description       String?
+  type              String    // "discount-percent" | "discount-amount" | "buy-x-get-y" | "bundle" | "free-item" | "seasonal" | "happy-hour" | "customer-specific"
+  discountPercent   Decimal?  @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount    Decimal?  @map("discount_amount") @db.Decimal(15, 2)
+  minPurchaseAmount Decimal? @map("min_purchase_amount") @db.Decimal(15, 2)
+  startDate         DateTime? @map("start_date")
+  endDate           DateTime? @map("end_date")
+  priority          Int       @default(0)
+  stackable         Boolean   @default(false)
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  items    PromotionItem[]
+  coupons  Coupon[]
+
+  @@index([businessId, isActive])
+  @@index([type])
+  @@map("promotions")
+}
+
+// ─── PromotionItem ────────────────────────────────────────────────────────────
+
+model PromotionItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  promotionId   String   @map("promotion_id") @db.Uuid
+  catalogItemId String   @map("catalog_item_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  promotion   Promotion   @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([promotionId, catalogItemId])
+  @@index([catalogItemId])
+  @@map("promotion_items")
+}
+
+// ─── Coupon ───────────────────────────────────────────────────────────────────
+
+model Coupon {
+  id              String    @id @default(uuid()) @db.Uuid
+  businessId      String    @map("business_id") @db.Uuid
+  promotionId     String?   @map("promotion_id") @db.Uuid
+  code            String
+  discountPercent Decimal?  @map("discount_percent") @db.Decimal(5, 2)
+  discountAmount  Decimal?  @map("discount_amount") @db.Decimal(15, 2)
+  maxUses         Int       @default(0) @map("max_uses") // 0 = unlimited
+  currentUses     Int       @default(0) @map("current_uses")
+  minAmount       Decimal?  @map("min_amount") @db.Decimal(15, 2)
+  maxAmount       Decimal?  @map("max_amount") @db.Decimal(15, 2)
+  isActive        Boolean   @default(true) @map("is_active")
+  validFrom       DateTime? @map("valid_from")
+  validUntil      DateTime? @map("valid_until")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  promotion   Promotion?         @relation(fields: [promotionId], references: [id])
+  redemptions CouponRedemption[]
+
+  @@unique([businessId, code])
+  @@index([code])
+  @@index([isActive, validFrom, validUntil])
+  @@map("coupons")
+}
+
+// ─── CouponRedemption ─────────────────────────────────────────────────────────
+
+model CouponRedemption {
+  id         String   @id @default(uuid()) @db.Uuid
+  couponId   String   @map("coupon_id") @db.Uuid
+  businessId String   @map("business_id") @db.Uuid
+  saleId     String?  @map("sale_id") @db.Uuid
+  customerId String?  @map("customer_id") @db.Uuid
+  usedAt     DateTime @default(now()) @map("used_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([couponId])
+  @@index([saleId])
+  @@map("coupon_redemptions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTOMATION RULES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── AutomationRule ───────────────────────────────────────────────────────────
+
+model AutomationRule {
+  id               String    @id @default(uuid()) @db.Uuid
+  businessId       String    @map("business_id") @db.Uuid
+  name             String
+  description      String?
+  triggerType      String    @map("trigger_type") // "inventory-low" | "sale-completed" | "payment-received" | "invoice-overdue" | "stock-expiry" | "customer-birthday" | "scheduled"
+  triggerConfig    Json      @default("{}") @map("trigger_config") @db.JsonB
+  conditionConfig  Json      @default("{}") @map("condition_config") @db.JsonB
+  actionType       String    @map("action_type") // "send-notification" | "send-email" | "create-purchase-order" | "apply-discount" | "update-status" | "webhook"
+  actionConfig     Json      @default("{}") @map("action_config") @db.JsonB
+  isActive         Boolean   @default(true) @map("is_active")
+  priority         Int       @default(0)
+  cooldownMinutes  Int       @default(0) @map("cooldown_minutes") // 0 = no cooldown
+  lastTriggeredAt  DateTime? @map("last_triggered_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, isActive])
+  @@index([triggerType])
+  @@map("automation_rules")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APPROVAL WORKFLOWS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── ApprovalWorkflow ─────────────────────────────────────────────────────────
+
+model ApprovalWorkflow {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @map("business_id") @db.Uuid
+  name          String
+  description   String?
+  module        String   // "purchase-order" | "expense" | "return" | "stock-adjustment" | "quotation"
+  triggerEvent  String   @map("trigger_event") // "status-changed" | "amount-exceeded" | "created"
+  triggerConfig Json     @default("{}") @map("trigger_config") @db.JsonB
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  stages   ApprovalStage[]
+  requests ApprovalRequest[]
+
+  @@index([businessId, isActive])
+  @@index([module])
+  @@map("approval_workflows")
+}
+
+// ─── ApprovalStage ────────────────────────────────────────────────────────────
+
+model ApprovalStage {
+  id           String   @id @default(uuid()) @db.Uuid
+  workflowId   String   @map("workflow_id") @db.Uuid
+  name         String
+  stageOrder   Int      @map("stage_order")
+  approverRole String   @map("approver_role") // role slug or role name
+  minApprovers Int      @default(1) @map("min_approvers")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  workflow ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, stageOrder])
+  @@map("approval_stages")
+}
+
+// ─── ApprovalRequest ──────────────────────────────────────────────────────────
+
+model ApprovalRequest {
+  id            String         @id @default(uuid()) @db.Uuid
+  businessId    String         @map("business_id") @db.Uuid
+  workflowId    String         @map("workflow_id") @db.Uuid
+  referenceId   String         @map("reference_id") @db.Uuid
+  referenceType String         @map("reference_type") // "purchase-order" | "expense" | "return" | "stock-adjustment"
+  status        String         @default("pending") // "pending" | "approved" | "rejected" | "cancelled"
+  requestedById String         @map("requested_by") @db.Uuid
+  currentStage  Int            @default(0) @map("current_stage")
+  notes         String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  business  Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workflow  ApprovalWorkflow @relation(fields: [workflowId], references: [id])
+  requestedBy User          @relation("ApprovalRequestRequestedBy", fields: [requestedById], references: [id])
+  actions   ApprovalAction[]
+
+  @@index([businessId, status])
+  @@index([referenceId, referenceType])
+  @@index([workflowId])
+  @@map("approval_requests")
+}
+
+// ─── ApprovalAction ───────────────────────────────────────────────────────────
+
+model ApprovalAction {
+  id         String   @id @default(uuid()) @db.Uuid
+  requestId  String   @map("request_id") @db.Uuid
+  approverId String   @map("approver_id") @db.Uuid
+  stage      Int      @default(0)
+  action     String   // "approved" | "rejected" | "returned"
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  request  ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approver User            @relation("ApprovalActionApprover", fields: [approverId], references: [id])
+
+  @@index([requestId])
+  @@map("approval_actions")
 }

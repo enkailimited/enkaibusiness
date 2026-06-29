@@ -22,3 +22,7 @@ export { AIContextEngine, aiContextEngine } from "./ai-context-engine";
 export { PluginEngine, pluginEngine, definePlugin } from "./plugin-engine";
 export type { PluginManifest } from "./plugin-engine";
 export type { BusinessContext } from "./ai-context-engine";
+export { WorkflowEngine, workflowEngine } from "./workflow-engine";
+export type { WorkflowModule, WorkflowTriggerEvent, ApprovalActionType, ApprovalStatus, StageDefinition, WorkflowDefinition, ApprovalActionInput } from "./workflow-engine";
+export { AutomationEngine, automationEngine } from "./automation-engine";
+export type { TriggerType, ActionType, RuleDefinition, TriggerEvent } from "./automation-engine";
