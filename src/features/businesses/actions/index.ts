@@ -476,14 +476,26 @@ export async function getBusinessesAction() {
   try {
     const user = await requireAuth();
 
+    let workspaceId: string | null = null;
+
     const membership = await prisma.workspaceMember.findFirst({
       where: { userId: user.id },
       select: { workspaceId: true },
     });
-    if (!membership) return { workspaceId: null, businesses: [] };
+    if (membership) {
+      workspaceId = membership.workspaceId;
+    } else {
+      const staff = await prisma.staff.findFirst({
+        where: { userId: user.id, isActive: true },
+        select: { business: { select: { workspaceId: true } } },
+      });
+      workspaceId = staff?.business?.workspaceId ?? null;
+    }
+
+    if (!workspaceId) return { workspaceId: null, businesses: [] };
 
     const businesses = await prisma.business.findMany({
-      where: { workspaceId: membership.workspaceId },
+      where: { workspaceId },
       include: {
         _count: { select: { branches: true, staff: true, customers: true } },
         modes: { select: { industry: true, mode: true } },
@@ -497,7 +509,7 @@ export async function getBusinessesAction() {
       ...biz,
       subscriptionStatus: statuses[i],
     }));
-    return { workspaceId: membership.workspaceId, businesses: serialize(data) };
+    return { workspaceId, businesses: serialize(data) };
   } catch (error) {
     console.error("getBusinessesAction error:", error);
     return { workspaceId: null, businesses: [] };
