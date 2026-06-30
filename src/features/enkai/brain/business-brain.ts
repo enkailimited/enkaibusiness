@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { parseCommand } from "../commands/command-parser";
 import { toolRegistry } from "../tools/tool-registry";
@@ -996,9 +997,9 @@ async function handlePlatformRequest(
   if (/subscription|subscriptions|usajili|plan/.test(lower)) {
     const [total, active, expired, cancelled] = await Promise.all([
       prisma.subscription.count(),
-      prisma.subscription.count({ where: { status: "ACTIVE" } }),
-      prisma.subscription.count({ where: { status: "EXPIRED" } }),
-      prisma.subscription.count({ where: { status: "CANCELLED" } }),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.EXPIRED } }),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.CANCELLED } }),
     ]);
     return { message: `Jumla ya usajili: ${total}\nWanaoendelea: ${active}\nWameisha: ${expired}\nWameghairi: ${cancelled}` };
   }

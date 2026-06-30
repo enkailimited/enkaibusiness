@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { PlatformKPIs, BusinessKPIs } from "../types";
 
@@ -25,7 +26,7 @@ export async function getPlatformKPIs(period: "current" | "prev" = "current"): P
         where: { status: "completed", ...paidAtFilter },
         _sum: { amount: true },
       }),
-      prisma.subscription.count({ where: { status: "ACTIVE" } }),
+      prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
       prisma.supportTicket.count({ where: { status: "OPEN" } }),
     ]);
 

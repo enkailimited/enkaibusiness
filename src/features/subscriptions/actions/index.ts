@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { SubscriptionStatus } from "@prisma/client";
 import { serialize } from "@/lib/utils";
 import {
   createPlan,

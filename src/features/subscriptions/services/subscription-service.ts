@@ -1,7 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
-import { Prisma } from "@prisma/client";
+import { Prisma, SubscriptionStatus } from "@prisma/client";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateSubscriptionSchema } from "../schemas";
 import type { SubscriptionWithRelations, SubscriptionListItem, SubscriptionFilter } from "../types";
@@ -49,7 +49,7 @@ export async function subscribe(
     const existingActive = await prisma.subscription.findFirst({
       where: {
         businessId: data.businessId,
-        status: { in: ["ACTIVE", "GRACE_PERIOD"] },
+        status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.GRACE_PERIOD] },
       },
     });
 
@@ -86,7 +86,7 @@ export async function getSubscription(id: string): Promise<SubscriptionWithRelat
     where: { id },
     include: {
       plan: true,
-      business: { select: { id: true, name: true, legalName: true } },
+      business: { select: { id: true, name: true } },
       payments: { orderBy: { paidAt: "desc" } },
     },
   });
@@ -131,14 +131,14 @@ export async function cancelSubscription(id: string): Promise<ActionResponse> {
     const existing = await prisma.subscription.findUnique({ where: { id } });
 
     if (!existing) return { success: false, message: "Subscription not found" };
-    if (existing.status === "CANCELLED") {
+    if (existing.status === SubscriptionStatus.CANCELLED) {
       return { success: false, message: "Subscription is already cancelled" };
     }
 
     await prisma.subscription.update({
       where: { id },
       data: {
-        status: "CANCELLED",
+        status: SubscriptionStatus.CANCELLED,
         cancelledAt: new Date(),
         endDate: new Date(),
       },
@@ -188,7 +188,7 @@ export async function renewSubscription(id: string): Promise<ActionResponse & { 
     const updated = await prisma.subscription.update({
       where: { id },
       data: {
-        status: "ACTIVE",
+        status: SubscriptionStatus.ACTIVE,
         startDate: now,
         endDate,
         graceEndDate,
@@ -215,12 +215,12 @@ export async function updateSubscriptionStatus(
   try {
     const updateData: Record<string, unknown> = { status };
 
-    if (status === "SUSPENDED") {
+    if (status === SubscriptionStatus.SUSPENDED) {
       updateData.suspendedAt = new Date();
-    } else if (status === "CANCELLED") {
+    } else if (status === SubscriptionStatus.CANCELLED) {
       updateData.cancelledAt = new Date();
       updateData.endDate = new Date();
-    } else if (status === "ACTIVE") {
+    } else if (status === SubscriptionStatus.ACTIVE) {
       updateData.suspendedAt = null;
     }
 
@@ -237,7 +237,7 @@ export async function processSubscriptionRenewals(): Promise<ActionResponse> {
   const now = new Date();
 
   const expiringSubs = await prisma.subscription.findMany({
-    where: { status: "ACTIVE", endDate: { lte: now } },
+    where: { status: SubscriptionStatus.ACTIVE, endDate: { lte: now } },
     include: { plan: { select: { id: true, name: true, amount: true, interval: true } } },
     take: 100,
   });
@@ -313,7 +313,7 @@ export async function processSubscriptionRenewals(): Promise<ActionResponse> {
     } else {
       await prisma.subscription.update({
         where: { id: sub.id },
-        data: { status: "GRACE_PERIOD" },
+        data: { status: SubscriptionStatus.GRACE_PERIOD },
       });
       gracePeriod++;
     }
@@ -331,10 +331,10 @@ export async function checkExpiringSubscriptions(): Promise<ActionResponse> {
 
     const suspended = await prisma.subscription.updateMany({
       where: {
-        status: "GRACE_PERIOD",
+        status: SubscriptionStatus.GRACE_PERIOD,
         graceEndDate: { lte: now },
       },
-      data: { status: "SUSPENDED", suspendedAt: now },
+      data: { status: SubscriptionStatus.SUSPENDED, suspendedAt: now },
     });
 
     return {
@@ -349,11 +349,11 @@ export async function checkExpiringSubscriptions(): Promise<ActionResponse> {
 
 export async function getSubscriptionMetrics() {
   const [active, gracePeriod, suspended, expired, cancelled, payments] = await Promise.all([
-    prisma.subscription.count({ where: { status: "ACTIVE" } }),
-    prisma.subscription.count({ where: { status: "GRACE_PERIOD" } }),
-    prisma.subscription.count({ where: { status: "SUSPENDED" } }),
-    prisma.subscription.count({ where: { status: "EXPIRED" } }),
-    prisma.subscription.count({ where: { status: "CANCELLED" } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.GRACE_PERIOD } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.SUSPENDED } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.EXPIRED } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.CANCELLED } }),
     prisma.subscriptionPayment.aggregate({ _sum: { amount: true } }),
   ]);
 

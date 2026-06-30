@@ -3,6 +3,7 @@ import type { SubscriptionPlan, Subscription, SubscriptionPayment } from "@prism
 export type PlanInterval = "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY";
 
 export type SubscriptionStatus =
+  | "PENDING"
   | "ACTIVE"
   | "GRACE_PERIOD"
   | "SUSPENDED"

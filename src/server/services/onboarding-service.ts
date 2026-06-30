@@ -7,6 +7,7 @@ import { OnboardingStep } from "@/types/enums";
 import { UserRegistrationEngine, BusinessRegistrationEngine } from "@/server/registrations";
 import { RegistrationContext } from "@/server/registrations/context";
 import { ensureRbacWorkspaceRole } from "@/features/workspaces/services/workspace-service";
+import { SubscriptionPlanResolver } from "@/server/services/subscription-plan-resolver";
 
 export interface OnboardingStepInfo {
   step: OnboardingStep;
@@ -221,10 +222,7 @@ export async function createWorkspaceForLead(
 
     await ensureRbacWorkspaceRole(user.id, "OWNER");
 
-    const defaultPlan = await prisma.subscriptionPlan.findFirst({
-      where: { isActive: true },
-      orderBy: { amount: "asc" },
-    });
+    const defaultPlan = await SubscriptionPlanResolver.getDefaultPlan();
 
     if (!defaultPlan) {
       return { success: false, message: "No active subscription plan found. Please contact administrator." };
@@ -250,7 +248,7 @@ export async function createWorkspaceForLead(
       },
       {
         id: defaultPlan.id,
-        amount: Number(defaultPlan.amount),
+        amount: defaultPlan.amount,
         interval: defaultPlan.interval,
         name: defaultPlan.name,
       },

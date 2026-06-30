@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { SubscriptionStatus } from "@prisma/client";
 
 export interface ActivationGuardResult {
   allowed: boolean;
@@ -31,7 +32,7 @@ export async function requireActiveBusiness(businessId: string): Promise<Activat
   }
 
   const subscription = await prisma.subscription.findFirst({
-    where: { businessId, status: { notIn: ["CANCELLED", "EXPIRED"] } },
+    where: { businessId, status: { notIn: [SubscriptionStatus.CANCELLED, SubscriptionStatus.EXPIRED] } },
     orderBy: { createdAt: "desc" },
     select: { status: true },
   });
@@ -66,7 +67,7 @@ export async function requireActiveSubscription(businessId: string): Promise<{
     return { active: false, reason: "No subscription found" };
   }
 
-  if (subscription.status !== "ACTIVE") {
+  if (subscription.status !== SubscriptionStatus.ACTIVE) {
     return { active: false, reason: `Subscription is ${subscription.status.toLowerCase()}` };
   }
 

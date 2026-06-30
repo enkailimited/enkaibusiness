@@ -5,6 +5,7 @@ import { createAuditLog } from "@/server/services/audit-service";
 import { getBusinessSetting } from "@/features/businesses/services/setting-service";
 import { createNotification, createBulkNotifications } from "@/features/notifications/services/notification-service";
 import type { ActionResponse } from "@/types/relationships";
+import { SubscriptionStatus } from "@prisma/client";
 import { emitBusinessActivated, emitWalletFunded } from "@/modules/ai/events/event-bus";
 
 export interface ActivationInfo {
@@ -247,18 +248,18 @@ export async function approveTopUp(
 
       if (balanceAfter >= setupFee && request.business.status === "PENDING_SETUP") {
         const subscription = await tx.subscription.findFirst({
-          where: { businessId: request.businessId, status: "PENDING" },
+          where: { businessId: request.businessId, status: SubscriptionStatus.PENDING },
           orderBy: { createdAt: "desc" },
         });
 
         if (subscription) {
           await tx.subscription.update({
             where: { id: subscription.id },
-            data: { status: "ACTIVE" },
+            data: { status: SubscriptionStatus.ACTIVE },
           });
 
           await createAuditLog(adminId, "SUBSCRIPTION_ACTIVATED", "Subscription", subscription.id, {
-            after: { status: "ACTIVE", businessId: request.businessId },
+            after: { status: SubscriptionStatus.ACTIVE, businessId: request.businessId },
           });
         }
 

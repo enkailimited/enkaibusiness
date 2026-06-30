@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useCallback, useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,10 @@ import { createPlanAction } from "../actions";
 import { SUBSCRIPTION_INTERVALS } from "../constants";
 import type { SubscriptionPlan } from "@prisma/client";
 
+function toSlug(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
 interface PlanFormProps {
   plan?: SubscriptionPlan;
 }
@@ -24,6 +28,23 @@ export function PlanForm({ plan }: PlanFormProps) {
     createPlanAction,
     null,
   );
+
+  const [name, setName] = useState(plan?.name ?? "");
+  const [slug, setSlug] = useState(plan?.slug ?? "");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(!!plan?.slug);
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
+    if (!slugManuallyEdited) {
+      setSlug(toSlug(val));
+    }
+  }, [slugManuallyEdited]);
+
+  const handleSlugChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSlugManuallyEdited(true);
+    setSlug(e.target.value);
+  }, []);
 
   return (
     <Card>
@@ -42,7 +63,8 @@ export function PlanForm({ plan }: PlanFormProps) {
             <Input
               id="name"
               name="name"
-              defaultValue={plan?.name}
+              value={name}
+              onChange={handleNameChange}
               placeholder="e.g. Basic Plan"
               required
             />
@@ -53,7 +75,8 @@ export function PlanForm({ plan }: PlanFormProps) {
             <Input
               id="slug"
               name="slug"
-              defaultValue={plan?.slug}
+              value={slug}
+              onChange={handleSlugChange}
               placeholder="e.g. basic-plan"
               required
             />

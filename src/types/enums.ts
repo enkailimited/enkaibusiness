@@ -81,6 +81,7 @@ export enum SubscriptionInterval {
 }
 
 export enum SubscriptionStatus {
+  PENDING = "PENDING",
   ACTIVE = "ACTIVE",
   GRACE_PERIOD = "GRACE_PERIOD",
   SUSPENDED = "SUSPENDED",

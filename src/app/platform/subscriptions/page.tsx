@@ -35,6 +35,10 @@ import {
   Clock,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import {
+  SUBSCRIPTION_STATUSES,
+  SUBSCRIPTION_STATUS_VARIANTS,
+} from "@/features/subscriptions/constants";
 
 type SubscriptionPlan = {
   id: string;
@@ -95,12 +99,14 @@ const TAB_LABELS: Record<TabKey, string> = {
   subscriptions: "Subscriptions",
 };
 
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning"> = {
-  ACTIVE: "success",
-  SUSPENDED: "warning",
-  EXPIRED: "destructive",
-  INACTIVE: "outline",
-};
+const STATUS = {
+  PENDING: "PENDING",
+  ACTIVE: "ACTIVE",
+  GRACE_PERIOD: "GRACE_PERIOD",
+  SUSPENDED: "SUSPENDED",
+  EXPIRED: "EXPIRED",
+  CANCELLED: "CANCELLED",
+} as const;
 
 export default function PlatformSubscriptionsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -357,7 +363,7 @@ export default function PlatformSubscriptionsPage() {
                     </div>
                     <div className="text-sm md:col-span-2">{plan.interval}</div>
                     <div className="md:col-span-2">
-                      <Badge variant={STATUS_VARIANTS[plan.status] || "outline"}>
+                      <Badge variant={SUBSCRIPTION_STATUS_VARIANTS[plan.status] || "outline"}>
                         {plan.status}
                       </Badge>
                     </div>
@@ -383,9 +389,10 @@ export default function PlatformSubscriptionsPage() {
                   onChange={(e) => setSubStatusFilter(e.target.value)}
                   options={[
                     { value: "ALL", label: "All Status" },
-                    { value: "ACTIVE", label: "Active" },
-                    { value: "SUSPENDED", label: "Suspended" },
-                    { value: "EXPIRED", label: "Expired" },
+                    ...SUBSCRIPTION_STATUSES.map((s) => ({
+                      value: s.value,
+                      label: s.label,
+                    })),
                   ]}
                 />
                 <Button
@@ -453,7 +460,7 @@ export default function PlatformSubscriptionsPage() {
                       )}
                     </div>
                     <div className="md:col-span-1">
-                      <Badge variant={STATUS_VARIANTS[sub.status] || "outline"}>
+                      <Badge variant={SUBSCRIPTION_STATUS_VARIANTS[sub.status] || "outline"}>
                         {sub.status}
                       </Badge>
                     </div>
@@ -472,23 +479,23 @@ export default function PlatformSubscriptionsPage() {
                       )}
                     </div>
                     <div className="flex justify-end gap-1 md:col-span-1">
-                      {sub.status === "ACTIVE" && (
+                      {sub.status === STATUS.ACTIVE && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => handleStatusChange(sub.id, "SUSPENDED")}
+                          onClick={() => handleStatusChange(sub.id, STATUS.SUSPENDED)}
                           title="Suspend"
                         >
                           <Ban className="h-4 w-4 text-yellow-500" />
                         </Button>
                       )}
-                      {sub.status === "SUSPENDED" && (
+                      {sub.status === STATUS.SUSPENDED && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => handleStatusChange(sub.id, "ACTIVE")}
+                          onClick={() => handleStatusChange(sub.id, STATUS.ACTIVE)}
                           title="Activate"
                         >
                           <CheckCircle className="h-4 w-4 text-green-500" />

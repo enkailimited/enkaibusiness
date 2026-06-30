@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 
 export async function getRevenueMetrics() {
@@ -8,7 +9,7 @@ export async function getRevenueMetrics() {
   });
 
   const pendingPayments = await prisma.subscriptionPayment.count({
-    where: { subscription: { status: { not: "CANCELLED" } } },
+    where: { subscription: { status: { not: SubscriptionStatus.CANCELLED } } },
   });
 
   return {
@@ -89,7 +90,7 @@ export async function getFinancialSummary() {
       where: { status: "PAID" },
     }),
     prisma.subscription.count({
-      where: { status: "ACTIVE" },
+      where: { status: SubscriptionStatus.ACTIVE },
     }),
   ]);
 

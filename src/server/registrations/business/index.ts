@@ -13,6 +13,8 @@ import {
 import { emitBusinessCreated } from "../events";
 import { CommerceResolver, DbBusinessTypeResolver, type BusinessTypeResolver, type BusinessPricingInfo } from "../resolvers";
 import { createAuditLog } from "@/server/services/audit-service";
+import { SubscriptionStatus } from "@prisma/client";
+import { SubscriptionPlanResolver } from "@/server/services/subscription-plan-resolver";
 
 export class BusinessRegistrationEngine {
   static async register(
@@ -112,23 +114,14 @@ export class BusinessRegistrationEngine {
 
         if (subscriptionRequired) {
           const now = new Date();
-          let endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-          if (plan.interval === "WEEKLY") {
-            endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          } else if (plan.interval === "MONTHLY") {
-            endDate = new Date(now);
-            endDate.setMonth(endDate.getMonth() + 1);
-          } else if (plan.interval === "YEARLY") {
-            endDate = new Date(now);
-            endDate.setFullYear(endDate.getFullYear() + 1);
-          }
-          const graceEndDate = new Date(endDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+          const endDate = SubscriptionPlanResolver.computeEndDate(plan.interval, now);
+          const graceEndDate = SubscriptionPlanResolver.computeGraceEndDate(endDate);
 
           const subscription = await tx.subscription.create({
             data: {
               planId: plan.id,
               businessId: business.id,
-              status: "PENDING",
+              status: SubscriptionStatus.PENDING,
               startDate: now,
               endDate,
               graceEndDate,
@@ -227,7 +220,7 @@ export class BusinessRegistrationEngine {
       if (txResult.subscriptionId) {
         await createAuditLog(input.createdById, "SUBSCRIPTION_CREATED", "Subscription", txResult.subscriptionId, {
           after: {
-            status: "PENDING",
+            status: SubscriptionStatus.PENDING,
             planName: plan.name,
             businessId: txResult.business.id,
           },

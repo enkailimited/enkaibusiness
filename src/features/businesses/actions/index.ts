@@ -12,6 +12,7 @@ import { recordTransaction } from "@/features/subscriptions/wallet/services/wall
 import { BusinessRegistrationEngine } from "@/server/registrations";
 import { ensureRbacWorkspaceRole } from "@/features/workspaces/services/workspace-service";
 import type { ActionResponse } from "@/types/relationships";
+import { SubscriptionStatus } from "@prisma/client";
 
 async function getBusiness(id: string) {
   return prisma.business.findUnique({
@@ -328,7 +329,7 @@ export async function toggleQrOrderingAction(
       include: {
         modes: { select: { mode: true } },
         subscriptions: {
-          where: { status: "ACTIVE" },
+          where: { status: SubscriptionStatus.ACTIVE },
           include: { plan: true },
           take: 1,
         },

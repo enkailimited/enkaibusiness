@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { PlatformStats } from "../types";
 
@@ -9,7 +10,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     prisma.user.count(),
     prisma.staff.count(),
     prisma.sale.count(),
-    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
     prisma.lead.count({ where: { status: "NEW" } }),
     prisma.supportTicket.count({ where: { status: "OPEN" } }),
   ]);

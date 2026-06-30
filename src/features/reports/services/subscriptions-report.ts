@@ -1,5 +1,6 @@
 import "server-only";
 
+import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { DateRange, SubscriptionsReport, PlanDistribution } from "../types";
 
@@ -18,20 +19,20 @@ export async function getSubscriptionSummary(
 
   const [activeSubs, churnedSubs, planGroups, revenueData] = await Promise.all([
     prisma.subscription.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: SubscriptionStatus.ACTIVE },
       include: { plan: true },
     }),
     dateFilter
       ? prisma.subscription.count({
           where: {
-            status: "CANCELLED",
+            status: SubscriptionStatus.CANCELLED,
             cancelledAt: dateFilter,
           },
         })
       : Promise.resolve(0),
     prisma.subscription.groupBy({
       by: ["planId"],
-      where: { status: "ACTIVE" },
+      where: { status: SubscriptionStatus.ACTIVE },
       _count: true,
     }),
     prisma.subscriptionPayment.aggregate({
@@ -116,12 +117,12 @@ export async function getChurnRate(
   const dateFilter = buildDateFilter(dateRange);
 
   const [totalActive, cancelled] = await Promise.all([
-    prisma.subscription.count({ where: { status: "ACTIVE" } }),
+    prisma.subscription.count({ where: { status: SubscriptionStatus.ACTIVE } }),
     dateFilter
       ? prisma.subscription.count({
-          where: { status: "CANCELLED", cancelledAt: dateFilter },
+          where: { status: SubscriptionStatus.CANCELLED, cancelledAt: dateFilter },
         })
-      : prisma.subscription.count({ where: { status: "CANCELLED" } }),
+      : prisma.subscription.count({ where: { status: SubscriptionStatus.CANCELLED } }),
   ]);
 
   return totalActive + cancelled > 0 ? cancelled / (totalActive + cancelled) : 0;
@@ -130,7 +131,7 @@ export async function getChurnRate(
 export async function getPlanDistribution(): Promise<PlanDistribution[]> {
   const planGroups = await prisma.subscription.groupBy({
     by: ["planId"],
-    where: { status: "ACTIVE" },
+    where: { status: SubscriptionStatus.ACTIVE },
     _count: true,
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,6 +72,8 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const slugManuallyEdited = useRef(false);
+
   const [form, setForm] = useState<{
     businessName: string;
     businessSlug: string;
@@ -105,8 +107,19 @@ export default function RegisterPage() {
 
   const selectedLead = leads.find((l) => l.id === selectedLeadId);
 
+  const toSlug = (value: string) => value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
   const update = (field: string, value: unknown) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "businessName" && typeof value === "string" && !slugManuallyEdited.current) {
+        next.businessSlug = toSlug(value);
+      }
+      if (field === "businessSlug" && typeof value === "string") {
+        slugManuallyEdited.current = value !== toSlug(prev.businessName);
+      }
+      return next;
+    });
   };
 
   const selectedPlan = plans.find((p) => p.id === form.planId);
@@ -323,10 +336,7 @@ export default function RegisterPage() {
                 <Label className="text-sm font-medium">Business Name <span className="text-red-500">*</span></Label>
                 <Input
                   value={form.businessName}
-                  onChange={(e) => {
-                    update("businessName", e.target.value);
-                    update("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
-                  }}
+                  onChange={(e) => update("businessName", e.target.value)}
                   placeholder="e.g. Juma's Store"
                   className={inputClass}
                 />
@@ -335,7 +345,7 @@ export default function RegisterPage() {
                 <Label className="text-sm font-medium">Business Slug <span className="text-red-500">*</span></Label>
                 <Input
                   value={form.businessSlug}
-                  onChange={(e) => update("businessSlug", e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""))}
+                  onChange={(e) => update("businessSlug", e.target.value)}
                   placeholder="duka-la-juma"
                   className={inputClass}
                 />

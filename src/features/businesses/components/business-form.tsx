@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,10 @@ import type { RegisterBusinessInput } from "../schemas";
 import { BUSINESS_SIZE_LABELS, calculateSetupFee, calculateDailyPrice, calculateWeeklyPrice, calculateMonthlyPrice } from "@/features/subscriptions/constants/pricing";
 import { INDUSTRIES, INDUSTRY_LABELS, BUSINESS_MODES } from "../constants";
 import { Check, ChevronLeft, ChevronRight, Building2, Settings, CreditCard, Loader2, UserPlus, QrCode } from "lucide-react";
+
+function toSlug(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
 
 type Plan = { id: string; name: string; amount: number; currency: string; interval: string };
 
@@ -44,13 +48,23 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const slugManuallyEdited = useRef(false);
 
   useEffect(() => {
     listActivePlansAction().then((data) => setPlans(data as unknown as Plan[]));
   }, []);
 
   const updateField = useCallback((field: string, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "name" && typeof value === "string" && !slugManuallyEdited.current) {
+        next.slug = toSlug(value);
+      }
+      if (field === "slug") {
+        slugManuallyEdited.current = value !== toSlug(prev.name);
+      }
+      return next;
+    });
   }, []);
 
   const availableModes = BUSINESS_MODES[formData.industry] ?? [];

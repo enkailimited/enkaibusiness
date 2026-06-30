@@ -13,6 +13,7 @@ export const SUBSCRIPTION_INTERVAL_LABELS: Record<string, string> = {
 };
 
 export const SUBSCRIPTION_STATUSES = [
+  { value: "PENDING", label: "Pending" },
   { value: "ACTIVE", label: "Active" },
   { value: "GRACE_PERIOD", label: "Grace Period" },
   { value: "SUSPENDED", label: "Suspended" },
@@ -21,6 +22,7 @@ export const SUBSCRIPTION_STATUSES = [
 ] as const;
 
 export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pending",
   ACTIVE: "Active",
   GRACE_PERIOD: "Grace Period",
   SUSPENDED: "Suspended",
@@ -32,6 +34,7 @@ export const SUBSCRIPTION_STATUS_VARIANTS: Record<
   string,
   "default" | "secondary" | "destructive" | "outline" | "success" | "warning"
 > = {
+  PENDING: "warning",
   ACTIVE: "success",
   GRACE_PERIOD: "warning",
   SUSPENDED: "destructive",
