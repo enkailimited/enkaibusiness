@@ -7,9 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { SupplierForm } from "@/features/suppliers/components/supplier-form";
+import { listSuppliersAction } from "@/features/suppliers/actions";
 import { createPurchaseAction } from "../actions";
 import { PURCHASE_STATUSES } from "../constants";
-import { ChevronLeft, ChevronRight, ShoppingBag, Package, CreditCard } from "lucide-react";
+import { useActiveBranch } from "@/features/branches/context/active-branch-context";
+import { ChevronLeft, ChevronRight, ShoppingBag, Package, CreditCard, Plus } from "lucide-react";
 
 interface PurchaseFormProps {
   businessId: string;
@@ -23,6 +27,7 @@ interface LineItem {
   catalogItemId: string;
   quantity: number;
   unitCost: number;
+  unitPrice: number;
   subtotal: number;
 }
 
@@ -34,15 +39,23 @@ const STEPS = [
 
 let nextKey = 1;
 function newLineItem(): LineItem {
-  return { key: String(nextKey++), catalogItemId: "", quantity: 1, unitCost: 0, subtotal: 0 };
+  return { key: String(nextKey++), catalogItemId: "", quantity: 1, unitCost: 0, unitPrice: 0, subtotal: 0 };
 }
 
-export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems }: PurchaseFormProps) {
+export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, catalogItems }: PurchaseFormProps) {
   const [step, setStep] = useState(0);
+  const { activeBranch } = useActiveBranch();
   const createAction = useMemo(() => createPurchaseAction.bind(null, businessId, workspaceId), [businessId, workspaceId]);
   const [state, formAction, pending] = useActionState(createAction, null);
   const formRef = useRef<HTMLFormElement>(null);
   const [allowSubmit, setAllowSubmit] = useState(false);
+  const [suppliers, setSuppliers] = useState(_suppliers);
+  const [showNewSupplier, setShowNewSupplier] = useState(false);
+
+  async function refreshSuppliers() {
+    const data = await listSuppliersAction(businessId);
+    setSuppliers((data as unknown as Array<{ id: string; name: string }>) ?? []);
+  }
 
   function handleFinalSubmit() {
     setAllowSubmit(true);
@@ -91,6 +104,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
       <CardContent className="p-0">
         <FormStepper steps={STEPS} currentStep={step} />
         <form ref={formRef} action={formAction} onSubmit={handleFormSubmit} noValidate className="space-y-6" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}>
+          <input type="hidden" name="branchId" value={activeBranch?.id ?? ""} />
           <input type="hidden" name="itemCount" value={items.length} />
 
           <div className={cn(step !== 0 && "hidden")}>
@@ -110,17 +124,22 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
                     <Label htmlFor="supplierId" className="text-sm font-medium">
                       Supplier <span className="text-red-500">*</span>
                     </Label>
-                    <select
-                      id="supplierId"
-                      name="supplierId"
-                      required
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="">Select a supplier</option>
-                      {suppliers.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="supplierId"
+                        name="supplierId"
+                        required
+                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">Select a supplier</option>
+                        {suppliers.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => setShowNewSupplier(true)} title="Add new supplier">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="purchaseDate" className="text-sm font-medium">
@@ -187,8 +206,9 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
                     <input type="hidden" name={`items.${idx}.catalogItemId`} value={item.catalogItemId} />
                     <input type="hidden" name={`items.${idx}.quantity`} value={item.quantity} />
                     <input type="hidden" name={`items.${idx}.unitCost`} value={item.unitCost} />
+                    <input type="hidden" name={`items.${idx}.unitPrice`} value={item.unitPrice} />
                     <input type="hidden" name={`items.${idx}.subtotal`} value={item.subtotal} />
-                    <div className="col-span-5 space-y-1">
+                    <div className="col-span-4 space-y-1">
                       <Label className="text-xs text-gray-500">Product</Label>
                       <select
                         value={item.catalogItemId}
@@ -226,6 +246,17 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
+                      <Label className="text-xs text-gray-500">Sell Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(item.key, "unitPrice", parseFloat(e.target.value) || 0)}
+                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                    <div className="col-span-1 space-y-1">
                       <Label className="text-xs text-gray-500">Total</Label>
                       <div className="h-11 flex items-center text-sm font-medium">
                         {item.subtotal.toFixed(2)}
@@ -349,6 +380,16 @@ export function PurchaseForm({ businessId, workspaceId, suppliers, catalogItems 
               </Button>
             )}
           </div>
+
+          <Dialog open={showNewSupplier} onOpenChange={(open) => { if (!open) setShowNewSupplier(false); }}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Supplier</DialogTitle>
+                <DialogDescription className="sr-only">Create a new supplier</DialogDescription>
+              </DialogHeader>
+              <SupplierForm businessId={businessId} onSuccess={() => { setShowNewSupplier(false); refreshSuppliers(); }} />
+            </DialogContent>
+          </Dialog>
         </form>
       </CardContent>
     </Card>

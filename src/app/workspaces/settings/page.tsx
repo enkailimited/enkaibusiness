@@ -24,14 +24,22 @@ export default function WorkspaceSettingsPage() {
         setDescription(w.description);
       }
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, []);
 
   async function handleSave() {
     if (!workspace) return;
     setSaving(true);
-    await saveWorkspaceSettingsAction(workspace.id, name, description);
-    setSaving(false);
+    try {
+      await saveWorkspaceSettingsAction(workspace.id, name, description);
+    } catch {
+      // Error will surface via toast or UI feedback
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

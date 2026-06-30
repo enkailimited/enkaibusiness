@@ -26,6 +26,7 @@ export async function createPurchaseAction(
     variantId?: string;
     quantity: number;
     unitCost: number;
+    unitPrice?: number;
     subtotal: number;
   }> = [];
 
@@ -33,11 +34,13 @@ export async function createPurchaseAction(
   for (let i = 0; i < itemCount; i++) {
     const catalogItemId = formData.get(`items.${i}.catalogItemId`) as string;
     if (!catalogItemId) continue;
+    const unitPriceRaw = formData.get(`items.${i}.unitPrice`) as string;
     items.push({
       catalogItemId,
       variantId: (formData.get(`items.${i}.variantId`) as string) || undefined,
       quantity: parseFloat(formData.get(`items.${i}.quantity`) as string) || 0,
       unitCost: parseFloat(formData.get(`items.${i}.unitCost`) as string) || 0,
+      unitPrice: unitPriceRaw ? parseFloat(unitPriceRaw) || undefined : undefined,
       subtotal: parseFloat(formData.get(`items.${i}.subtotal`) as string) || 0,
     });
   }
@@ -85,6 +88,7 @@ export async function updatePurchaseAction(
     variantId?: string;
     quantity: number;
     unitCost: number;
+    unitPrice?: number;
     subtotal: number;
   }> = [];
 
@@ -92,11 +96,13 @@ export async function updatePurchaseAction(
   for (let i = 0; i < itemCount; i++) {
     const catalogItemId = formData.get(`items.${i}.catalogItemId`) as string;
     if (!catalogItemId) continue;
+    const unitPriceRaw = formData.get(`items.${i}.unitPrice`) as string;
     items.push({
       catalogItemId,
       variantId: (formData.get(`items.${i}.variantId`) as string) || undefined,
       quantity: parseFloat(formData.get(`items.${i}.quantity`) as string) || 0,
       unitCost: parseFloat(formData.get(`items.${i}.unitCost`) as string) || 0,
+      unitPrice: unitPriceRaw ? parseFloat(unitPriceRaw) || undefined : undefined,
       subtotal: parseFloat(formData.get(`items.${i}.subtotal`) as string) || 0,
     });
   }

@@ -26,6 +26,9 @@ export function TaxSettingsForm({ businessId }: TaxSettingsFormProps) {
     getTaxSettingsAction(businessId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

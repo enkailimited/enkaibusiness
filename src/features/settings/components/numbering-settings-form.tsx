@@ -26,6 +26,9 @@ export function NumberingSettingsForm({ businessId }: NumberingSettingsFormProps
     getNumberingSettingsAction(businessId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

@@ -33,16 +33,20 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    const result = await changePasswordAction(currentPassword, newPassword);
+    try {
+      const result = await changePasswordAction(currentPassword, newPassword);
 
-    if (result.success) {
-      setSuccess(true);
-      setTimeout(() => router.push("/platform/dashboard"), 2000);
-    } else {
-      setError(result.message);
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => router.push("/platform/dashboard"), 2000);
+      } else {
+        setError(result.message);
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setPending(false);
     }
-
-    setPending(false);
   }
 
   if (success) {

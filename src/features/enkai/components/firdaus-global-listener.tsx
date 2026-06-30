@@ -50,9 +50,13 @@ export function FirdausGlobalListener() {
   stateRef.current = state;
   const lastWakeTimeRef = useRef(0);
   const isSpeakingRef = useRef(false);
+  const restartAttemptsRef = useRef(0);
+  const intentionalStopRef = useRef(false);
   const [permissionDenied, setPermissionDenied] = useState(false);
   const [mounted, setMounted] = useState(false);
   const instanceId = useRef(++instanceCount);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const isListeningRef = useRef(false);
 
   useEffect(() => {
     if (instanceId.current > 1) {
@@ -94,16 +98,46 @@ export function FirdausGlobalListener() {
     return true;
   }
 
+  async function ensureMicrophonePermission(): Promise<boolean> {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) return true;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      stream.getTracks().forEach((t) => t.stop());
+      return true;
+    } catch {
+      setPermissionDenied(true);
+      return false;
+    }
+  }
+
   const vsm = getVoiceStateMachine(user?.id || "anon");
 
-  const startRecognition = useCallback(() => {
+  const startRecognition = useCallback(async () => {
     if (!isSupported || recognitionRef.current || permissionDenied) return;
     if (isPublicRoute(pathname)) return;
     if (!user?.id) return;
 
+    const granted = await ensureMicrophonePermission();
+    if (!granted) return;
+
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = "sw";
+    const supportedLangs = ["sw", "sw-TZ", "en-US", "en"];
+    recognition.lang = supportedLangs.find((l) => {
+      try {
+        const test = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        test.lang = l;
+        return true;
+      } catch {
+        return false;
+      }
+    }) || "en-US";
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 3;
@@ -132,6 +166,8 @@ export function FirdausGlobalListener() {
       }
 
       if (!finalTranscript) return;
+
+      restartAttemptsRef.current = 0;
 
       if (!isMicrophoneAudio(finalTranscript)) return;
 
@@ -196,6 +232,19 @@ export function FirdausGlobalListener() {
       }
     };
 
+    recognition.onaudiostart = () => {
+      isListeningRef.current = true;
+    };
+    recognition.onaudioend = () => {
+      isListeningRef.current = false;
+    };
+    recognition.onspeechstart = () => {
+      window.dispatchEvent(new CustomEvent("firdaus:speech-start"));
+    };
+    recognition.onspeechend = () => {
+      window.dispatchEvent(new CustomEvent("firdaus:speech-end"));
+    };
+
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (event.error === "aborted") return;
       recognitionRef.current = null;
@@ -215,11 +264,24 @@ export function FirdausGlobalListener() {
       recognitionRef.current = null;
       if (permissionDenied || !mountedRef.current) return;
       if (isPublicRoute(pathname)) return;
+      if (intentionalStopRef.current) {
+        intentionalStopRef.current = false;
+        return;
+      }
       scheduleRestart();
     };
 
     recognitionRef.current = recognition;
     try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+        },
+      });
+      audioStreamRef.current = stream;
       recognition.start();
       if (vsm.state === VoiceState.INITIALIZING) {
         vsm.transition({ from: VoiceState.INITIALIZING, to: VoiceState.READY, reason: "initialized" });
@@ -236,6 +298,7 @@ export function FirdausGlobalListener() {
       restartTimer.current = null;
     }
     if (recognitionRef.current) {
+      intentionalStopRef.current = true;
       try { recognitionRef.current.abort(); } catch {}
       recognitionRef.current = null;
     }
@@ -245,12 +308,16 @@ export function FirdausGlobalListener() {
   function scheduleRestart() {
     if (restartTimer.current) clearTimeout(restartTimer.current);
     if (!mountedRef.current) return;
+    const delay = Math.min(1000 * Math.pow(2, restartAttemptsRef.current), 30000);
+    restartAttemptsRef.current += 1;
     restartTimer.current = setTimeout(() => {
       if (mountedRef.current && !isPublicRoute(pathname) && user?.id && !permissionDenied) {
-        vsm.transition({ from: vsm.state, to: VoiceState.INITIALIZING, reason: "recover" });
+        if (vsm.state === VoiceState.ERROR) {
+          vsm.transition({ from: VoiceState.ERROR, to: VoiceState.INITIALIZING, reason: "recover" });
+        }
         startRecognition();
       }
-    }, 1000);
+    }, delay);
   }
 
   function clearInactivityTimer() {
@@ -294,6 +361,7 @@ export function FirdausGlobalListener() {
       }
 
       if (mountedRef.current) {
+        restartAttemptsRef.current = 0;
         setTimeout(() => startRecognition(), 300);
       }
     };
@@ -303,6 +371,10 @@ export function FirdausGlobalListener() {
 
     return () => {
       stopRecognition();
+      if (audioStreamRef.current) {
+        audioStreamRef.current.getTracks().forEach((t) => t.stop());
+        audioStreamRef.current = null;
+      }
       window.removeEventListener("firdaus:voice-start", handleVoiceStart);
       window.removeEventListener("firdaus:voice-end", handleVoiceEnd);
     };
@@ -319,6 +391,25 @@ export function FirdausGlobalListener() {
 
     return clearInactivityTimer;
   }, [state.isAwake, state.currentWorkflow]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (recognitionRef.current) {
+          try { recognitionRef.current.abort(); } catch {}
+          recognitionRef.current = null;
+        }
+      } else {
+        if (user?.id && !permissionDenied) {
+          ensureMicrophonePermission().then((granted) => {
+            if (granted) startRecognition();
+          });
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [user?.id, permissionDenied, startRecognition]);
 
   if (!mounted) return null;
   if (!isSupported) return null;

@@ -16,10 +16,15 @@ export function ActivationDashboard({ businessId }: Props) {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const loadInfo = useCallback(async () => {
-    setLoading(true);
-    const data = await getActivationInfoAction(businessId);
-    setInfo(data as unknown as ActivationInfo);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const data = await getActivationInfoAction(businessId);
+      setInfo(data as unknown as ActivationInfo);
+    } catch (error) {
+      console.error("Failed to load activation info:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [businessId]);
 
   useEffect(() => { loadInfo(); }, [loadInfo]);

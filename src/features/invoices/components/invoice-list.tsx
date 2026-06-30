@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { listInvoicesAction } from "../actions";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ interface InvoiceListProps {
 }
 
 export function InvoiceList({ businessId, branchId }: InvoiceListProps) {
+  const router = useRouter();
   const query = useQuery({
     queryKey: ["invoices", businessId, branchId],
     queryFn: async () => {
@@ -94,6 +96,7 @@ export function InvoiceList({ businessId, branchId }: InvoiceListProps) {
       data={query.data ?? []}
       emptyTitle="No invoices found"
       emptyDescription="Create your first invoice to get started."
+      onRowClick={(inv) => router.push(`/workspaces/businesses/${businessId}/invoices/${inv.id}`)}
     />
   );
 }

@@ -1,42 +1,42 @@
-"use client";
-
-import { Sidebar } from "@/components/layout/sidebar";
+import { prisma } from "@/server/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import {
-  Building2,
-  Users,
-  Settings,
-  LayoutDashboard,
-  User,
-} from "lucide-react";
+import type { ReactNode } from "react";
 
-const workspaceNavItems = [
-  { title: "Dashboard", href: "/workspaces/dashboard", icon: LayoutDashboard },
-  { title: "Businesses", href: "/workspaces/businesses", icon: Building2 },
-  { title: "Members", href: "/workspaces/members", icon: Users },
-  { title: "Profile", href: "/workspaces/profile", icon: User },
-  { title: "Settings", href: "/workspaces/settings", icon: Settings },
-];
-
-export default function WorkspacesLayout({
+export default async function WorkspacesLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) redirect("/login");
+
+  const [workspaceMember, staffProfile] = await Promise.all([
+    prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id },
+      select: { role: true },
+    }),
+    prisma.staff.findFirst({
+      where: { userId: session.user.id, isActive: true },
+      select: { businessId: true },
+    }),
+  ]);
+
+  const isOwner = workspaceMember?.role === "OWNER" || workspaceMember?.role === "ADMIN";
+  if (!isOwner && staffProfile) {
+    redirect(`/workspaces/businesses/${staffProfile.businessId}/overview`);
+  }
+
   return (
     <div className="min-h-screen bg-muted/20">
-      {/* <Sidebar items={workspaceNavItems} /> */}
-
       <div className="flex flex-1 flex-col transition-all duration-300">
         <Navbar profileHref="/workspaces/profile" />
-
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
           <div className="max-w-8xl">{children}</div>
         </main>
       </div>
-
-      {/* <BottomNav items={workspaceNavItems} /> */}
     </div>
   );
 }

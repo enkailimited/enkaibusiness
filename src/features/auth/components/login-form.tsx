@@ -33,25 +33,30 @@ export function LoginForm() {
       return;
     }
 
-    const { error: signInError } = await authClient.signIn.email({
-      email: identifier,
-      password,
-      rememberMe: true,
-    });
+    try {
+      const { error: signInError } = await authClient.signIn.email({
+        email: identifier,
+        password,
+        rememberMe: true,
+      });
 
-    if (signInError) {
-      const msg =
-        signInError.message?.toLowerCase().includes("invalid") ||
-        signInError.message?.toLowerCase().includes("no user")
-          ? "Invalid email, phone/username, or password"
-          : signInError.message || "Failed to sign in";
-      setError(msg);
+      if (signInError) {
+        const msg =
+          signInError.message?.toLowerCase().includes("invalid") ||
+          signInError.message?.toLowerCase().includes("no user")
+            ? "Invalid email, phone/username, or password"
+            : signInError.message || "Failed to sign in";
+        setError(msg);
+        return;
+      }
+
+      router.push("/platform/dashboard");
+      router.refresh();
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setPending(false);
-      return;
     }
-
-    router.push("/platform/dashboard");
-    router.refresh();
   }
 
   return (

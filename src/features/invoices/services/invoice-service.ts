@@ -168,7 +168,24 @@ export async function getInvoiceWithRelations(id: string): Promise<InvoiceWithRe
     },
   });
   if (!raw) return null;
-  return raw as unknown as InvoiceWithRelations;
+  return {
+    ...raw,
+    subtotal: Number(raw.subtotal),
+    tax: Number(raw.tax),
+    total: Number(raw.total),
+    paidAmount: Number(raw.paidAmount),
+    balanceDue: Number(raw.balanceDue),
+    invoiceDate: raw.invoiceDate instanceof Date ? raw.invoiceDate.toISOString() : raw.invoiceDate,
+    dueDate: raw.dueDate instanceof Date ? raw.dueDate.toISOString() : raw.dueDate,
+    createdAt: raw.createdAt instanceof Date ? raw.createdAt.toISOString() : raw.createdAt,
+    updatedAt: raw.updatedAt instanceof Date ? raw.updatedAt.toISOString() : raw.updatedAt,
+    items: (raw.items ?? []).map((item) => ({
+      ...item,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+      subtotal: Number(item.subtotal),
+    })),
+  } as InvoiceWithRelations;
 }
 
 export async function listInvoices(
@@ -198,7 +215,24 @@ export async function listInvoices(
     orderBy: { createdAt: "desc" },
   });
 
-  return result.items;
+  return (result.items as any[]).map((inv) => ({
+    ...inv,
+    subtotal: Number(inv.subtotal),
+    tax: Number(inv.tax),
+    total: Number(inv.total),
+    paidAmount: Number(inv.paidAmount),
+    balanceDue: Number(inv.balanceDue),
+    invoiceDate: inv.invoiceDate instanceof Date ? inv.invoiceDate.toISOString() : inv.invoiceDate,
+    dueDate: inv.dueDate instanceof Date ? inv.dueDate.toISOString() : inv.dueDate,
+    createdAt: inv.createdAt instanceof Date ? inv.createdAt.toISOString() : inv.createdAt,
+    updatedAt: inv.updatedAt instanceof Date ? inv.updatedAt.toISOString() : inv.updatedAt,
+    items: (inv.items ?? []).map((item: any) => ({
+      ...item,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unitPrice),
+      subtotal: Number(item.subtotal),
+    })),
+  })) as InvoiceWithRelations[];
 }
 
 export async function markAsSent(id: string): Promise<ActionResponse> {

@@ -20,7 +20,7 @@ export {
   createBusinessAction,
   updateBusinessAction,
   getBusinessAction,
-  listBusinessesAction,
+  getBusinessesAction,
   deleteBusinessAction,
 } from "@/features/businesses/actions";
 

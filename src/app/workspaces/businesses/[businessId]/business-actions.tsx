@@ -61,7 +61,7 @@ export function BusinessActions({ businessId }: { businessId: string }) {
       <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">
         Business Operations
       </h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
         {actions.map((action) => (
           <QuickActionCard
             key={action.id}

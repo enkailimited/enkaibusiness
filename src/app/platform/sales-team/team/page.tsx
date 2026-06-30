@@ -219,10 +219,15 @@ export default function TeamPage() {
   const [hierarchies, setHierarchies] = useState<{ id: string; title: string; slug: string }[]>([]);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    const result = await getMyTeamAction();
-    setData(result);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const result = await getMyTeamAction();
+      setData(result);
+    } catch (error) {
+      console.error("Failed to fetch team data:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

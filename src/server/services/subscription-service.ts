@@ -242,9 +242,31 @@ export async function updateSubscriptionStatus(
       updateData.suspendedAt = null;
     }
 
-    await prisma.subscription.update({
+    const sub = await prisma.subscription.findUnique({
       where: { id },
-      data: updateData,
+      select: { status: true, businessId: true },
+    });
+    if (!sub) return { success: false, message: "Subscription not found" };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.subscription.update({ where: { id }, data: updateData });
+
+      if (status === SubscriptionStatus.ACTIVE || status === SubscriptionStatus.GRACE_PERIOD) {
+        await tx.business.update({
+          where: { id: sub.businessId },
+          data: { status: "ACTIVE", isActive: true },
+        });
+      } else if (status === SubscriptionStatus.SUSPENDED) {
+        await tx.business.update({
+          where: { id: sub.businessId },
+          data: { status: "SUSPENDED", isActive: false },
+        });
+      } else if (status === SubscriptionStatus.EXPIRED || status === SubscriptionStatus.CANCELLED) {
+        await tx.business.update({
+          where: { id: sub.businessId },
+          data: { status: "INACTIVE", isActive: false },
+        });
+      }
     });
 
     return { success: true, message: `Subscription status updated to ${status}` };

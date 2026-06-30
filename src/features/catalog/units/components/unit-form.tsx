@@ -52,6 +52,7 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
     if (step < STEPS.length - 1 || !allowSubmit) {
       e.preventDefault();
     }
+    e.stopPropagation();
   }
 
   const succeeded = state?.success === true;

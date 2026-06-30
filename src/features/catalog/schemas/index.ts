@@ -20,6 +20,8 @@ export const createCatalogItemSchema = z.object({
   categoryId: z.string().uuid().optional().or(z.literal("")),
   brandId: z.string().uuid().optional().or(z.literal("")),
   unitId: z.string().uuid().optional().or(z.literal("")),
+  price: z.coerce.number().min(0).default(0),
+  costPrice: z.coerce.number().min(0).optional(),
   isService: z.boolean().default(false),
   trackStock: z.boolean().default(true),
   imageUrl: z.string().optional().or(z.literal("")),

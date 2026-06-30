@@ -3,7 +3,7 @@ import "server-only";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateSaleSchema, UpdateSaleSchema, SaleFilterSchema } from "../schemas";
-import type { SaleWithRelations, SaleListItem } from "../types";
+import type { SaleListItem, SaleStatus } from "../types";
 import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 import { emitSaleCreated, emitSaleUpdated, emitSaleVoided } from "@/modules/ai/events/event-bus";
@@ -25,15 +25,6 @@ export async function createSale(
       if (!data.branchId) {
         return { success: false, message: "Branch is required for sales" };
       }
-
-      const isCompleted = data.status === "completed" || !data.status;
-    const paymentType = data.paymentType ?? "cash";
-    const amountPaid = paymentType === "cash" ? grandTotal : (data.amountPaid ?? 0);
-    const isCredit = paymentType === "credit";
-    const isPartial = paymentType === "partial";
-    const invoiceStatus: string = isCredit ? "unpaid" : isPartial ? "partial" : "paid";
-    const paidAmount = isCredit ? 0 : amountPaid;
-    const balanceDue = grandTotal - paidAmount;
 
     const catalogItemIds = [...new Set(data.items.map((i) => i.catalogItemId))];
     const catalogItems = await prisma.catalogItem.findMany({
@@ -100,6 +91,15 @@ export async function createSale(
     }
 
     const grandTotal = subtotal - discountTotal + taxTotal;
+
+    const isCompleted = data.status === "completed" || !data.status;
+    const paymentType = data.paymentType ?? "cash";
+    const amountPaid = paymentType === "cash" ? grandTotal : (data.amountPaid ?? 0);
+    const isCredit = paymentType === "credit";
+    const isPartial = paymentType === "partial";
+    const invoiceStatus: string = isCredit ? "unpaid" : isPartial ? "partial" : "paid";
+    const paidAmount = isCredit ? 0 : amountPaid;
+    const balanceDue = grandTotal - paidAmount;
 
     const sale = await prisma.$transaction(async (tx) => {
       const created = await tx.sale.create({
@@ -406,10 +406,14 @@ export async function getBusinessSales(
   });
 
   return raw.map((s) => ({
-    ...s,
+    id: s.id,
+    reference: s.reference,
     saleDate: s.saleDate.toISOString(),
+    status: s.status as SaleStatus,
     grandTotal: Number(s.grandTotal),
-  })) as unknown as SaleListItem[];
+    customer: s.customer,
+    _count: s._count,
+  })) as SaleListItem[];
 }
 
 export async function updateSale(

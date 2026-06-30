@@ -34,10 +34,15 @@ export function AdminActivationList() {
   const [actionMsg, setActionMsg] = useState<{ id: string; type: "success" | "error"; text: string } | null>(null);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    const data = await getBusinessesForAdminAction();
-    setBusinesses(data as unknown as BusinessItem[]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const data = await getBusinessesForAdminAction();
+      setBusinesses(data as unknown as BusinessItem[]);
+    } catch (error) {
+      console.error("Failed to load businesses for admin:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);

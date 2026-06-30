@@ -49,6 +49,9 @@ export function WalletTransactionList({
         setTransactions(result.data as TransactionListItem[]);
       }
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

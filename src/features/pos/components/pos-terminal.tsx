@@ -1,10 +1,61 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Search, X, Plus, Minus, ShoppingCart, User, Receipt, Loader2, Circle, ShoppingBag } from "lucide-react";
+import { Search, X, Plus, Minus, ShoppingCart, User, Receipt, Loader2, Circle, ShoppingBag, Scale, ExternalLink } from "lucide-react";
+import { useActiveBranch } from "@/features/branches/context/active-branch-context";
+import { BackButton } from "@/components/layout/back-button";
+import type { ActionResponse } from "@/types/relationships";
+
+type UnitType = "count" | "weight" | "volume" | "length";
+
+interface MeasurementPreset {
+  label: string;
+  value: number;
+  unit: string;
+}
+
+const WEIGHT_PRESETS: MeasurementPreset[] = [
+  { label: "¼ kg", value: 0.25, unit: "kg" },
+  { label: "½ kg", value: 0.5, unit: "kg" },
+  { label: "¾ kg", value: 0.75, unit: "kg" },
+  { label: "1 kg", value: 1, unit: "kg" },
+  { label: "2 kg", value: 2, unit: "kg" },
+  { label: "5 kg", value: 5, unit: "kg" },
+];
+
+const VOLUME_PRESETS: MeasurementPreset[] = [
+  { label: "¼ L", value: 0.25, unit: "L" },
+  { label: "½ L", value: 0.5, unit: "L" },
+  { label: "¾ L", value: 0.75, unit: "L" },
+  { label: "1 L", value: 1, unit: "L" },
+  { label: "2 L", value: 2, unit: "L" },
+  { label: "5 L", value: 5, unit: "L" },
+];
+
+const VOLUME_ML_PRESETS: MeasurementPreset[] = [
+  { label: "100 ml", value: 100, unit: "ml" },
+  { label: "200 ml", value: 200, unit: "ml" },
+  { label: "300 ml", value: 300, unit: "ml" },
+  { label: "500 ml", value: 500, unit: "ml" },
+  { label: "1 L", value: 1000, unit: "ml" },
+  { label: "1.5 L", value: 1500, unit: "ml" },
+];
+
+function getMeasurementPresets(unit: { name: string; abbreviation: string; type: string } | null): MeasurementPreset[] {
+  if (!unit) return [];
+  const abbr = unit.abbreviation.toLowerCase();
+  const type = unit.type as UnitType;
+  if (type === "weight" || abbr === "kg" || abbr === "g") return WEIGHT_PRESETS;
+  if (type === "volume" || abbr === "l" || abbr === "lita" || abbr === "ml") {
+    if (abbr === "ml") return VOLUME_ML_PRESETS;
+    return VOLUME_PRESETS;
+  }
+  return [];
+}
 
 interface Product {
   id: string;
@@ -14,6 +65,8 @@ interface Product {
   categoryId: string | null;
   imageUrl: string | null;
   trackStock: boolean;
+  stockQuantity: number | null;
+  unit: { name: string; abbreviation: string; type: string } | null;
 }
 
 interface Category {
@@ -74,6 +127,10 @@ export function POSTerminal({
   const [amountReceived, setAmountReceived] = useState("");
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
+  const [measurementProduct, setMeasurementProduct] = useState<Product | null>(null);
+  const [measurementInput, setMeasurementInput] = useState("1");
+  const [lastSaleId, setLastSaleId] = useState<string | null>(null);
+  const { activeBranch } = useActiveBranch();
   const prevCartLength = useRef(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -97,6 +154,24 @@ export function POSTerminal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (!initialSession) {
+      (async () => {
+        try {
+          const { openSessionAction } = await import("@/features/pos/actions");
+          const formData = new FormData();
+          formData.set("openingFloat", "0");
+          const result = await openSessionAction(businessId, null, formData) as ActionResponse<{ id: string }>;
+          if (result.success && result.data) {
+            setSession({ id: result.data.id, openedAt: new Date().toISOString(), openingFloat: 0 });
+          }
+        } catch {
+          // silent — user can manually open session
+        }
+      })();
+    }
+  }, [initialSession, businessId]);
+
   const filteredProducts = useMemo(() => {
     let result = products;
     if (selectedCategory) {
@@ -114,6 +189,12 @@ export function POSTerminal({
   }, [products, selectedCategory, searchQuery]);
 
   const addToCart = useCallback((product: Product) => {
+    const presets = getMeasurementPresets(product.unit);
+    if (presets.length > 0) {
+      setMeasurementProduct(product);
+      setMeasurementInput("1");
+      return;
+    }
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
@@ -125,6 +206,22 @@ export function POSTerminal({
       }
       return [...prev, { product, quantity: 1, discount: 0 }];
     });
+    setMessage(null);
+  }, []);
+
+  const addWithMeasurement = useCallback((product: Product, quantity: number) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item,
+        );
+      }
+      return [...prev, { product, quantity, discount: 0 }];
+    });
+    setMeasurementProduct(null);
     setMessage(null);
   }, []);
 
@@ -182,6 +279,7 @@ export function POSTerminal({
 
     try {
       const formData = new FormData();
+      formData.set("branchId", activeBranch?.id ?? "");
       formData.set("customerId", selectedCustomer || "");
       formData.set("status", "completed");
       formData.set("paymentType", paymentType);
@@ -202,6 +300,7 @@ export function POSTerminal({
       const result = await createSaleAction(businessId, workspaceId, null, formData);
 
       if (result.success) {
+        setLastSaleId(result.data?.id ?? null);
         setMessage({ type: "success", text: "Sale completed successfully!" });
         setCart([]);
         setSelectedCustomer("");
@@ -226,21 +325,33 @@ export function POSTerminal({
     <div className="flex h-[calc(100vh-4rem)] flex-col overflow-hidden">
       {message && (
         <div
-          className={`flex items-center justify-between px-4 py-2 text-sm font-medium ${
+          className={`flex items-center justify-between gap-2 px-4 py-2 text-sm font-medium ${
             message.type === "success"
               ? "bg-emerald-50 text-emerald-700"
               : "bg-red-50 text-red-700"
           }`}
         >
           <span>{message.text}</span>
-          <button onClick={() => setMessage(null)} className="ml-2">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {message.type === "success" && lastSaleId && (
+              <Link
+                href={`/workspaces/businesses/${businessId}/sales/${lastSaleId}`}
+                className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View Sale
+              </Link>
+            )}
+            <button onClick={() => setMessage(null)} className="ml-2">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
       <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-1.5 text-xs text-gray-500">
         <div className="flex items-center gap-2">
+          <BackButton />
           <Circle className={`h-2.5 w-2.5 ${session ? "fill-emerald-500 text-emerald-500" : "fill-red-400 text-red-400"}`} />
           <span>{session ? "Session Open" : "No Active Session"}</span>
         </div>
@@ -270,7 +381,7 @@ export function POSTerminal({
             </div>
           </div>
 
-          <div className="flex gap-1 overflow-x-auto border-b bg-gray-50 px-3 py-2">
+          <div className="flex gap-1 flex-wrap border-b bg-gray-50 px-3 py-2">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -304,32 +415,64 @@ export function POSTerminal({
                   : "No products available"}
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
                 {filteredProducts.map((product) => (
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="group flex flex-col rounded-xl border border-gray-200 bg-white p-3 text-left shadow-sm transition-all hover:border-blue-300 hover:shadow-md active:scale-[0.98]"
+                    className="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-2 text-left shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
                   >
-                    <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-gradient-to-br from-gray-50 to-gray-100">
+                    {product.trackStock && product.stockQuantity !== null && product.stockQuantity <= 0 && (
+                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 shadow-sm">
+                        Out
+                      </span>
+                    )}
+                    {product.trackStock && product.stockQuantity !== null && product.stockQuantity > 0 && product.stockQuantity <= 5 && (
+                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 shadow-sm">
+                        {product.stockQuantity}
+                      </span>
+                    )}
+                    <div className="relative mb-1.5 overflow-hidden rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 aspect-square">
                       {product.imageUrl ? (
                         <img
                           src={product.imageUrl}
                           alt={product.name}
-                          className="h-full w-full rounded-lg object-cover"
+                          loading="lazy"
+                          className="h-full w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                       ) : (
-                        <span className="text-2xl font-bold text-gray-300">
-                          {product.name.charAt(0).toUpperCase()}
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 transition-colors group-hover:from-blue-100 group-hover:to-indigo-200">
+                          <span className="text-xl font-bold text-blue-300 group-hover:text-blue-400 transition-colors">
+                            {product.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      {product.unit?.type !== "count" && product.unit && (
+                        <span className="absolute left-1 bottom-1 rounded-md bg-white/90 px-1 py-0.5 text-[9px] font-medium text-gray-600 shadow-sm backdrop-blur-sm">
+                          <Scale className="inline h-2.5 w-2.5 mr-0.5" />
+                          {product.unit.abbreviation}
                         </span>
                       )}
                     </div>
-                    <span className="line-clamp-2 text-xs font-medium text-gray-800">
-                      {product.name}
-                    </span>
-                    <span className="mt-1 text-sm font-bold text-emerald-600">
-                      {product.price.toLocaleString()} TZS
-                    </span>
+                    <div className="space-y-0.5">
+                      <span className="line-clamp-2 text-[11px] font-medium leading-tight text-gray-800 group-hover:text-blue-700 transition-colors">
+                        {product.name}
+                      </span>
+                      <div className="flex items-baseline gap-0.5 flex-wrap">
+                        <span className="text-xs font-bold text-emerald-600">
+                          {product.price.toLocaleString()}
+                        </span>
+                        <span className="text-[9px] font-medium text-gray-400">TZS</span>
+                        {product.unit && (
+                          <span className="text-[9px] text-gray-400">/{product.unit.abbreviation}</span>
+                        )}
+                      </div>
+                      {product.trackStock && product.stockQuantity !== null && product.stockQuantity > 5 && (
+                        <span className="block text-[9px] text-gray-400">
+                          {product.stockQuantity} in stock
+                        </span>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -378,6 +521,7 @@ export function POSTerminal({
                         </p>
                         <p className="text-xs text-gray-400">
                           {item.product.price.toLocaleString()} TZS
+                          {item.product.unit && <span> /{item.product.unit.abbreviation}</span>}
                         </p>
                       </div>
                       <button
@@ -560,16 +704,25 @@ export function POSTerminal({
         </div>
       </div>
 
-      {cart.length > 0 && (
-        <div className="sticky bottom-0 z-30 border-t bg-white px-3 py-2 shadow-lg lg:hidden">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      <div className={`sticky bottom-0 z-30 border-t bg-white px-3 py-2 shadow-lg transition-all duration-300 lg:hidden ${cart.length === 0 ? "opacity-60" : "opacity-100"}`}>
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setCartDrawerOpen(true)}
+            className="flex flex-1 items-center gap-2"
+          >
+            <div className="relative">
               <ShoppingBag className={`h-5 w-5 text-blue-600 transition-transform duration-300 ${cartBounce ? "scale-125" : "scale-100"}`} />
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                {cart.length}
-              </span>
-              <span className="text-sm font-semibold text-gray-700">{grandTotal.toLocaleString()} TZS</span>
+              {cart.length > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white animate-in zoom-in">
+                  {cart.length}
+                </span>
+              )}
             </div>
+            <span className={`text-sm font-semibold transition-colors ${cart.length > 0 ? "text-gray-700" : "text-gray-400"}`}>
+              {cart.length > 0 ? `${grandTotal.toLocaleString()} TZS` : "Cart is empty"}
+            </span>
+          </button>
+          {cart.length > 0 && (
             <Button
               size="sm"
               onClick={() => setCartDrawerOpen(true)}
@@ -577,9 +730,9 @@ export function POSTerminal({
             >
               View Cart
             </Button>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <Drawer.Root open={cartDrawerOpen} onOpenChange={setCartDrawerOpen}>
         <Drawer.Portal>
@@ -830,6 +983,70 @@ export function POSTerminal({
               </Button>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={measurementProduct !== null} onOpenChange={(open) => { if (!open) setMeasurementProduct(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="h-5 w-5 text-blue-600" />
+              {measurementProduct?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Chagua kipimo au ingiza kiasi
+            </DialogDescription>
+          </DialogHeader>
+          {measurementProduct && (() => {
+            const presets = getMeasurementPresets(measurementProduct.unit);
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {presets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => addWithMeasurement(measurementProduct, preset.value)}
+                      className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-3 text-center transition-all hover:border-blue-300 hover:bg-blue-50 active:scale-95"
+                    >
+                      <span className="text-sm font-semibold text-gray-800">{preset.label}</span>
+                      <span className="mt-0.5 text-xs font-medium text-emerald-600">
+                        {(measurementProduct.price * preset.value).toLocaleString()} TZS
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-400">au ingiza kiasi</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={measurementInput}
+                    onChange={(e) => setMeasurementInput(e.target.value)}
+                    className="h-11 flex-1 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="Kiasi"
+                    autoFocus
+                  />
+                  {measurementProduct.unit && (
+                    <span className="text-sm font-medium text-gray-500 w-8">{measurementProduct.unit.abbreviation}</span>
+                  )}
+                  <Button
+                    onClick={() => addWithMeasurement(measurementProduct, parseFloat(measurementInput) || 1)}
+                    className="h-11 rounded-xl bg-blue-600 px-4 text-white hover:bg-blue-700"
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +27,7 @@ function formatDate(dateString: string): string {
 }
 
 export function SaleList({ businessId }: SaleListProps) {
+  const router = useRouter();
   const { activeBranch } = useActiveBranch();
   const query = useQuery({
     queryKey: ["sales", businessId, activeBranch?.id],
@@ -95,6 +97,7 @@ export function SaleList({ businessId }: SaleListProps) {
       data={query.data ?? []}
       emptyTitle="No sales found"
       emptyDescription="Record your first sale to get started."
+      onRowClick={(sale) => router.push(`/workspaces/businesses/${businessId}/sales/${sale.id}`)}
     />
   );
 }

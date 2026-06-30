@@ -99,22 +99,35 @@ export class StaffRegistrationEngine {
             select: { id: true },
           });
 
-          if (input.roleId || input.branchId || input.storeId) {
-            const level = await effectiveResolver.resolveLevel({
+          const level = await effectiveResolver.resolveLevel({
+            branchId: input.branchId ?? null,
+            storeId: input.storeId ?? null,
+          });
+          await tx.staffAssignment.create({
+            data: {
+              staffId: staffRecord.id,
+              businessId,
+              level,
               branchId: input.branchId ?? null,
               storeId: input.storeId ?? null,
+              roleId: input.roleId ?? null,
+              isPrimary: true,
+            },
+          });
+
+          const business = await tx.business.findUnique({
+            where: { id: businessId },
+            select: { workspaceId: true },
+          });
+          if (business) {
+            const existingMember = await tx.workspaceMember.findFirst({
+              where: { userId, workspaceId: business.workspaceId },
             });
-            await tx.staffAssignment.create({
-              data: {
-                staffId: staffRecord.id,
-                businessId,
-                level,
-                branchId: input.branchId ?? null,
-                storeId: input.storeId ?? null,
-                roleId: input.roleId ?? null,
-                isPrimary: true,
-              },
-            });
+            if (!existingMember) {
+              await tx.workspaceMember.create({
+                data: { userId, workspaceId: business.workspaceId, role: "MEMBER" },
+              });
+            }
           }
         }
 

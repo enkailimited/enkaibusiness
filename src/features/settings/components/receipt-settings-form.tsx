@@ -26,6 +26,9 @@ export function ReceiptSettingsForm({ businessId }: ReceiptSettingsFormProps) {
     getReceiptSettingsAction(businessId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

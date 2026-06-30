@@ -50,9 +50,14 @@ export default function WorkspaceMembersPage() {
   const { toast } = useToast();
 
   const load = useCallback(async () => {
-    const result = await getMembersAction();
-    setData(result as unknown as { members: Member[]; workspaceName: string });
-    setLoading(false);
+    try {
+      const result = await getMembersAction();
+      setData(result as unknown as { members: Member[]; workspaceName: string });
+    } catch (error) {
+      console.error("Failed to load members:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);

@@ -45,19 +45,23 @@ function ResetPasswordForm() {
       return;
     }
 
-    const { error: resetError } = await authClient.resetPassword({
-      token,
-      newPassword: password,
-    } as Parameters<typeof authClient.resetPassword>[0]);
+    try {
+      const { error: resetError } = await authClient.resetPassword({
+        token,
+        newPassword: password,
+      } as Parameters<typeof authClient.resetPassword>[0]);
 
-    if (resetError) {
-      setError(resetError.message || "Failed to reset password");
+      if (resetError) {
+        setError(resetError.message || "Failed to reset password");
+        return;
+      }
+
+      setReset(true);
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setPending(false);
-      return;
     }
-
-    setReset(true);
-    setPending(false);
   }
 
   if (reset) {

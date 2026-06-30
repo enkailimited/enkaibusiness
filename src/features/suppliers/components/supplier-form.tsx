@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo, useRef } from "react";
+import { useState, useActionState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { SUPPLIER_TYPES, PAYMENT_TERMS, COUNTRIES, CURRENCIES } from "../constan
 
 interface SupplierFormProps {
   businessId: string;
+  onSuccess?: () => void;
 }
 
 const STEPS = [
@@ -21,12 +22,20 @@ const STEPS = [
   { title: "More Info", description: "Country, currency and payment terms" },
 ];
 
-export function SupplierForm({ businessId }: SupplierFormProps) {
+export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
   const [step, setStep] = useState(0);
   const createAction = useMemo(() => createSupplierAction.bind(null, businessId), [businessId]);
   const [state, formAction, pending] = useActionState(createAction, null);
   const formRef = useRef<HTMLFormElement>(null);
   const [allowSubmit, setAllowSubmit] = useState(false);
+
+  const succeeded = state?.success === true;
+  useEffect(() => {
+    if (succeeded) {
+      const timer = setTimeout(() => onSuccess?.(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [succeeded, onSuccess]);
 
   function handleFinalSubmit() {
     setAllowSubmit(true);
@@ -37,6 +46,7 @@ export function SupplierForm({ businessId }: SupplierFormProps) {
     if (step < STEPS.length - 1 || !allowSubmit) {
       e.preventDefault();
     }
+    e.stopPropagation();
   }
 
   return (

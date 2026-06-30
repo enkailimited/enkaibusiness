@@ -14,7 +14,48 @@ import { ensureRbacWorkspaceRole } from "@/features/workspaces/services/workspac
 import type { ActionResponse } from "@/types/relationships";
 import { SubscriptionStatus } from "@prisma/client";
 
+async function syncBusinessStatus(businessId: string): Promise<string | null> {
+  const sub = await prisma.subscription.findFirst({
+    where: { businessId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true },
+  });
+  if (!sub) return null;
+
+  const biz = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { status: true, isActive: true },
+  });
+  if (!biz) return null;
+
+  if (sub.status === SubscriptionStatus.ACTIVE || sub.status === SubscriptionStatus.GRACE_PERIOD) {
+    if (biz.status !== "ACTIVE" || !biz.isActive) {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: { status: "ACTIVE", isActive: true },
+      });
+    }
+  } else if (sub.status === SubscriptionStatus.SUSPENDED) {
+    if (biz.status !== "SUSPENDED") {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: { status: "SUSPENDED", isActive: false },
+      });
+    }
+  } else {
+    if (biz.status === "ACTIVE" || biz.isActive) {
+      await prisma.business.update({
+        where: { id: businessId },
+        data: { status: "INACTIVE", isActive: false },
+      });
+    }
+  }
+
+  return sub.status;
+}
+
 async function getBusiness(id: string) {
+  await syncBusinessStatus(id);
   return prisma.business.findUnique({
     where: { id },
     include: {
@@ -90,174 +131,189 @@ export async function createBusinessAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const parsed = createBusinessSchema.safeParse({
-    name: formData.get("name"),
-    slug: formData.get("slug"),
-    email: formData.get("email") || undefined,
-    phone: formData.get("phone") || undefined,
-    address: formData.get("address") || undefined,
-    currency: formData.get("currency") || "TZS",
-    timezone: formData.get("timezone") || "Africa/Dar_es_Salaam",
-    taxId: formData.get("taxId") || undefined,
-    industry: formData.get("industry"),
-    modes: JSON.parse((formData.get("modes") as string) || "[]"),
-  });
+    const parsed = createBusinessSchema.safeParse({
+      name: formData.get("name"),
+      slug: formData.get("slug"),
+      email: formData.get("email") || undefined,
+      phone: formData.get("phone") || undefined,
+      address: formData.get("address") || undefined,
+      currency: formData.get("currency") || "TZS",
+      timezone: formData.get("timezone") || "Africa/Dar_es_Salaam",
+      taxId: formData.get("taxId") || undefined,
+      industry: formData.get("industry"),
+      modes: JSON.parse((formData.get("modes") as string) || "[]"),
+    });
 
-  if (!parsed.success) {
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      };
+    }
+
+    const { industry, modes, ...businessData } = parsed.data;
+
+    const planId = formData.get("planId") as string;
+    const businessSize = (formData.get("businessSize") as string) || "small";
+
+    if (!planId) {
+      return { success: false, message: "Subscription plan is required" };
+    }
+
+    const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
+    if (!plan || !plan.isActive) {
+      return { success: false, message: "Invalid or inactive subscription plan" };
+    }
+
+    const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
+    const dailyPrice = calculateDailyPrice(dailyRate, businessSize, false);
+    const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(false, modes);
+
+    const result = await BusinessRegistrationEngine.register(
+      {
+        ...businessData,
+        workspaceId,
+        createdById: user.id,
+        industry,
+        modes,
+        planId,
+        businessSize,
+      },
+      { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
+      { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
+    );
+
+    if (!result.success) {
+      return { success: false, message: result.message };
+    }
+
+    revalidatePath(`/workspaces/${workspaceId}`);
+
     return {
-      success: false,
-      message: "Validation failed",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      success: true,
+      message: result.message,
+      data: { id: result.data!.businessId, subscriptionId: result.data!.subscriptionId },
     };
+  } catch (error) {
+    console.error("createBusinessAction error:", error);
+    return { success: false, message: "Failed to create business. Please try again." };
   }
-
-  const { industry, modes, ...businessData } = parsed.data;
-
-  const planId = formData.get("planId") as string;
-  const businessSize = (formData.get("businessSize") as string) || "small";
-
-  if (!planId) {
-    return { success: false, message: "Subscription plan is required" };
-  }
-
-  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
-  if (!plan || !plan.isActive) {
-    return { success: false, message: "Invalid or inactive subscription plan" };
-  }
-
-  const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
-  const dailyPrice = calculateDailyPrice(dailyRate, businessSize, false);
-  const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(false, modes);
-
-  const result = await BusinessRegistrationEngine.register(
-    {
-      ...businessData,
-      workspaceId,
-      createdById: user.id,
-      industry,
-      modes,
-      planId,
-      businessSize,
-    },
-    { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
-    { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
-  );
-
-  if (!result.success) {
-    return { success: false, message: result.message };
-  }
-
-  revalidatePath(`/workspaces/${workspaceId}`);
-
-  return {
-    success: true,
-    message: result.message,
-    data: { id: result.data!.businessId, subscriptionId: result.data!.subscriptionId },
-  };
 }
 
 export async function registerBusinessAction(
   input: RegisterBusinessInput,
 ): Promise<ActionResponse & { data?: { businessId: string; workspaceId?: string; subscriptionId: string } }> {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const parsed = registerBusinessSchema.safeParse(input);
-  if (!parsed.success) {
+    const parsed = registerBusinessSchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      };
+    }
+
+    const { workspaceId, leadId, qrOrderingEnabled, modes, industry, ...rest } = parsed.data;
+
+    let targetWorkspaceId = workspaceId;
+    let createdById = user.id;
+
+    if (leadId) {
+      const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+      if (!lead) return { success: false, message: "Lead not found" };
+      if (!lead.convertedToUserId) return { success: false, message: "Lead has not been converted to a user yet" };
+
+      const leadUser = await prisma.user.findUnique({ where: { id: lead.convertedToUserId } });
+      if (!leadUser) return { success: false, message: "Converted user not found" };
+      createdById = leadUser.id;
+
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: `${rest.name} Workspace`,
+          slug: `${rest.slug}-${Date.now()}`,
+          description: `Workspace for ${rest.name}`,
+          members: { create: { userId: leadUser.id, role: "OWNER" } },
+        },
+      });
+      await ensureRbacWorkspaceRole(leadUser.id, "OWNER");
+      targetWorkspaceId = workspace.id;
+    }
+
+    const plan = await prisma.subscriptionPlan.findUnique({ where: { id: parsed.data.planId } });
+    if (!plan || !plan.isActive) {
+      return { success: false, message: "Invalid or inactive subscription plan" };
+    }
+
+    const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
+    const dailyPrice = calculateDailyPrice(dailyRate, parsed.data.businessSize, qrOrderingEnabled);
+    const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(qrOrderingEnabled, modes);
+
+    const result = await BusinessRegistrationEngine.register(
+      {
+        ...rest,
+        workspaceId: targetWorkspaceId!,
+        createdById,
+        updatedById: leadId ? user.id : undefined,
+        email: rest.email || undefined,
+        phone: rest.phone || undefined,
+        industry: industry as any,
+        modes,
+        planId: parsed.data.planId,
+        businessSize: parsed.data.businessSize,
+      },
+      { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
+      { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
+    );
+
+    if (!result.success) return { success: false, message: result.message };
+
+    if (leadId) {
+      await prisma.leadActivity.create({
+        data: {
+          leadId,
+          action: "REGISTERED",
+          detail: `Business "${rest.name}" registered with ${plan.name} plan at ${dailyPrice} TZS/day`,
+          createdById: user.id,
+        },
+      });
+      revalidatePath("/platform/sales-team/clients");
+    } else {
+      revalidatePath(`/workspaces/${targetWorkspaceId}`);
+    }
+
     return {
-      success: false,
-      message: "Validation failed",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      success: true,
+      message: result.message,
+      data: {
+        businessId: result.data!.businessId,
+        workspaceId: targetWorkspaceId,
+        subscriptionId: result.data!.subscriptionId,
+      },
     };
+  } catch (error) {
+    console.error("registerBusinessAction error:", error);
+    return { success: false, message: "Failed to register business. Please try again." };
   }
-
-  const { workspaceId, leadId, qrOrderingEnabled, modes, industry, ...rest } = parsed.data;
-
-  let targetWorkspaceId = workspaceId;
-  let createdById = user.id;
-
-  if (leadId) {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (!lead) return { success: false, message: "Lead not found" };
-    if (!lead.convertedToUserId) return { success: false, message: "Lead has not been converted to a user yet" };
-
-    const leadUser = await prisma.user.findUnique({ where: { id: lead.convertedToUserId } });
-    if (!leadUser) return { success: false, message: "Converted user not found" };
-    createdById = leadUser.id;
-
-    const workspace = await prisma.workspace.create({
-      data: {
-        name: `${rest.name} Workspace`,
-        slug: `${rest.slug}-${Date.now()}`,
-        description: `Workspace for ${rest.name}`,
-        members: { create: { userId: leadUser.id, role: "OWNER" } },
-      },
-    });
-    await ensureRbacWorkspaceRole(leadUser.id, "OWNER");
-    targetWorkspaceId = workspace.id;
-  }
-
-  const plan = await prisma.subscriptionPlan.findUnique({ where: { id: parsed.data.planId } });
-  if (!plan || !plan.isActive) {
-    return { success: false, message: "Invalid or inactive subscription plan" };
-  }
-
-  const dailyRate = Number(plan.amount) / (plan.interval === "WEEKLY" ? 7 : plan.interval === "MONTHLY" ? 30 : 1);
-  const dailyPrice = calculateDailyPrice(dailyRate, parsed.data.businessSize, qrOrderingEnabled);
-  const { setupFee, qrPrintingFee, total: totalSetupFee } = calculateSetupFee(qrOrderingEnabled, modes);
-
-  const result = await BusinessRegistrationEngine.register(
-    {
-      ...rest,
-      workspaceId: targetWorkspaceId!,
-      createdById,
-      updatedById: leadId ? user.id : undefined,
-      email: rest.email || undefined,
-      phone: rest.phone || undefined,
-      industry: industry as any,
-      modes,
-      planId: parsed.data.planId,
-      businessSize: parsed.data.businessSize,
-    },
-    { id: plan.id, amount: Number(plan.amount), interval: plan.interval, name: plan.name },
-    { dailyPrice, setupFee, qrPrintingFee, totalSetupFee },
-  );
-
-  if (!result.success) return { success: false, message: result.message };
-
-  if (leadId) {
-    await prisma.leadActivity.create({
-      data: {
-        leadId,
-        action: "REGISTERED",
-        detail: `Business "${rest.name}" registered with ${plan.name} plan at ${dailyPrice} TZS/day`,
-        createdById: user.id,
-      },
-    });
-    revalidatePath("/platform/sales-team/clients");
-  } else {
-    revalidatePath(`/workspaces/${targetWorkspaceId}`);
-  }
-
-  return {
-    success: true,
-    message: result.message,
-    data: {
-      businessId: result.data!.businessId,
-      workspaceId: targetWorkspaceId,
-      subscriptionId: result.data!.subscriptionId,
-    },
-  };
 }
 
 export async function listActivePlansAction() {
-  await requireAuth();
-  const plans = await prisma.subscriptionPlan.findMany({
-    where: { isActive: true },
-    orderBy: { amount: "asc" },
-  });
-  return serialize(plans);
+  try {
+    await requireAuth();
+    const plans = await prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: { amount: "asc" },
+    });
+    return serialize(plans);
+  } catch (error) {
+    console.error("listActivePlansAction error:", error);
+    return [];
+  }
 }
 
 export async function updateBusinessAction(
@@ -266,55 +322,75 @@ export async function updateBusinessAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const parsed = updateBusinessSchema.safeParse({
-    name: formData.get("name") || undefined,
-    slug: formData.get("slug") || undefined,
-    email: formData.get("email") || undefined,
-    phone: formData.get("phone") || undefined,
-    address: formData.get("address") || undefined,
-    currency: formData.get("currency") || undefined,
-    timezone: formData.get("timezone") || undefined,
-    taxId: formData.get("taxId") || undefined,
-    industry: formData.get("industry") || undefined,
-    modes: formData.get("modes") ? JSON.parse(formData.get("modes") as string) : undefined,
-  });
+    const parsed = updateBusinessSchema.safeParse({
+      name: formData.get("name") || undefined,
+      slug: formData.get("slug") || undefined,
+      email: formData.get("email") || undefined,
+      phone: formData.get("phone") || undefined,
+      address: formData.get("address") || undefined,
+      currency: formData.get("currency") || undefined,
+      timezone: formData.get("timezone") || undefined,
+      taxId: formData.get("taxId") || undefined,
+      industry: formData.get("industry") || undefined,
+      modes: formData.get("modes") ? JSON.parse(formData.get("modes") as string) : undefined,
+    });
 
-  if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: "Validation failed",
+        errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+      };
+    }
+
+    const result = await updateBusiness(id, parsed.data, user.id);
+
+    if (result.success) {
+      revalidatePath(`/workspaces/${workspaceId}`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error("updateBusinessAction error:", error);
+    return { success: false, message: "Failed to update business. Please try again." };
   }
-
-  const result = await updateBusiness(id, parsed.data, user.id);
-
-  if (result.success) {
-    revalidatePath(`/workspaces/${workspaceId}`);
-  }
-
-  return result;
 }
 
 export async function getBusinessAction(id: string) {
-  await requireAuth();
-  return getBusiness(id);
+  try {
+    await requireAuth();
+    return getBusiness(id);
+  } catch (error) {
+    console.error("getBusinessAction error:", error);
+    return null;
+  }
 }
 
 export async function getWorkspaceBusinessesAction(workspaceId: string) {
-  await requireAuth();
-  return getWorkspaceBusinesses(workspaceId);
+  try {
+    await requireAuth();
+    return getWorkspaceBusinesses(workspaceId);
+  } catch (error) {
+    console.error("getWorkspaceBusinessesAction error:", error);
+    return [];
+  }
 }
 
 export async function deleteBusinessAction(businessId: string, workspaceId: string) {
-  await requireAuth();
-  const result = await deleteBusiness(businessId);
-  if (result.success) {
-    revalidatePath(`/workspaces/${workspaceId}`);
+  try {
+    await requireAuth();
+    const result = await deleteBusiness(businessId);
+    if (result.success) {
+      revalidatePath(`/workspaces/${workspaceId}`);
+    }
+    return result;
+  } catch (error) {
+    console.error("deleteBusinessAction error:", error);
+    return { success: false, message: "Failed to delete business. Please try again." };
   }
-  return result;
 }
 
 export async function toggleQrOrderingAction(
@@ -381,32 +457,49 @@ export async function toggleQrOrderingAction(
 }
 
 export async function getBusinessPricingSettingsAction(businessId: string) {
-  await requireAuth();
-  const settings = await getBusinessSettingsMap(businessId);
-  return {
-    qrOrderingEnabled: settings.qr_ordering_enabled === "true",
-    dailyPrice: settings.daily_price ? Number(settings.daily_price) : null,
-    setupFee: settings.setup_fee ? Number(settings.setup_fee) : null,
-    businessSize: settings.business_size ?? null,
-  };
+  try {
+    await requireAuth();
+    const settings = await getBusinessSettingsMap(businessId);
+    return {
+      qrOrderingEnabled: settings.qr_ordering_enabled === "true",
+      dailyPrice: settings.daily_price ? Number(settings.daily_price) : null,
+      setupFee: settings.setup_fee ? Number(settings.setup_fee) : null,
+      businessSize: settings.business_size ?? null,
+    };
+  } catch (error) {
+    console.error("getBusinessPricingSettingsAction error:", error);
+    return { qrOrderingEnabled: false, dailyPrice: null, setupFee: null, businessSize: null };
+  }
 }
 
 export async function getBusinessesAction() {
-  const user = await requireAuth();
+  try {
+    const user = await requireAuth();
 
-  const membership = await prisma.workspaceMember.findFirst({
-    where: { userId: user.id },
-    select: { workspaceId: true },
-  });
-  if (!membership) return { workspaceId: null, businesses: [] };
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.id },
+      select: { workspaceId: true },
+    });
+    if (!membership) return { workspaceId: null, businesses: [] };
 
-  const businesses = await prisma.business.findMany({
-    where: { workspaceId: membership.workspaceId },
-    include: {
-      _count: { select: { branches: true, staff: true, customers: true } },
-      modes: { select: { industry: true, mode: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return { workspaceId: membership.workspaceId, businesses: serialize(businesses) };
+    const businesses = await prisma.business.findMany({
+      where: { workspaceId: membership.workspaceId },
+      include: {
+        _count: { select: { branches: true, staff: true, customers: true } },
+        modes: { select: { industry: true, mode: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const statuses = await Promise.all(businesses.map((b) => syncBusinessStatus(b.id)));
+
+    const data = businesses.map((biz, i) => ({
+      ...biz,
+      subscriptionStatus: statuses[i],
+    }));
+    return { workspaceId: membership.workspaceId, businesses: serialize(data) };
+  } catch (error) {
+    console.error("getBusinessesAction error:", error);
+    return { workspaceId: null, businesses: [] };
+  }
 }

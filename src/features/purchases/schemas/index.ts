@@ -7,6 +7,7 @@ const purchaseItemSchema = z.object({
   variantId: z.string().uuid().optional().or(z.literal("")),
   quantity: z.coerce.number().min(0.01, "Quantity must be greater than 0"),
   unitCost: z.coerce.number().min(0, "Unit cost must be non-negative"),
+  unitPrice: z.coerce.number().min(0, "Unit price must be non-negative").optional(),
   subtotal: z.coerce.number().min(0, "Subtotal must be non-negative"),
 });
 

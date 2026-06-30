@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useActionState, useMemo, useRef } from "react";
+import { useState, useActionState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,9 +26,10 @@ interface BrandFormProps {
     description: string | null;
     logoUrl: string | null;
   };
+  onSuccess?: () => void;
 }
 
-export function BrandForm({ mode, businessId, initialData }: BrandFormProps) {
+export function BrandForm({ mode, businessId, initialData, onSuccess }: BrandFormProps) {
   const [step, setStep] = useState(0);
   const formActionRef = useMemo(
     () => (mode === "create"
@@ -49,7 +50,16 @@ export function BrandForm({ mode, businessId, initialData }: BrandFormProps) {
     if (step < STEPS.length - 1 || !allowSubmit) {
       e.preventDefault();
     }
+    e.stopPropagation();
   }
+
+  const succeeded = state?.success === true;
+  useEffect(() => {
+    if (succeeded) {
+      const timer = setTimeout(() => onSuccess?.(), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [succeeded, onSuccess]);
 
   return (
     <Card className="border-0 shadow-none">

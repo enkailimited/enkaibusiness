@@ -28,10 +28,12 @@ export function ActiveBranchProvider({
   children,
   businessId,
   branches,
+  defaultBranchId,
 }: {
   children: React.ReactNode;
   businessId: string;
   branches: BranchInfo[];
+  defaultBranchId?: string;
 }) {
   const [activeBranch, setActiveBranchState] = useState<BranchInfo | null>(null);
 
@@ -47,13 +49,21 @@ export function ActiveBranchProvider({
         }
       } catch {}
     }
+    if (defaultBranchId) {
+      const assigned = branches.find((b) => b.id === defaultBranchId);
+      if (assigned) {
+        setActiveBranchState(assigned);
+        localStorage.setItem(`activeBranch_${businessId}`, JSON.stringify(assigned));
+        return;
+      }
+    }
     const headOffice = branches.find((b) => b.isHeadOffice) ?? null;
     const defaultBranch = headOffice ?? (branches.length > 0 ? branches[0] : null);
     if (defaultBranch) {
       setActiveBranchState(defaultBranch);
       localStorage.setItem(`activeBranch_${businessId}`, JSON.stringify(defaultBranch));
     }
-  }, [businessId, branches]);
+  }, [businessId, branches, defaultBranchId]);
 
   const setActiveBranch = useCallback(
     (branch: BranchInfo) => {

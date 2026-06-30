@@ -8,9 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { FormStepper } from "@/components/ui/form-stepper";
 import { ImageUploader } from "@/components/upload/image-uploader";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CategoryForm } from "@/features/catalog/categories/components/category-form";
+import { BrandForm } from "@/features/catalog/brands/components/brand-form";
+import { UnitForm } from "@/features/catalog/units/components/unit-form";
+import { listCategoriesAction } from "@/features/catalog/categories/actions";
+import { listBrandsAction } from "@/features/catalog/brands/actions";
+import { listUnitsAction } from "@/features/catalog/units/actions";
 import { createCatalogItemAction, updateCatalogItemAction } from "../actions";
 import { CATALOG_ITEM_TYPES, ITEM_TYPE_LABELS } from "../constants";
-import { Package, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Package, FileText, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import type { ActionResponse } from "@/types/relationships";
 import type { UploadedFile } from "@/types/upload";
 
@@ -53,7 +60,7 @@ interface CatalogFormProps {
 }
 
 export function CatalogForm({
-  mode, businessId, initialData, categories, brands, units, commerceCatalogTypes, onSuccess,
+  mode, businessId, initialData, categories: _categories, brands: _brands, units: _units, commerceCatalogTypes, onSuccess,
 }: CatalogFormProps) {
   const [step, setStep] = useState(0);
   const [itemType, setItemType] = useState(initialData?.itemType ?? "PRODUCT");
@@ -65,6 +72,11 @@ export function CatalogForm({
       barcode: v.barcode ?? "",
     })) ?? [],
   );
+
+  const [categories, setCategories] = useState(_categories ?? []);
+  const [brands, setBrands] = useState(_brands ?? []);
+  const [units, setUnits] = useState(_units ?? []);
+  const [inlineDialog, setInlineDialog] = useState<"category" | "brand" | "unit" | null>(null);
 
   const formActionRef = useMemo(
     () => (mode === "create"
@@ -111,6 +123,19 @@ export function CatalogForm({
 
   function updateVariant(index: number, field: string, value: string) {
     setVariants((prev) => prev.map((v, i) => (i === index ? { ...v, [field]: value } : v)));
+  }
+
+  async function refreshCategories() {
+    const data = await listCategoriesAction(businessId);
+    setCategories((data as unknown as Array<{ id: string; name: string }>) ?? []);
+  }
+  async function refreshBrands() {
+    const data = await listBrandsAction(businessId);
+    setBrands((data as unknown as Array<{ id: string; name: string }>) ?? []);
+  }
+  async function refreshUnits() {
+    const data = await listUnitsAction(businessId);
+    setUnits((data as unknown as Array<{ id: string; name: string; abbreviation: string }>) ?? []);
   }
 
   return (
@@ -204,42 +229,57 @@ export function CatalogForm({
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="categoryId">Category</Label>
-                    <select
-                      id="categoryId" name="categoryId"
-                      defaultValue={initialData?.categoryId ?? ""}
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="">No category</option>
-                      {(categories ?? []).map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="categoryId" name="categoryId"
+                        defaultValue={initialData?.categoryId ?? ""}
+                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">No category</option>
+                        {(categories ?? []).map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => setInlineDialog("category")} title="Add new category">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="brandId">Brand</Label>
-                    <select
-                      id="brandId" name="brandId"
-                      defaultValue={initialData?.brandId ?? ""}
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="">No brand</option>
-                      {(brands ?? []).map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="brandId" name="brandId"
+                        defaultValue={initialData?.brandId ?? ""}
+                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">No brand</option>
+                        {(brands ?? []).map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => setInlineDialog("brand")} title="Add new brand">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="unitId">Unit</Label>
-                    <select
-                      id="unitId" name="unitId"
-                      defaultValue={initialData?.unitId ?? ""}
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    >
-                      <option value="">No unit</option>
-                      {(units ?? []).map((u) => (
-                        <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>
-                      ))}
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        id="unitId" name="unitId"
+                        defaultValue={initialData?.unitId ?? ""}
+                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">No unit</option>
+                        {(units ?? []).map((u) => (
+                          <option key={u.id} value={u.id}>{u.name} ({u.abbreviation})</option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0 rounded-xl" onClick={() => setInlineDialog("unit")} title="Add new unit">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -350,6 +390,34 @@ export function CatalogForm({
               {state.message}
             </div>
           )}
+
+          <Dialog open={inlineDialog === "category"} onOpenChange={(open) => { if (!open) setInlineDialog(null); }}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Category</DialogTitle>
+                <DialogDescription className="sr-only">Create a new category</DialogDescription>
+              </DialogHeader>
+              <CategoryForm mode="create" businessId={businessId} onSuccess={() => { setInlineDialog(null); refreshCategories(); }} />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={inlineDialog === "brand"} onOpenChange={(open) => { if (!open) setInlineDialog(null); }}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Brand</DialogTitle>
+                <DialogDescription className="sr-only">Create a new brand</DialogDescription>
+              </DialogHeader>
+              <BrandForm mode="create" businessId={businessId} onSuccess={() => { setInlineDialog(null); refreshBrands(); }} />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={inlineDialog === "unit"} onOpenChange={(open) => { if (!open) setInlineDialog(null); }}>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Unit</DialogTitle>
+                <DialogDescription className="sr-only">Create a new unit</DialogDescription>
+              </DialogHeader>
+              <UnitForm mode="create" businessId={businessId} onSuccess={() => { setInlineDialog(null); refreshUnits(); }} />
+            </DialogContent>
+          </Dialog>
 
           <div className="flex items-center justify-between border-t border-gray-100 pt-6">
             <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">

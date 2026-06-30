@@ -25,6 +25,9 @@ export function UserSettingsForm({ userId }: UserSettingsFormProps) {
     getUserPreferencesAction(userId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [userId]);
 

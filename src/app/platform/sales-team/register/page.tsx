@@ -102,6 +102,9 @@ export default function RegisterPage() {
       setLeads(leadsResult as unknown as LeadItem[]);
       setPlans(plansResult as unknown as Plan[]);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, []);
 

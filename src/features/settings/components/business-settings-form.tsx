@@ -26,6 +26,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsFormProps) 
     getBusinessProfileSettingsAction(businessId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

@@ -31,6 +31,25 @@ type Business = {
   createdAt: string;
   _count: { branches: number; staff: number; customers: number };
   modes: { industry: string; mode: string }[];
+  subscriptionStatus: string | null;
+};
+
+const BUSINESS_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Active",
+  PENDING: "Pending",
+  GRACE_PERIOD: "Grace Period",
+  SUSPENDED: "Suspended",
+  EXPIRED: "Expired",
+  CANCELLED: "Cancelled",
+};
+
+const BUSINESS_STATUS_VARIANTS: Record<string, string> = {
+  ACTIVE: "success",
+  PENDING: "warning",
+  GRACE_PERIOD: "warning",
+  SUSPENDED: "secondary",
+  EXPIRED: "destructive",
+  CANCELLED: "destructive",
 };
 
 export function BusinessesClient() {
@@ -40,10 +59,15 @@ export function BusinessesClient() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const load = useCallback(async () => {
-    const data = await getBusinessesAction();
-    setWorkspaceId(data.workspaceId);
-    setBusinesses(data.businesses as unknown as Business[]);
-    setLoading(false);
+    try {
+      const data = await getBusinessesAction();
+      setWorkspaceId(data.workspaceId);
+      setBusinesses(data.businesses as unknown as Business[]);
+    } catch (error) {
+      console.error("Failed to load businesses:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -97,19 +121,19 @@ export function BusinessesClient() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {businesses.map((biz) => (
-            <Link key={biz.id} href={`/workspaces/businesses/${biz.id}`}>
-              <Card className="group hover:shadow-md transition-all cursor-pointer h-full">
+          {businesses.map((biz) => {
+            const card = (
+              <Card className={`h-full ${biz.isActive ? "group hover:shadow-md transition-all cursor-pointer" : "opacity-60"}`}>
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
                       <Building2 className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={biz.isActive ? "success" : "secondary"} className="text-xs">
-                        {biz.isActive ? "Active" : "Inactive"}
+                      <Badge variant={(BUSINESS_STATUS_VARIANTS[biz.subscriptionStatus ?? ""] ?? "outline") as any} className="text-xs">
+                        {biz.subscriptionStatus ? (BUSINESS_STATUS_LABELS[biz.subscriptionStatus] ?? biz.subscriptionStatus) : (biz.isActive ? "Active" : "Inactive")}
                       </Badge>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {biz.isActive && <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
                     </div>
                   </div>
 
@@ -137,8 +161,15 @@ export function BusinessesClient() {
                   )}
                 </CardContent>
               </Card>
-            </Link>
-          ))}
+            );
+            return biz.isActive ? (
+              <Link key={biz.id} href={`/workspaces/businesses/${biz.id}`}>
+                {card}
+              </Link>
+            ) : (
+              <div key={biz.id} className="cursor-default">{card}</div>
+            );
+          })}
         </div>
       )}
     </div>

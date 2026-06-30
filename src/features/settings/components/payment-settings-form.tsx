@@ -26,6 +26,9 @@ export function PaymentSettingsForm({ businessId }: PaymentSettingsFormProps) {
     getPaymentSettingsAction(businessId).then((data) => {
       setSettings(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [businessId]);
 

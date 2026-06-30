@@ -479,6 +479,17 @@ export default function PlatformSubscriptionsPage() {
                       )}
                     </div>
                     <div className="flex justify-end gap-1 md:col-span-1">
+                      {sub.status === STATUS.PENDING && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => handleStatusChange(sub.id, STATUS.ACTIVE)}
+                          title="Approve subscription"
+                        >
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        </Button>
+                      )}
                       {sub.status === STATUS.ACTIVE && (
                         <Button
                           variant="ghost"

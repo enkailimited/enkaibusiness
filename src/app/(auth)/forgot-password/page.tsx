@@ -29,19 +29,23 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    const { error: forgotError } = await authClient.requestPasswordReset({
-      email,
-      redirectTo: window.location.origin + "/reset-password",
-    } as Parameters<typeof authClient.requestPasswordReset>[0]);
+    try {
+      const { error: forgotError } = await authClient.requestPasswordReset({
+        email,
+        redirectTo: window.location.origin + "/reset-password",
+      } as Parameters<typeof authClient.requestPasswordReset>[0]);
 
-    if (forgotError) {
-      setError(forgotError.message || "Failed to send reset email");
+      if (forgotError) {
+        setError(forgotError.message || "Failed to send reset email");
+        return;
+      }
+
+      setSent(true);
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
       setPending(false);
-      return;
     }
-
-    setSent(true);
-    setPending(false);
   }
 
   if (sent) {

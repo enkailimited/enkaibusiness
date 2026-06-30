@@ -57,6 +57,7 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
     if (step < STEPS.length - 1 || !allowSubmit) {
       e.preventDefault();
     }
+    e.stopPropagation();
   }
 
   const isSuccess = state?.success === true;

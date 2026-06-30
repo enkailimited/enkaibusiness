@@ -51,7 +51,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
   const slugManuallyEdited = useRef(false);
 
   useEffect(() => {
-    listActivePlansAction().then((data) => setPlans(data as unknown as Plan[]));
+    listActivePlansAction().then((data) => setPlans(data as unknown as Plan[])).catch((err) => console.error(err));
   }, []);
 
   const updateField = useCallback((field: string, value: string | boolean) => {

@@ -33,6 +33,12 @@ export default async function RootPage() {
         redirect("/platform/dashboard");
       }
 
+      const workspaceMembership = await prisma.workspaceMember.findFirst({
+        where: { userId: session.user.id },
+        select: { role: true, workspaceId: true },
+      });
+      const isWorkspaceOwner = workspaceMembership?.role === "OWNER" || workspaceMembership?.role === "ADMIN";
+
       const activeStaffBusiness = dbUser?.staffProfiles?.find((s) => s.isActive)?.businessId;
       if (activeStaffBusiness) {
         const biz = await prisma.business.findUnique({
@@ -42,7 +48,9 @@ export default async function RootPage() {
         if (biz && biz.status !== "ACTIVE") {
           redirect(`/workspaces/businesses/${activeStaffBusiness}/activation`);
         }
-        redirect(`/workspaces/businesses/${activeStaffBusiness}/overview`);
+        if (!isWorkspaceOwner) {
+          redirect(`/workspaces/businesses/${activeStaffBusiness}/overview`);
+        }
       }
 
       const roleBusinessId = dbUser?.userRoles?.find((ur) => ur.businessId)?.businessId;
@@ -54,7 +62,9 @@ export default async function RootPage() {
         if (biz && biz.status !== "ACTIVE") {
           redirect(`/workspaces/businesses/${roleBusinessId}/activation`);
         }
-        redirect(`/workspaces/businesses/${roleBusinessId}/overview`);
+        if (!isWorkspaceOwner) {
+          redirect(`/workspaces/businesses/${roleBusinessId}/overview`);
+        }
       }
 
       redirect("/workspaces/dashboard");

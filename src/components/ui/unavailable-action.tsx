@@ -12,6 +12,29 @@ interface UnavailableActionProps {
   description?: string;
 }
 
+let sharedAudioContext: AudioContext | null = null;
+
+function playBeep() {
+  try {
+    if (!sharedAudioContext) {
+      sharedAudioContext = new AudioContext();
+    }
+    if (sharedAudioContext.state === "suspended") {
+      sharedAudioContext.resume();
+    }
+    const osc = sharedAudioContext.createOscillator();
+    const gain = sharedAudioContext.createGain();
+    osc.connect(gain);
+    gain.connect(sharedAudioContext.destination);
+    osc.frequency.value = 440;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.2, sharedAudioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, sharedAudioContext.currentTime + 0.2);
+    osc.start(sharedAudioContext.currentTime);
+    osc.stop(sharedAudioContext.currentTime + 0.2);
+  } catch {}
+}
+
 export function UnavailableAction({
   open,
   onOpenChange,
@@ -19,21 +42,7 @@ export function UnavailableAction({
   description = "You do not have the required permissions to access this feature. Contact your administrator if you need access.",
 }: UnavailableActionProps) {
   useEffect(() => {
-    if (open) {
-      try {
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = 440;
-        osc.type = "sawtooth";
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.3);
-      } catch {}
-    }
+    if (open) playBeep();
   }, [open]);
 
   return (

@@ -46,7 +46,7 @@ export async function createPurchase(
     const catalogItemIds = [...new Set(data.items.map((i) => i.catalogItemId))];
     const catalogItems = await prisma.catalogItem.findMany({
       where: { id: { in: catalogItemIds } },
-      select: { id: true, name: true, costPrice: true, trackStock: true },
+      select: { id: true, name: true, costPrice: true, price: true, trackStock: true },
     });
     const catalogMap = new Map(catalogItems.map((ci) => [ci.id, ci]));
 
@@ -159,6 +159,14 @@ export async function createPurchase(
               await tx.catalogItem.update({
                 where: { id: item.catalogItemId },
                 data: { costPrice: unitCost },
+              });
+            }
+
+            const unitPrice = item.unitPrice ? Number(item.unitPrice) : 0;
+            if (unitPrice > 0) {
+              await tx.catalogItem.update({
+                where: { id: item.catalogItemId },
+                data: { price: unitPrice },
               });
             }
           }
