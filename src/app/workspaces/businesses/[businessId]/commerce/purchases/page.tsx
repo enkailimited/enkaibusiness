@@ -13,12 +13,12 @@ interface Props { params: Promise<{ businessId: string }> }
 
 async function PurchaseFormDialog({ businessId }: { businessId: string }) {
   await requireAuth();
-  const [business, suppliers, products] = await Promise.all([
-    prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } }),
+  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } });
+  if (!business) throw new Error("Business not found");
+  const [suppliers, products] = await Promise.all([
     listSuppliers(businessId),
     listProducts(businessId),
   ]);
-  if (!business) throw new Error("Business not found");
   const catalogItems = (products.data ?? []).map((p) => ({
     id: p.id,
     name: p.name,
@@ -43,6 +43,7 @@ async function PurchaseFormDialog({ businessId }: { businessId: string }) {
 
 export default async function PurchasesPage({ params }: Props) {
   const { businessId } = await params;
+  const business = await prisma.business.findUnique({ where: { id: businessId }, select: { workspaceId: true } });
   return (
     <div className="space-y-6 pb-10">
       <PageHeader title="Purchases" description="Record and manage supplier purchases">
@@ -51,7 +52,7 @@ export default async function PurchasesPage({ params }: Props) {
         </Suspense>
       </PageHeader>
       <Suspense fallback={<Skeleton className="h-96 w-full rounded-2xl" />}>
-        <PurchaseList businessId={businessId} />
+        <PurchaseList businessId={businessId} workspaceId={business?.workspaceId} />
       </Suspense>
     </div>
   );
