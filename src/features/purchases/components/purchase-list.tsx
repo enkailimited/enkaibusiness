@@ -59,7 +59,7 @@ export function PurchaseList({ businessId, workspaceId }: PurchaseListProps) {
       if (result.success) {
         setPayPurchaseId(null);
         setPayAmount("");
-        query.invalidateQueries({ queryKey: ["purchases", businessId] });
+        queryClient.invalidateQueries({ queryKey: ["purchases", businessId] });
       }
     } finally {
       setPaying(false);

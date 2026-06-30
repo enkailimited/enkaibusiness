@@ -61,7 +61,7 @@ export function BusinessesClient() {
   const load = useCallback(async () => {
     try {
       const data = await getBusinessesAction();
-      setWorkspaceId(data.workspaceId);
+      setWorkspaceId(data.workspaceId ?? (data.businesses as any[])?.[0]?.workspaceId ?? null);
       setBusinesses(data.businesses as unknown as Business[]);
     } catch (error) {
       console.error("Failed to load businesses:", error);
