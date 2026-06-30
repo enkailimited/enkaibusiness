@@ -75,6 +75,8 @@ export async function recordInvoicePaymentAction(
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/receivables`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
 
   return result;
@@ -85,6 +87,7 @@ export async function markOverdueInvoicesAction(businessId: string): Promise<Act
   try {
     const count = await markOverdueInvoices(businessId);
     revalidatePath(`/workspaces/businesses/${businessId}`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/receivables`);
     return { success: true, message: `${count} invoice(s) marked as overdue` };
   } catch (error) {
     return { success: false, message: "Failed to mark overdue invoices" };

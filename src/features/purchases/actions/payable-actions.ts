@@ -72,6 +72,8 @@ export async function recordPurchasePaymentAction(
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/payables`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchases`);
   }
 
   return result;
