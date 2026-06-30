@@ -49,7 +49,7 @@ export default async function RootPage() {
           redirect(`/workspaces/businesses/${activeStaffBusiness}/activation`);
         }
         if (!isWorkspaceOwner) {
-          redirect(`/workspaces/businesses/${activeStaffBusiness}/overview`);
+          redirect(`/workspaces/businesses/${activeStaffBusiness}/commerce/overview`);
         }
       }
 
@@ -63,7 +63,7 @@ export default async function RootPage() {
           redirect(`/workspaces/businesses/${roleBusinessId}/activation`);
         }
         if (!isWorkspaceOwner) {
-          redirect(`/workspaces/businesses/${roleBusinessId}/overview`);
+          redirect(`/workspaces/businesses/${roleBusinessId}/commerce/overview`);
         }
       }
 

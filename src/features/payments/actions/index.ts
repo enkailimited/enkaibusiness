@@ -46,7 +46,7 @@ export async function createPaymentMethodAction(
   const result = await createPaymentMethod(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/payments`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/commerce/payments`);
   }
 
   return result;
@@ -81,7 +81,7 @@ export async function updatePaymentMethodAction(
   const result = await updatePaymentMethod(methodId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${method.businessId}/payments`);
+    revalidatePath(`/workspaces/businesses/${method.businessId}/commerce/payments`);
   }
 
   return result;
@@ -96,7 +96,7 @@ export async function deletePaymentMethodAction(
   const result = await deletePaymentMethod(methodId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/payments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/payments`);
   }
 
   return result;
@@ -140,7 +140,7 @@ export async function createPaymentAction(
   const result = await createPayment(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/payments`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/commerce/payments`);
   }
 
   return result;
@@ -177,7 +177,7 @@ export async function voidPaymentAction(
   const result = await voidPayment(paymentId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/payments`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/payments`);
   }
 
   return result;

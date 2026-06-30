@@ -97,7 +97,7 @@ export function SaleList({ businessId }: SaleListProps) {
       data={query.data ?? []}
       emptyTitle="No sales found"
       emptyDescription="Record your first sale to get started."
-      onRowClick={(sale) => router.push(`/workspaces/businesses/${businessId}/sales/${sale.id}`)}
+      onRowClick={(sale) => router.push(`/workspaces/businesses/${businessId}/commerce/sales/${sale.id}`)}
     />
   );
 }

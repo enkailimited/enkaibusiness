@@ -38,7 +38,7 @@ export async function createCategoryAction(
   const result = await createCategory(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;
@@ -81,7 +81,7 @@ export async function updateCategoryAction(
   const result = await updateCategory(categoryId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${existing.businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${existing.businessId}/commerce/catalog`);
   }
 
   return result;
@@ -108,7 +108,7 @@ export async function deleteCategoryAction(
   const result = await deleteCategory(categoryId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;

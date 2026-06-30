@@ -21,7 +21,7 @@ export default async function CustomerDetailPage({ params }: Props) {
         description={`${CUSTOMER_TYPE_LABELS[customer.customerType]} customer`}
       >
         <Button asChild>
-          <Link href={`/workspaces/businesses/${businessId}/customers/${customerId}/statement`}>
+          <Link href={`/workspaces/businesses/${businessId}/commerce/customers/${customerId}/statement`}>
             Statement
           </Link>
         </Button>

@@ -36,7 +36,7 @@ export async function createBrandAction(
   const result = await createBrand(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;
@@ -77,7 +77,7 @@ export async function updateBrandAction(
   const result = await updateBrand(brandId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${existing.businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${existing.businessId}/commerce/catalog`);
   }
 
   return result;
@@ -104,7 +104,7 @@ export async function deleteBrandAction(
   const result = await deleteBrand(brandId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;

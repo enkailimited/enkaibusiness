@@ -57,7 +57,7 @@ export async function createReturnAction(
   const result = await createReturn(parsed.data, businessId, user.workspaceId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/returns`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
   }
 
   return result;
@@ -89,7 +89,7 @@ export async function updateReturnAction(
   const result = await updateReturn(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/returns`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
   }
 
   return result;
@@ -124,7 +124,7 @@ export async function approveReturnAction(id: string, businessId: string) {
   await requireAuth();
   const result = await approveReturn(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/returns`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
   }
   return result;
 }
@@ -133,7 +133,7 @@ export async function rejectReturnAction(id: string, businessId: string) {
   await requireAuth();
   const result = await rejectReturn(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/returns`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
   }
   return result;
 }
@@ -142,7 +142,7 @@ export async function deleteReturnAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteReturn(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/returns`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
   }
   return result;
 }

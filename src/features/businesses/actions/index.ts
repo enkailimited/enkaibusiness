@@ -440,8 +440,8 @@ export async function toggleQrOrderingAction(
       });
     }
 
-    revalidatePath(`/workspaces/businesses/${businessId}/qr-ordering`);
-    revalidatePath(`/workspaces/businesses/${businessId}/subscriptions`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/qr-ordering`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/subscriptions`);
 
     return {
       success: true,

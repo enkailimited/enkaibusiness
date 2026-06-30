@@ -59,14 +59,14 @@ export function BusinessActions({ businessId }: { businessId: string }) {
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70">
-        Business Operations
+        Commerce
       </h2>
       <div className="grid grid-cols-4 gap-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
         {actions.map((action) => (
           <QuickActionCard
             key={action.id}
             title={action.title}
-            href={`/workspaces/businesses/${businessId}/${action.id}`}
+            href={`/workspaces/businesses/${businessId}/commerce/${action.id}`}
             icon={action.icon}
             color={action.color}
             bg={action.bg}

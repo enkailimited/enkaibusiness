@@ -8,7 +8,7 @@ import { createCatalogItemSchema, updateCatalogItemSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 
 function revalidateCatalog(prefix: string) {
-  revalidatePath(`${prefix}/catalog`);
+  revalidatePath(`${prefix}/commerce/catalog`);
 }
 
 export async function createCatalogItemAction(

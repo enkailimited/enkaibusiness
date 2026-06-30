@@ -43,7 +43,7 @@ export async function createCustomerAction(
   const result = await createCustomer(parsed.data, businessId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customers`);
   }
 
   return result;
@@ -81,7 +81,7 @@ export async function updateCustomerAction(
   const result = await updateCustomer(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customers`);
   }
 
   return result;
@@ -111,7 +111,7 @@ export async function deleteCustomerAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteCustomer(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customers`);
   }
   return result;
 }

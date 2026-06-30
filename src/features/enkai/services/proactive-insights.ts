@@ -66,7 +66,7 @@ async function checkLowStock(businessId: string): Promise<ProactiveInsight | nul
     severity: lowStockItems.length > 3 ? "high" : "medium",
     businessId,
     actionLabel: "Angalia Stock",
-    actionLink: `/workspaces/businesses/${businessId}/inventory`,
+    actionLink: `/workspaces/businesses/${businessId}/commerce/inventory`,
   };
 }
 
@@ -100,7 +100,7 @@ async function checkSalesDrop(businessId: string): Promise<ProactiveInsight | nu
         severity: dropPercent > 20 ? "high" : "medium",
         businessId,
         actionLabel: "Angalia Ripoti",
-        actionLink: `/workspaces/businesses/${businessId}/sales`,
+        actionLink: `/workspaces/businesses/${businessId}/commerce/sales`,
       };
     }
   }
@@ -152,7 +152,7 @@ async function checkProfitChange(businessId: string): Promise<ProactiveInsight |
         severity: changePercent > 0 ? "low" : "high",
         businessId,
         actionLabel: "Angalia Ripoti",
-        actionLink: `/workspaces/businesses/${businessId}/sales`,
+        actionLink: `/workspaces/businesses/${businessId}/commerce/sales`,
       };
     }
   }
@@ -210,7 +210,7 @@ async function checkInactiveCustomers(businessId: string): Promise<ProactiveInsi
       severity: "medium",
       businessId,
       actionLabel: "Angalia Mteja",
-      actionLink: `/workspaces/businesses/${businessId}/customers`,
+      actionLink: `/workspaces/businesses/${businessId}/commerce/customers`,
     });
   }
 

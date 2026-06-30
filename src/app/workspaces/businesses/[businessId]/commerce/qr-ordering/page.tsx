@@ -69,7 +69,7 @@ async function QRCodeSection({ businessId }: { businessId: string }) {
                 </div>
                 <Button asChild variant="outline" size="sm">
                   <Link
-                    href={`/workspaces/businesses/${businessId}/qr-ordering/${qr.id}/menu`}
+                    href={`/workspaces/businesses/${businessId}/commerce/qr-ordering/${qr.id}/menu`}
                   >
                     Manage Menu
                   </Link>

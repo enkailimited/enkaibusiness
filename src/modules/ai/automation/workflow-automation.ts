@@ -83,7 +83,7 @@ export class WorkflowAutomation {
         type: "reminder",
         title: "Dokezo la Malipo",
         message: message.slice(0, 500),
-        link: `/workspaces/businesses/${businessId}/customers/${customerId}`,
+        link: `/workspaces/businesses/${businessId}/commerce/customers/${customerId}`,
       },
     });
   }
@@ -101,7 +101,7 @@ export class WorkflowAutomation {
           type: "warning",
           title: "Bidhaa Zinahitaji Kuagizwa Haraka",
           message: `Bidhaa hizi zinaisha stoo: ${names}.`,
-          link: `/workspaces/businesses/${businessId}/inventory`,
+          link: `/workspaces/businesses/${businessId}/commerce/inventory`,
         },
       });
     }

@@ -72,10 +72,10 @@ export async function createSaleAction(
   const result = await createSale(parsed.data, businessId, workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
-    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
-    revalidatePath(`/workspaces/businesses/${businessId}/receivables`);
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/receivables`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
 
   return result;
@@ -137,7 +137,7 @@ export async function updateSaleAction(
   const result = await updateSale(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);
   }
 
   return result;
@@ -167,8 +167,8 @@ export async function voidSaleAction(id: string, businessId: string) {
   const user = await requireAuth();
   const result = await voidSale(id, user.id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
-    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/pos`);
   }
 
   return result;
@@ -178,8 +178,8 @@ export async function deleteSaleAction(id: string, businessId: string) {
   const user = await requireAuth();
   const result = await deleteSale(id, user.id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/sales`);
-    revalidatePath(`/workspaces/businesses/${businessId}/pos`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/pos`);
   }
 
   return result;

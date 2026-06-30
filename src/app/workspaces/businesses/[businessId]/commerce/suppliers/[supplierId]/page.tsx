@@ -21,7 +21,7 @@ export default async function SupplierDetailPage({ params }: Props) {
         description={`${SUPPLIER_TYPE_LABELS[supplier.supplierType as keyof typeof SUPPLIER_TYPE_LABELS] || supplier.supplierType} supplier`}
       >
         <Button asChild>
-          <Link href={`/workspaces/businesses/${businessId}/suppliers/${supplierId}/statement`}>
+          <Link href={`/workspaces/businesses/${businessId}/commerce/suppliers/${supplierId}/statement`}>
             Statement
           </Link>
         </Button>

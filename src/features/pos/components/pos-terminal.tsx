@@ -335,7 +335,7 @@ export function POSTerminal({
           <div className="flex items-center gap-2">
             {message.type === "success" && lastSaleId && (
               <Link
-                href={`/workspaces/businesses/${businessId}/sales/${lastSaleId}`}
+                href={`/workspaces/businesses/${businessId}/commerce/sales/${lastSaleId}`}
                 className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700"
               >
                 <ExternalLink className="h-3 w-3" />

@@ -96,7 +96,7 @@ export function InvoiceList({ businessId, branchId }: InvoiceListProps) {
       data={query.data ?? []}
       emptyTitle="No invoices found"
       emptyDescription="Create your first invoice to get started."
-      onRowClick={(inv) => router.push(`/workspaces/businesses/${businessId}/invoices/${inv.id}`)}
+      onRowClick={(inv) => router.push(`/workspaces/businesses/${businessId}/commerce/invoices/${inv.id}`)}
     />
   );
 }

@@ -183,7 +183,7 @@ export function BusinessSubscriptionView({ businessId }: Props) {
             disabled={toggling}
             asChild
           >
-            <a href={`/workspaces/businesses/${businessId}/wallet`}>
+            <a href={`/workspaces/businesses/${businessId}/commerce/wallet`}>
               View Wallet
             </a>
           </Button>

@@ -37,7 +37,7 @@ export async function createGroupAction(
   const result = await createGroup(parsed.data, businessId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customer-groups`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customer-groups`);
   }
 
   return result;
@@ -69,7 +69,7 @@ export async function updateGroupAction(
   const result = await updateGroup(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customer-groups`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customer-groups`);
   }
 
   return result;
@@ -89,7 +89,7 @@ export async function deleteGroupAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteGroup(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/customer-groups`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/customer-groups`);
   }
   return result;
 }

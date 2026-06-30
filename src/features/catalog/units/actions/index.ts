@@ -37,7 +37,7 @@ export async function createUnitAction(
   const result = await createUnit(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;
@@ -78,7 +78,7 @@ export async function updateUnitAction(
   const result = await updateUnit(unitId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${existing.businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${existing.businessId}/commerce/catalog`);
   }
 
   return result;
@@ -105,7 +105,7 @@ export async function deleteUnitAction(
   const result = await deleteUnit(unitId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;

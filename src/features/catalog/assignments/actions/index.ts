@@ -38,7 +38,7 @@ export async function createAssignmentAction(
   const result = await createAssignment(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/commerce/catalog`);
   }
 
   return result;
@@ -83,7 +83,7 @@ export async function removeAssignmentAction(
   const result = await removeAssignment(assignmentId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/catalog`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/catalog`);
   }
 
   return result;

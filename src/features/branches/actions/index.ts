@@ -45,7 +45,7 @@ export async function createBranchAction(
   const result = await createBranch(businessId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/branches`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/branches`);
   }
 
   return result;
@@ -85,7 +85,7 @@ export async function updateBranchAction(
   const result = await updateBranch(branchId, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/branches`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/branches`);
   }
 
   return result;
@@ -105,7 +105,7 @@ export async function deleteBranchAction(businessId: string, branchId: string) {
   await requireAuth();
   const result = await deleteBranch(branchId);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/branches`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/branches`);
   }
   return result;
 }

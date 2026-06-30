@@ -3,40 +3,38 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { requireAuth } from "@/server/auth";
-import { getCustomer } from "@/features/customers/services/customer-service";
-import { getCustomerStatement } from "@/features/statements/services/statement-service";
+import { getSupplier } from "@/features/suppliers/services/supplier-service";
+import { getSupplierStatement } from "@/features/statements/services/statement-service";
 import { formatCurrency } from "@/lib/utils";
 
-interface Props { params: Promise<{ businessId: string; customerId: string }> }
+interface Props { params: Promise<{ businessId: string; supplierId: string }> }
 
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-TZ", { dateStyle: "medium" }).format(new Date(iso));
 }
 
-export default async function CustomerStatementPage({ params }: Props) {
-  const { businessId, customerId } = await params;
+export default async function SupplierStatementPage({ params }: Props) {
+  const { businessId, supplierId } = await params;
   await requireAuth();
 
-  const customer = await getCustomer(customerId);
-  if (!customer) notFound();
+  const supplier = await getSupplier(supplierId);
+  if (!supplier) notFound();
 
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
   const to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-  const statement = await getCustomerStatement(customerId, businessId, from, to);
-
-  const customerName = `${customer.firstName}${customer.lastName ? ` ${customer.lastName}` : ""}`;
+  const statement = await getSupplierStatement(supplierId, businessId, from, to);
 
   return (
     <div className="space-y-6 pb-10">
       <PageHeader
-        title="Customer Statement"
-        description={customerName}
+        title="Supplier Statement"
+        description={supplier.name}
       >
         <Button variant="outline" asChild>
-          <Link href={`/workspaces/businesses/${businessId}/customers/${customerId}`}>
-            Back to Customer
+          <Link href={`/workspaces/businesses/${businessId}/commerce/suppliers/${supplierId}`}>
+            Back to Supplier
           </Link>
         </Button>
       </PageHeader>

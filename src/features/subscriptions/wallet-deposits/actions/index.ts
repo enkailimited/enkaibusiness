@@ -36,7 +36,7 @@ export async function submitDepositRequestAction(
   const result = await createDepositRequest(businessId, user.id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/wallet`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/wallet`);
   }
 
   return result;

@@ -42,7 +42,7 @@ export async function createAccountAction(
   const result = await createAccount(parsed.data, businessId, user.id);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/credit-accounts`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/credit-accounts`);
   }
 
   return result;
@@ -72,7 +72,7 @@ export async function updateAccountAction(
   const result = await updateAccount(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/credit-accounts`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/credit-accounts`);
   }
 
   return result;
@@ -124,7 +124,7 @@ export async function recordTransactionAction(
   const result = await recordTransaction(parsed.data, user.id);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/credit-accounts`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/credit-accounts`);
   }
 
   return result;

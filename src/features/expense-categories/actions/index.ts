@@ -37,7 +37,7 @@ export async function createCategoryAction(
   const result = await createCategory(parsed.data, businessId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/expense-categories`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/expense-categories`);
   }
 
   return result;
@@ -68,7 +68,7 @@ export async function updateCategoryAction(
   const result = await updateCategory(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/expense-categories`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/expense-categories`);
   }
 
   return result;
@@ -93,7 +93,7 @@ export async function deleteCategoryAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteCategory(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/expense-categories`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/expense-categories`);
   }
   return result;
 }

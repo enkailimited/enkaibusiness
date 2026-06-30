@@ -67,7 +67,7 @@ export async function createPurchaseOrderAction(
   const result = await createPurchaseOrder(parsed.data, businessId, workspaceId, user.id);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
 
   return result;
@@ -125,7 +125,7 @@ export async function updatePurchaseOrderAction(
   const result = await updatePurchaseOrder(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
 
   return result;
@@ -155,7 +155,7 @@ export async function deletePurchaseOrderAction(id: string, businessId: string) 
   await requireAuth();
   const result = await deletePurchaseOrder(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
   return result;
 }
@@ -164,7 +164,7 @@ export async function approvePurchaseOrderAction(id: string, businessId: string)
   await requireAuth();
   const result = await approvePurchaseOrder(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
   return result;
 }
@@ -173,7 +173,7 @@ export async function sendPurchaseOrderAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markPurchaseOrderAsSent(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
   return result;
 }
@@ -182,7 +182,7 @@ export async function receivePurchaseOrderAction(id: string, businessId: string)
   await requireAuth();
   const result = await markPurchaseOrderAsReceived(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/purchase-orders`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
   }
   return result;
 }

@@ -24,7 +24,7 @@ export async function uploadFileAction(
   });
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${data.businessId}/uploads`);
+    revalidatePath(`/workspaces/businesses/${data.businessId}/commerce/uploads`);
   }
 
   return result;
@@ -57,7 +57,7 @@ export async function deleteUploadAction(
   const result = await deleteUpload(id);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/uploads`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/uploads`);
   }
 
   return result;

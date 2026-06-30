@@ -44,7 +44,7 @@ export async function createSupplierAction(
   const result = await createSupplier(parsed.data, businessId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/suppliers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/suppliers`);
   }
 
   return result;
@@ -83,7 +83,7 @@ export async function updateSupplierAction(
   const result = await updateSupplier(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/suppliers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/suppliers`);
   }
 
   return result;
@@ -113,7 +113,7 @@ export async function deleteSupplierAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteSupplier(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/suppliers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/suppliers`);
   }
   return result;
 }

@@ -26,7 +26,7 @@ export default async function WorkspacesLayout({
 
   const isOwner = workspaceMember?.role === "OWNER" || workspaceMember?.role === "ADMIN";
   if (!isOwner && staffProfile) {
-    redirect(`/workspaces/businesses/${staffProfile.businessId}/overview`);
+    redirect(`/workspaces/businesses/${staffProfile.businessId}/commerce/overview`);
   }
 
   return (

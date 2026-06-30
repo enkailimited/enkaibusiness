@@ -55,7 +55,7 @@ export async function createTransferAction(
   const result = await createTransfer(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/stock-transfers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
   }
 
   return result;
@@ -102,7 +102,7 @@ export async function updateTransferAction(
   const result = await updateTransfer(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/stock-transfers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
   }
 
   return result;
@@ -132,7 +132,7 @@ export async function deleteTransferAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteTransfer(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/stock-transfers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
   }
   return result;
 }
@@ -144,7 +144,7 @@ export async function dispatchTransferAction(
   await requireAuth();
   const result = await dispatchTransfer(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/stock-transfers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
   }
   return result;
 }
@@ -171,7 +171,7 @@ export async function receiveTransferAction(
   const result = await receiveTransfer(id, items.length > 0 ? items : undefined);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/stock-transfers`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
   }
 
   return result;

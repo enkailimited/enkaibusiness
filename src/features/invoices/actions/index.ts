@@ -54,7 +54,7 @@ export async function createInvoiceAction(
   const result = await createInvoice(parsed.data, businessId, user.workspaceId);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
 
   return result;
@@ -86,7 +86,7 @@ export async function updateInvoiceAction(
   const result = await updateInvoice(id, parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
 
   return result;
@@ -122,7 +122,7 @@ export async function markAsSentAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markAsSent(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
   return result;
 }
@@ -135,7 +135,7 @@ export async function recordPaymentAction(
   await requireAuth();
   const result = await recordPayment(id, amount);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
   return result;
 }
@@ -144,7 +144,7 @@ export async function markAsOverdueAction(id: string, businessId: string) {
   await requireAuth();
   const result = await markAsOverdue(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
   return result;
 }
@@ -153,7 +153,7 @@ export async function deleteInvoiceAction(id: string, businessId: string) {
   await requireAuth();
   const result = await deleteInvoice(id);
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${businessId}/invoices`);
+    revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
   }
   return result;
 }

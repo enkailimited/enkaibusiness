@@ -21,7 +21,7 @@ async function revalidateMenuBusiness(menuItemId: string) {
     select: { businessId: true },
   });
   if (item) {
-    revalidatePath(`/workspaces/businesses/${item.businessId}/qr-ordering`);
+    revalidatePath(`/workspaces/businesses/${item.businessId}/commerce/qr-ordering`);
   }
 }
 
@@ -57,7 +57,7 @@ export async function createMenuItemAction(
   const result = await createMenuItem(parsed.data);
 
   if (result.success) {
-    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/qr-ordering`);
+    revalidatePath(`/workspaces/businesses/${parsed.data.businessId}/commerce/qr-ordering`);
   }
 
   return result;

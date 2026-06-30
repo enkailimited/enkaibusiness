@@ -63,7 +63,7 @@ export async function updateBusinessSettingsAction(
   }
 
   const result = await updateBusinessProfileSettings(businessId, data);
-  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/settings`);
+  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/commerce/settings`);
   return result;
 }
 
@@ -93,7 +93,7 @@ export async function updateTaxSettingsAction(
   data.isVATRegistered = formData.get("isVATRegistered") === "on";
 
   const result = await updateTaxSettings(businessId, data);
-  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/settings`);
+  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/commerce/settings`);
   return result;
 }
 
@@ -124,7 +124,7 @@ export async function updateReceiptSettingsAction(
   data.showCustomerInfo = formData.get("showCustomerInfo") === "on";
 
   const result = await updateReceiptSettings(businessId, data);
-  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/settings`);
+  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/commerce/settings`);
   return result;
 }
 
@@ -162,7 +162,7 @@ export async function updateNumberingSettingsAction(
   }
 
   const result = await updateNumberingSettings(businessId, data);
-  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/settings`);
+  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/commerce/settings`);
   return result;
 }
 
@@ -189,7 +189,7 @@ export async function updatePaymentSettingsAction(
   if (paymentDueDays) data.paymentDueDays = Number(paymentDueDays);
 
   const result = await updatePaymentSettings(businessId, data);
-  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/settings`);
+  if (result.success) revalidatePath(`/workspaces/businesses/${businessId}/commerce/settings`);
   return result;
 }
 

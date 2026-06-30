@@ -125,7 +125,7 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
       description: `Bidhaa hizi zinaisha: ${names}. Inashauriwa kuongeza stock.`,
       severity: lowStock.length > 3 ? "high" : "medium",
       actionLabel: "Angalia Stock",
-      actionLink: `/workspaces/businesses/${businessId}/inventory`,
+      actionLink: `/workspaces/businesses/${businessId}/commerce/inventory`,
     });
   }
 
@@ -157,7 +157,7 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
         description: `Mauzo ya wiki hii yamepungua kwa ${dropPct.toFixed(0)}% ukilinganisha na wiki iliyopita.`,
         severity: dropPct > 20 ? "high" : "medium",
         actionLabel: "Angalia Ripoti",
-        actionLink: `/workspaces/businesses/${businessId}/sales`,
+        actionLink: `/workspaces/businesses/${businessId}/commerce/sales`,
       });
     }
   }
@@ -187,7 +187,7 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
       description: `${name} ana deni la Tsh ${Number(credit.balance).toLocaleString()} ambalo limechelewa siku ${daysOverdue}.`,
       severity: daysOverdue > 60 ? "high" : "medium",
       actionLabel: "Angalia Mikopo",
-      actionLink: `/workspaces/businesses/${businessId}/invoices`,
+      actionLink: `/workspaces/businesses/${businessId}/commerce/invoices`,
     });
   }
 
@@ -227,7 +227,7 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
         description: `Kuna purchase order ${pendingPOs} ambazo hazijakamilika.`,
         severity: "medium",
         actionLabel: "Angalia PO",
-        actionLink: `/workspaces/businesses/${businessId}/purchases`,
+        actionLink: `/workspaces/businesses/${businessId}/commerce/purchases`,
       });
     }
   }
