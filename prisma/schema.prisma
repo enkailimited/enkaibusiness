@@ -273,6 +273,7 @@ model Contact {
   addresses         Address[]
   communicationLogs CommunicationLog[]
   customer          Customer?
+  crmDeals           CRMDeal[]
 
   @@index([businessId])
   @@index([email])
@@ -470,6 +471,7 @@ model User {
   customerActivitiesAssigned       CustomerActivity[]     @relation("CustomerActivityAssignedTo")
   customerActivitiesCreated        CustomerActivity[]     @relation("CustomerActivityCreatedBy")
   journalEntriesCreated            JournalEntry[]         @relation("JournalEntryCreatedBy")
+  distributors                     Distributor[]
 
   @@map("users")
 }
@@ -679,6 +681,17 @@ model Business {
   customerActivities      CustomerActivity[]
   chartAccounts           ChartAccount[]
   journalEntries          JournalEntry[]
+  customerWallets         CustomerWallet[]
+  loyaltyAccounts         LoyaltyAccount[]
+  loyaltyRewards          LoyaltyReward[]
+  customerReviews         CustomerReview[]
+  storefronts             Storefront[]
+  qrExperiences           QRExperience[]
+  installationTickets     InstallationTicket[]
+  bookings                Booking[]
+  deliveryZones           DeliveryZone[]
+  crmPipelines            CRMPipeline[]
+  crmDeals                CRMDeal[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -733,6 +746,11 @@ model Branch {
   cashRegisters          CashRegister[]
   userInvites            UserInvite[]
   deliveryNotes          DeliveryNote[]
+  customerReviews         CustomerReview[]
+  qrExperiences           QRExperience[]
+  installationTickets     InstallationTicket[]
+  bookings                Booking[]
+  deliveryZones           DeliveryZone[]
 
   @@unique([businessId, name])
   @@index([businessId])
@@ -1046,6 +1064,11 @@ model CatalogItem {
   attributes           CatalogItemAttribute[]
   promotionItems       PromotionItem[]
   deliveryNoteItems    DeliveryNoteItem[]
+  customerWishlists     CustomerWishlist[]
+  customerFavorites     CustomerFavorite[]
+  customerReviews       CustomerReview[]
+  bookings              Booking[]
+  bookingItems          BookingItem[]
 
   @@unique([businessId, slug])
   @@unique([businessId, sku])
@@ -3774,6 +3797,7 @@ model CustomerReview {
   business    Business        @relation(fields: [businessId], references: [id])
   catalogItem CatalogItem?    @relation(fields: [catalogItemId], references: [id])
   branch      Branch?         @relation(fields: [branchId], references: [id])
+  booking     Booking?        @relation(fields: [bookingId], references: [id])
 
   @@index([businessId])
   @@index([catalogItemId])
@@ -4012,6 +4036,7 @@ model InstallationTicket {
   photos          InstallationPhoto[]
   trainingRecords InstallationTraining[]
   verifications   InstallationVerification[]
+  distributorAssignments DistributorAssignment[]
 
   @@index([businessId])
   @@index([distributorId])
@@ -4349,6 +4374,7 @@ model CRMDeal {
   pipeline CRMPipeline @relation(fields: [pipelineId], references: [id])
   business Business    @relation(fields: [businessId], references: [id])
   contact  Contact?    @relation(fields: [contactId], references: [id])
+  activities CRMDealActivity[]
 
   @@index([pipelineId])
   @@index([businessId])
