@@ -133,7 +133,7 @@ async function main() {
   // ─── 1. Permissions ─────────────────────────────────────────────────────
 
   const modules = [
-    { module: "users", actions: ["create", "read", "update", "delete", "list"] },
+    { module: "users", actions: ["create", "read", "update", "delete", "list", "invite"] },
     { module: "roles", actions: ["create", "read", "update", "delete", "list", "assign"] },
     { module: "workspaces", actions: ["create", "read", "update", "delete", "list", "manage_members"] },
     { module: "businesses", actions: ["create", "read", "update", "delete", "list"] },
@@ -194,7 +194,7 @@ async function main() {
       "settings.read",
     ],
     "national-sales-manager": [
-      "users.read", "users.list", "users.create",
+      "users.read", "users.list", "users.create", "users.invite",
       "workspaces.read", "workspaces.list",
       "businesses.read", "businesses.list",
       "branches.read", "branches.list",
