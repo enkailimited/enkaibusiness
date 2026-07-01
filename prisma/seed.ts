@@ -194,7 +194,7 @@ async function main() {
       "settings.read",
     ],
     "national-sales-manager": [
-      "users.read", "users.list",
+      "users.read", "users.list", "users.create",
       "workspaces.read", "workspaces.list",
       "businesses.read", "businesses.list",
       "branches.read", "branches.list",
