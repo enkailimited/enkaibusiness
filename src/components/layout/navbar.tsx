@@ -9,6 +9,8 @@ import { UserAvatar } from "@/features/users/components/user-avatar";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { authClient } from "@/lib/auth-client";
 import { Bell, User, ChevronDown, LogOut, Search } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useNavbarSlots } from "./navbar-slots";
 
 interface NavbarProps {
   profileHref: string;
@@ -18,6 +20,7 @@ interface NavbarProps {
 export function Navbar({ profileHref, showSearch = false }: NavbarProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { branchSwitcher } = useNavbarSlots();
 
   const displayName = user
     ? `${user.firstName} ${user.lastName}`.trim() || user.email
@@ -38,6 +41,9 @@ export function Navbar({ profileHref, showSearch = false }: NavbarProps) {
             <span className="text-[10px] text-muted-foreground -mt-0.5">business</span>
           </div>
         </div>
+        {branchSwitcher && (
+          <div className="hidden md:block">{branchSwitcher}</div>
+        )}
         {showSearch && (
           <div className="hidden md:flex max-w-sm">
             <div className="relative w-full">
@@ -52,7 +58,8 @@ export function Navbar({ profileHref, showSearch = false }: NavbarProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
         <Button variant="ghost" size="icon" className="rounded-full relative">
           <Bell className="h-5 w-5" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
+import { NavbarSlotsProvider } from "@/components/layout/navbar-slots";
 import type { ReactNode } from "react";
 
 export default async function WorkspacesLayout({
@@ -32,10 +33,12 @@ export default async function WorkspacesLayout({
   return (
     <div className="min-h-screen bg-muted/20">
       <div className="flex flex-1 flex-col transition-all duration-300">
-        <Navbar profileHref="/workspaces/profile" />
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <div className="max-w-8xl">{children}</div>
-        </main>
+        <NavbarSlotsProvider>
+          <Navbar profileHref="/workspaces/profile" />
+          <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+            <div className="max-w-8xl">{children}</div>
+          </main>
+        </NavbarSlotsProvider>
       </div>
     </div>
   );

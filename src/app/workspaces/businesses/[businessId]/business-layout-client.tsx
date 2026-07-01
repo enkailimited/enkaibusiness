@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { ActiveBranchProvider } from "@/features/branches/context/active-branch-context";
 import { BranchSwitcher } from "@/features/branches/components/branch-switcher";
+import { useNavbarSlots } from "@/components/layout/navbar-slots";
 
 interface BranchInfo {
   id: string;
@@ -16,6 +18,17 @@ interface BusinessLayoutClientProps {
   assignedBranchId?: string | null;
 }
 
+function BranchSwitcherSlot({ branches }: { branches: BranchInfo[] }) {
+  const { setBranchSwitcher } = useNavbarSlots();
+
+  useEffect(() => {
+    setBranchSwitcher(<BranchSwitcher branches={branches} />);
+    return () => setBranchSwitcher(null);
+  }, [branches, setBranchSwitcher]);
+
+  return null;
+}
+
 export function BusinessLayoutClient({
   children,
   businessId,
@@ -24,12 +37,8 @@ export function BusinessLayoutClient({
 }: BusinessLayoutClientProps) {
   return (
     <ActiveBranchProvider businessId={businessId} branches={branches} defaultBranchId={assignedBranchId ?? undefined}>
-      <div className="space-y-4">
-        <div className="flex items-center justify-end">
-          <BranchSwitcher branches={branches} />
-        </div>
-        {children}
-      </div>
+      <BranchSwitcherSlot branches={branches} />
+      {children}
     </ActiveBranchProvider>
   );
 }

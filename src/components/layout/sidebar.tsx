@@ -47,7 +47,7 @@ export function Sidebar({ items }: SidebarProps) {
         <Logo variant="blue" width={24} height={24} />
         {!collapsed && (
           <div className="ml-3 flex flex-col leading-tight">
-            <span className="font-bold text-base tracking-tight text-brand-700">Enkai</span>
+            <span className="font-bold text-base tracking-tight text-foreground">Enkai</span>
             <span className="text-[11px] text-muted-foreground -mt-0.5">business</span>
           </div>
         )}
@@ -91,7 +91,7 @@ export function Sidebar({ items }: SidebarProps) {
       <div className="space-y-1 p-2">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="flex w-full items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-accent"
+          className="flex w-full items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
