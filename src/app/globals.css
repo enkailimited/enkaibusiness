@@ -73,8 +73,8 @@
   --color-success-foreground: #ffffff;
   --color-warning: #92400e;
   --color-warning-foreground: #ffffff;
-  --color-border: #1e293b;
-  --color-input: #1e293b;
+  --color-border: #334155;
+  --color-input: #334155;
   --color-ring: #3b82f6;
 }
 
@@ -86,6 +86,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+
 
 @utility container {
   margin-inline: auto;
