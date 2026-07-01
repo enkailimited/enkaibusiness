@@ -66,39 +66,39 @@ export function ActivationDashboard({ businessId }: Props) {
   }
 
   if (!info) {
-    return <div className="p-8 text-center text-gray-500">Business not found</div>;
+    return <div className="p-8 text-center text-muted-foreground">Business not found</div>;
   }
 
   const remaining = Math.max(0, info.setupFee - info.walletBalance);
   const isFullyPaid = info.walletBalance >= info.setupFee;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h1 className="text-2xl font-bold text-gray-900">{info.businessName}</h1>
-          <p className="text-sm text-gray-500 mt-1">Business Activation</p>
+        <div className="bg-background rounded-xl shadow-sm p-6">
+          <h1 className="text-2xl font-bold text-foreground">{info.businessName}</h1>
+          <p className="text-sm text-muted-foreground mt-1">Business Activation</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div className="bg-background rounded-xl shadow-sm p-6 space-y-4">
           <h2 className="text-lg font-semibold">Plan Details</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Plan:</span>
+              <span className="text-muted-foreground">Plan:</span>
               <span className="ml-2 font-medium">{info.planName ?? "N/A"}</span>
             </div>
             <div>
-              <span className="text-gray-500">Setup Fee:</span>
+              <span className="text-muted-foreground">Setup Fee:</span>
               <span className="ml-2 font-medium">{info.setupFee.toLocaleString()} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Status:</span>
+              <span className="text-muted-foreground">Status:</span>
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                 {info.status === "PENDING_SETUP" ? "Pending Setup" : info.status}
               </span>
             </div>
             <div>
-              <span className="text-gray-500">Subscription:</span>
+              <span className="text-muted-foreground">Subscription:</span>
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                 {info.subscriptionStatus ?? "N/A"}
               </span>
@@ -106,23 +106,23 @@ export function ActivationDashboard({ businessId }: Props) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div className="bg-background rounded-xl shadow-sm p-6 space-y-4">
           <h2 className="text-lg font-semibold">Payment Status</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Wallet Balance:</span>
+              <span className="text-muted-foreground">Wallet Balance:</span>
               <span className="ml-2 font-medium">{info.walletBalance.toLocaleString()} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Total Deposited:</span>
+              <span className="text-muted-foreground">Total Deposited:</span>
               <span className="ml-2 font-medium">{info.totalDeposited.toLocaleString()} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Required (Setup Fee):</span>
+              <span className="text-muted-foreground">Required (Setup Fee):</span>
               <span className="ml-2 font-medium">{info.setupFee.toLocaleString()} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Remaining:</span>
+              <span className="text-muted-foreground">Remaining:</span>
               <span className={`ml-2 font-medium ${remaining > 0 ? "text-red-600" : "text-green-600"}`}>
                 {remaining > 0 ? `${remaining.toLocaleString()} TZS` : "Fully Paid"}
               </span>
@@ -137,9 +137,9 @@ export function ActivationDashboard({ businessId }: Props) {
         </div>
 
         {!isFullyPaid && (
-          <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+          <div className="bg-background rounded-xl shadow-sm p-6 space-y-4">
             <h2 className="text-lg font-semibold">Make a Payment</h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Top up your wallet to pay the setup fee. Your payment will be reviewed by an administrator.
             </p>
 
@@ -158,36 +158,36 @@ export function ActivationDashboard({ businessId }: Props) {
             {!info.hasPendingRequest && (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (TZS)</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Amount (TZS)</label>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="Enter amount"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     min="1"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment Reference</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Payment Reference</label>
                   <input
                     type="text"
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     placeholder="Enter payment reference number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Description (optional)</label>
                   <input
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Optional description"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
                 <button
@@ -202,7 +202,7 @@ export function ActivationDashboard({ businessId }: Props) {
           </div>
         )}
 
-        <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="bg-background rounded-xl shadow-sm p-6">
           <button
             onClick={() => loadInfo()}
             className="text-sm text-blue-600 hover:text-blue-800"

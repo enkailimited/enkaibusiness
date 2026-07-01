@@ -52,8 +52,8 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Customer and invoice date</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Customer and invoice date</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -65,7 +65,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                     id="customerId"
                     name="customerId"
                     required
-                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">Select a customer</option>
                     {customers.map((c) => (
@@ -77,13 +77,13 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="saleId" className="text-sm font-medium">
-                    Link to Sale <span className="text-gray-400">(Optional)</span>
+                    Link to Sale <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="saleId"
                     name="saleId"
                     placeholder="e.g. SALE-001"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
@@ -94,7 +94,7 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                     id="dueDate"
                     name="dueDate"
                     type="date"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
               </div>
@@ -108,42 +108,42 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Products</h3>
-                  <p className="text-sm text-gray-500">Products in this invoice</p>
+                  <h3 className="font-semibold text-foreground">Products</h3>
+                  <p className="text-sm text-muted-foreground">Products in this invoice</p>
                 </div>
               </div>
               <div className="space-y-4">
-                  <span className="text-sm font-medium text-gray-900">Products</span>
+                  <span className="text-sm font-medium text-foreground">Products</span>
                 <div id="items-container" className="space-y-2">
                   <div className="flex gap-2 items-start">
                     <div className="flex-1 space-y-2">
-                      <Label className="text-xs text-gray-500">Product ID</Label>
+                      <Label className="text-xs text-muted-foreground">Product ID</Label>
                       <Input
                         name="items[0][catalogItemId]"
                         placeholder="Catalog item ID"
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <div className="w-20 space-y-2">
-                      <Label className="text-xs text-gray-500">Qty</Label>
+                      <Label className="text-xs text-muted-foreground">Qty</Label>
                       <Input
                         name="items[0][quantity]"
                         type="number"
                         step="0.01"
                         min="0.01"
                         placeholder="Qty"
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <div className="w-24 space-y-2">
-                      <Label className="text-xs text-gray-500">Price</Label>
+                      <Label className="text-xs text-muted-foreground">Price</Label>
                       <Input
                         name="items[0][unitPrice]"
                         type="number"
                         step="0.01"
                         min="0"
                         placeholder="Price"
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                   </div>
@@ -159,19 +159,19 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
                   <CreditCard className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Payment</h3>
-                  <p className="text-sm text-gray-500">Invoice notes</p>
+                  <h3 className="font-semibold text-foreground">Payment</h3>
+                  <p className="text-sm text-muted-foreground">Invoice notes</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-sm font-medium">
-                    Notes <span className="text-gray-400">(Optional)</span>
+                    Notes <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <textarea
                     id="notes"
                     name="notes"
-                    className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex min-h-[80px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="Additional notes..."
                   />
                 </div>
@@ -200,13 +200,13 @@ export function InvoiceForm({ businessId, customers }: InvoiceFormProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

@@ -45,7 +45,7 @@ interface FormSuccessProps {
 export function FormSuccess({ message }: FormSuccessProps) {
   if (!message) return null;
   return (
-    <div className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+    <div className="rounded-md bg-success/10 p-3 text-sm text-success dark:bg-success/20 dark:text-success-foreground">
       {message}
     </div>
   );

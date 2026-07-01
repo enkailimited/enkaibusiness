@@ -79,11 +79,11 @@ export default function InventoryValuationPage({ params }: Props) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">All Items</CardTitle>
             <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
               <input
                 type="text" placeholder="Search items..."
                 value={search} onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm outline-none focus:border-blue-300"
+                className="h-9 w-full rounded-lg border border-border bg-muted pl-9 pr-3 text-sm outline-none focus:border-blue-300"
               />
             </div>
           </div>

@@ -16,7 +16,12 @@ function Dialog({ children, ...props }: React.ComponentPropsWithoutRef<typeof Dr
   }, [props.onOpenChange, play]);
 
   return (
-    <Drawer.Root {...props} onOpenChange={handleOpenChange}>
+    <Drawer.Root
+      repositionInputs
+      fixed
+      {...props}
+      onOpenChange={handleOpenChange}
+    >
       {children}
     </Drawer.Root>
   );
@@ -38,21 +43,123 @@ const DialogContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof Drawer.Content>
 >(({ className, children, ...props }, ref) => {
+  const bodyRef = React.useRef<HTMLDivElement>(null);
+  const rafRef = React.useRef<number>(0);
+  const [maxHeight, setMaxHeight] = React.useState("calc(100dvh - 32px)");
+  const [, forceUpdate] = React.useState(0);
+
+  let headerEl: React.ReactNode = null;
+  let footerEl: React.ReactNode = null;
+  const bodyChildren: React.ReactNode[] = [];
+
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child)) {
+      const t = child.type as React.ComponentType & { displayName?: string };
+      if (t === DialogHeader || t.displayName === "DialogHeader") {
+        headerEl = child;
+        return;
+      }
+      if (t === DialogFooter || t.displayName === "DialogFooter") {
+        footerEl = child;
+        return;
+      }
+    }
+    bodyChildren.push(child);
+  });
+
+  const hasLayout = headerEl !== null || footerEl !== null;
+
+  React.useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      const gap = 32;
+      const available = vv.height - (vv.offsetTop || 0) - gap;
+      setMaxHeight(`${Math.max(available, 200)}px`);
+    };
+
+    vv.addEventListener("resize", update);
+    update();
+    return () => vv.removeEventListener("resize", update);
+  }, []);
+
+  React.useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        forceUpdate((n) => n + 1);
+      });
+    });
+
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (!el.contains(target)) return;
+      const tag = target.tagName;
+      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") return;
+
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 350);
+    };
+
+    document.addEventListener("focusin", handleFocus);
+    return () => document.removeEventListener("focusin", handleFocus);
+  }, []);
+
   return (
     <Drawer.Portal>
       <Drawer.Overlay className="fixed inset-0 z-50 bg-black/80" />
       <Drawer.Content
         ref={ref}
+        style={{ maxHeight }}
         className={cn(
-          "fixed z-50 gap-4 bg-background p-6 shadow-lg",
-          "inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto rounded-t-2xl border-t pb-[env(safe-area-inset-bottom,16px)]",
-          "md:inset-auto md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] md:max-w-lg md:rounded-lg md:border md:pb-6",
+          "fixed z-50 bg-background shadow-lg",
+          "inset-x-0 bottom-0 rounded-t-2xl border-t",
+          "flex flex-col overflow-hidden",
+          "md:inset-auto md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] md:max-w-lg md:rounded-lg md:border md:max-h-[85dvh] md:overflow-y-auto md:block",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-muted md:hidden" />
-        {children}
+        <div className="shrink-0 flex justify-center pt-2 pb-1 md:hidden">
+          <div className="h-1.5 w-10 shrink-0 rounded-full bg-muted" />
+        </div>
+
+        {headerEl && (
+          <div className="shrink-0 px-6 pb-3 bg-background z-10">
+            {headerEl}
+          </div>
+        )}
+
+        <div
+          ref={bodyRef}
+          className="flex-1 overflow-y-auto min-h-0 px-6 pb-4"
+        >
+          {hasLayout ? bodyChildren : children}
+        </div>
+
+        {footerEl && (
+          <div className="shrink-0 px-6 py-3 border-t bg-background z-10">
+            {footerEl}
+          </div>
+        )}
+
+        <div className="shrink-0 h-[env(safe-area-inset-bottom,0px)] bg-background md:hidden" />
       </Drawer.Content>
     </Drawer.Portal>
   );
@@ -63,6 +170,11 @@ const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
   <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
+
+const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn("flex-1 overflow-y-auto min-h-0", className)} {...props} />
+);
+DialogBody.displayName = "DialogBody";
 
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
@@ -113,6 +225,7 @@ export {
   DialogClose,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,

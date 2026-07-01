@@ -77,8 +77,8 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
                   <Ruler className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name and abbreviation</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name and abbreviation</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -86,13 +86,13 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
                   <Label htmlFor="name" className="text-sm font-medium">
                     Unit Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Kilogram" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Kilogram" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="abbreviation" className="text-sm font-medium">
                     Abbreviation <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="abbreviation" name="abbreviation" defaultValue={initialData?.abbreviation}                     placeholder="e.g. kg" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="abbreviation" name="abbreviation" defaultValue={initialData?.abbreviation}                     placeholder="e.g. kg" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -105,8 +105,8 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
                   <Settings2 className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Settings</h3>
-                  <p className="text-sm text-gray-500">Type and base unit</p>
+                  <h3 className="font-semibold text-foreground">Settings</h3>
+                  <p className="text-sm text-muted-foreground">Type and base unit</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -114,7 +114,7 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
                   <Label htmlFor="type" className="text-sm font-medium">
                     Unit Type <span className="text-red-500">*</span>
                   </Label>
-                  <select id="type" name="type" value={selectedType} onChange={(e) => setSelectedType(e.target.value)} required className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                  <select id="type" name="type" value={selectedType} onChange={(e) => setSelectedType(e.target.value)} required className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
                     {UNIT_TYPES.map((type) => (
                       <option key={type} value={type}>
                         {UNIT_TYPE_LABELS[type]}
@@ -123,8 +123,8 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
                   </select>
                 </div>
                 <label className="flex items-center gap-2 pt-2">
-                  <input type="checkbox" name="isBase" defaultChecked={initialData?.isBase ?? false} className="h-4 w-4 rounded border-gray-300" />
-                  <span className="text-sm font-medium text-gray-700">Base Unit</span>
+                  <input type="checkbox" name="isBase" defaultChecked={initialData?.isBase ?? false} className="h-4 w-4 rounded border-input" />
+                  <span className="text-sm font-medium text-foreground">Base Unit</span>
                 </label>
               </div>
             </div>
@@ -148,8 +148,8 @@ export function UnitForm({ mode, businessId, initialData, onSuccess }: UnitFormP
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (

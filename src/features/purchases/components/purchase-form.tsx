@@ -114,8 +114,8 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                   <ShoppingBag className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Supplier, date and reference</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Supplier, date and reference</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -129,7 +129,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                         id="supplierId"
                         name="supplierId"
                         required
-                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="">Select a supplier</option>
                         {suppliers.map((s) => (
@@ -150,29 +150,29 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                       name="purchaseDate"
                       type="date"
                       defaultValue={new Date().toISOString().split("T")[0]}
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="reference" className="text-sm font-medium">
-                    Reference <span className="text-gray-400">(Optional)</span>
+                    Reference <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="reference"
                     name="reference"
                     placeholder="e.g. PO-001"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status" className="text-sm font-medium">
-                    Status <span className="text-gray-400">(Optional)</span>
+                    Status <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <select
                     id="status"
                     name="status"
-                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
                     {PURCHASE_STATUSES.map((s) => (
                       <option key={s.value} value={s.value}>{s.label}</option>
@@ -190,30 +190,30 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Products</h3>
-                  <p className="text-sm text-gray-500">Products in this purchase</p>
+                  <h3 className="font-semibold text-foreground">Products</h3>
+                  <p className="text-sm text-muted-foreground">Products in this purchase</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900">Products</span>
+                  <span className="text-sm font-medium text-foreground">Products</span>
                   <Button type="button" variant="outline" size="sm" onClick={addItem}>
                     Add Product
                   </Button>
                 </div>
                 {items.map((item, idx) => (
-                  <div key={item.key} className="grid grid-cols-12 gap-2 items-end rounded-xl border border-gray-200 p-3">
+                  <div key={item.key} className="grid grid-cols-12 gap-2 items-end rounded-xl border border-border p-3">
                     <input type="hidden" name={`items.${idx}.catalogItemId`} value={item.catalogItemId} />
                     <input type="hidden" name={`items.${idx}.quantity`} value={item.quantity} />
                     <input type="hidden" name={`items.${idx}.unitCost`} value={item.unitCost} />
                     <input type="hidden" name={`items.${idx}.unitPrice`} value={item.unitPrice} />
                     <input type="hidden" name={`items.${idx}.subtotal`} value={item.subtotal} />
                     <div className="col-span-4 space-y-1">
-                      <Label className="text-xs text-gray-500">Product</Label>
+                      <Label className="text-xs text-muted-foreground">Product</Label>
                       <select
                         value={item.catalogItemId}
                         onChange={(e) => updateItem(item.key, "catalogItemId", e.target.value)}
-                        className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="">Select a product</option>
                         {catalogItems.map((c) => (
@@ -224,40 +224,40 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                       </select>
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Qty</Label>
+                      <Label className="text-xs text-muted-foreground">Qty</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0.01"
                         value={item.quantity}
                         onChange={(e) => updateItem(item.key, "quantity", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Cost</Label>
+                      <Label className="text-xs text-muted-foreground">Cost</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
                         value={item.unitCost}
                         onChange={(e) => updateItem(item.key, "unitCost", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
-                      <Label className="text-xs text-gray-500">Sell Price</Label>
+                      <Label className="text-xs text-muted-foreground">Sell Price</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
                         value={item.unitPrice}
                         onChange={(e) => updateItem(item.key, "unitPrice", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
-                      <Label className="text-xs text-gray-500">Total</Label>
+                      <Label className="text-xs text-muted-foreground">Total</Label>
                       <div className="h-11 flex items-center text-sm font-medium">
                         {item.subtotal.toFixed(2)}
                       </div>
@@ -287,14 +287,14 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                   <CreditCard className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Payment</h3>
-                  <p className="text-sm text-gray-500">Notes and purchase totals</p>
+                  <h3 className="font-semibold text-foreground">Payment</h3>
+                  <p className="text-sm text-muted-foreground">Notes and purchase totals</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="tax" className="text-sm font-medium">
-                    Tax <span className="text-gray-400">(Optional)</span>
+                    Tax <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="tax"
@@ -303,21 +303,21 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                     step="0.01"
                     min="0"
                     defaultValue="0"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notes" className="text-sm font-medium">
-                    Notes <span className="text-gray-400">(Optional)</span>
+                    Notes <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <textarea
                     id="notes"
                     name="notes"
-                    className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="Additional notes..."
                   />
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                <div className="rounded-xl border border-border bg-muted/50 p-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
                     <span className="text-emerald-600">{subtotal.toFixed(2)}</span>
@@ -348,13 +348,13 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

@@ -36,7 +36,7 @@ const roleColors: Record<string, string> = {
   OWNER: "bg-amber-100 text-amber-700",
   ADMIN: "bg-blue-100 text-blue-700",
   MEMBER: "bg-slate-100 text-slate-700",
-  GUEST: "bg-gray-100 text-gray-600",
+  GUEST: "bg-muted text-muted-foreground",
 };
 
 export default function WorkspaceMembersPage() {

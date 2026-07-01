@@ -195,11 +195,11 @@ export default function RegisterPage() {
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
               <CheckCircle2 className="h-10 w-10 text-emerald-600" />
             </div>
-            <h2 className="mb-2 text-2xl font-bold text-gray-900">Registration Complete!</h2>
-            <p className="mb-2 text-gray-500">
+            <h2 className="mb-2 text-2xl font-bold text-foreground">Registration Complete!</h2>
+            <p className="mb-2 text-muted-foreground">
               Business <strong>{form.businessName}</strong> has been registered successfully.
             </p>
-            <p className="mb-8 text-sm text-gray-400">
+            <p className="mb-8 text-sm text-muted-foreground/70">
               Customer {selectedLead.firstName} {selectedLead.lastName} can now start using the system.
             </p>
             <div className="flex gap-4">
@@ -232,8 +232,8 @@ export default function RegisterPage() {
     );
   }
 
-  const inputClass = "h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
-  const selectClass = "flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
+  const inputClass = "h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
+  const selectClass = "flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20";
 
   return (
     <div className="space-y-6 pb-10">
@@ -251,15 +251,15 @@ export default function RegisterPage() {
                   <UserPlus className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Select Customer</h3>
-                  <p className="text-sm text-gray-500">Converted customers not yet registered</p>
+                  <h3 className="font-semibold text-foreground">Select Customer</h3>
+                  <p className="text-sm text-muted-foreground">Converted customers not yet registered</p>
                 </div>
               </div>
 
               {leads.length === 0 ? (
-                <div className="rounded-xl border-2 border-dashed border-gray-200 p-10 text-center">
-                  <p className="text-gray-500">No converted customers ready to register.</p>
-                  <p className="mt-1 text-sm text-gray-400">Change a lead to "CONVERTED" on the leads page first.</p>
+                <div className="rounded-xl border-2 border-dashed border-border p-10 text-center">
+                  <p className="text-muted-foreground">No converted customers ready to register.</p>
+                  <p className="mt-1 text-sm text-muted-foreground/70">Change a lead to "CONVERTED" on the leads page first.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -272,7 +272,7 @@ export default function RegisterPage() {
                         className={`relative flex cursor-pointer items-start gap-4 rounded-xl border-2 p-5 transition-all ${
                           isSelected
                             ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-500/10"
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            : "border-input bg-background hover:border-input"
                         }`}
                       >
                         <input
@@ -287,11 +287,11 @@ export default function RegisterPage() {
                           <UserPlus className="h-5 w-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-foreground">
                             {lead.firstName} {lead.lastName}
                           </p>
                           {user && (
-                            <div className="mt-1 space-y-0.5 text-sm text-gray-500">
+                            <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1.5">
                                 <Mail className="h-3.5 w-3.5" />
                                 {user.email}
@@ -326,8 +326,8 @@ export default function RegisterPage() {
                   <Building2 className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Business Info</h3>
-                  <p className="text-sm text-gray-500">Fill in the customer's business details</p>
+                  <h3 className="font-semibold text-foreground">Business Info</h3>
+                  <p className="text-sm text-muted-foreground">Fill in the customer's business details</p>
                 </div>
               </div>
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -352,7 +352,7 @@ export default function RegisterPage() {
                   placeholder="duka-la-juma"
                   className={inputClass}
                 />
-                <p className="text-xs text-gray-400">Unique identifier used in URLs and the system</p>
+                <p className="text-xs text-muted-foreground/70">Unique identifier used in URLs and the system</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -393,7 +393,7 @@ export default function RegisterPage() {
                       className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-sm transition-all ${
                         form.businessModes.includes(mode)
                           ? "border-blue-500 bg-blue-50 text-blue-700"
-                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                          : "border-input bg-background text-muted-foreground hover:border-input"
                       }`}
                     >
                       <input
@@ -413,7 +413,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Address <span className="text-gray-400">(Optional)</span></Label>
+                <Label className="text-sm font-medium">Address <span className="text-muted-foreground/70">(Optional)</span></Label>
                 <Input
                   value={form.businessAddress}
                   onChange={(e) => update("businessAddress", e.target.value)}
@@ -432,8 +432,8 @@ export default function RegisterPage() {
                   <CreditCard className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Choose Pricing Plan</h3>
-                  <p className="text-sm text-gray-500">Select a plan that fits the customer's business</p>
+                  <h3 className="font-semibold text-foreground">Choose Pricing Plan</h3>
+                  <p className="text-sm text-muted-foreground">Select a plan that fits the customer's business</p>
                 </div>
               </div>
               <div className="grid gap-4">
@@ -447,7 +447,7 @@ export default function RegisterPage() {
                       className={`relative block cursor-pointer rounded-xl border-2 p-5 transition-all ${
                         isSelected
                           ? "border-blue-500 bg-blue-50 shadow-md shadow-blue-500/10"
-                          : "border-gray-200 bg-white hover:border-gray-300"
+                          : "border-input bg-background hover:border-input"
                       }`}
                     >
                       <input
@@ -460,17 +460,17 @@ export default function RegisterPage() {
                       />
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="font-semibold text-gray-900">{plan.name}</h4>
-                          <p className="text-sm text-gray-500">{plan.description}</p>
+                          <h4 className="font-semibold text-foreground">{plan.name}</h4>
+                          <p className="text-sm text-muted-foreground">{plan.description}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-gray-900">
+                          <p className="text-2xl font-bold text-foreground">
                             {formatCurrency(planDailyPrice)}
                           </p>
-                          <p className="text-xs text-gray-400">per day</p>
+                          <p className="text-xs text-muted-foreground/70">per day</p>
                         </div>
                       </div>
-                      <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
+                      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground/70">
                         <span>Base price: {formatCurrency(planDailyRate)}/day</span>
                         <span>Period: {plan.interval.toLowerCase()}</span>
                         <span>Total: {formatCurrency(Number(plan.amount))}/{plan.interval.toLowerCase()}</span>
@@ -495,8 +495,8 @@ export default function RegisterPage() {
                   <QrCode className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">QR Ordering & Payment</h3>
-                  <p className="text-sm text-gray-500">Setup and complete registration</p>
+                  <h3 className="font-semibold text-foreground">QR Ordering & Payment</h3>
+                  <p className="text-sm text-muted-foreground">Setup and complete registration</p>
                 </div>
               </div>
 
@@ -504,20 +504,20 @@ export default function RegisterPage() {
                 className={`flex cursor-pointer items-start gap-4 rounded-xl border-2 p-5 transition-all ${
                   form.qrOrderingEnabled
                     ? "border-orange-500 bg-orange-50"
-                    : "border-gray-200 bg-white"
+                    : "border-input bg-background"
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={form.qrOrderingEnabled}
                   onChange={(e) => update("qrOrderingEnabled", e.target.checked)}
-                  className="mt-1 h-5 w-5 rounded-lg border-gray-300 text-orange-600 focus:ring-orange-500"
+                  className="mt-1 h-5 w-5 rounded-lg border-input text-orange-600 focus:ring-orange-500"
                 />
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">QR Ordering</span>
+                    <span className="font-medium text-foreground">QR Ordering</span>
                     {!form.qrOrderingEnabled && (
-                      <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">
+                      <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                         Off
                       </span>
                     )}
@@ -527,11 +527,11 @@ export default function RegisterPage() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Enable so customers can order products by scanning QR codes on tables or in-store.
                   </p>
                   <div className="mt-2 space-y-1 text-sm">
-                    <p className="text-gray-600">
+                    <p className="text-muted-foreground">
                       <span className="font-medium">QR printing:</span> {formatCurrency(QR_CODE_STICKER_PRICE)} per sticker × {QR_CODE_STICKER_COUNT} = {formatCurrency(QR_CODE_STICKER_PRICE * QR_CODE_STICKER_COUNT)}
                     </p>
                     {form.qrOrderingEnabled && (
@@ -544,37 +544,37 @@ export default function RegisterPage() {
               </label>
 
               {/* Summary Card */}
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                <h4 className="mb-3 font-semibold text-gray-900">Cost Summary</h4>
+              <div className="rounded-xl border border-border bg-muted p-5">
+                <h4 className="mb-3 font-semibold text-foreground">Cost Summary</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Plan price per day</span>
-                    <span className="font-medium text-gray-900">{formatCurrency(dailyPrice)}</span>
+                    <span className="text-muted-foreground">Plan price per day</span>
+                    <span className="font-medium text-foreground">{formatCurrency(dailyPrice)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Per week (×7)</span>
-                    <span className="font-medium text-gray-900">{formatCurrency(weeklyEstimate)}</span>
+                    <span className="text-muted-foreground">Per week (×7)</span>
+                    <span className="font-medium text-foreground">{formatCurrency(weeklyEstimate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Per month (×30)</span>
-                    <span className="font-medium text-gray-900">{formatCurrency(monthlyEstimate)}</span>
+                    <span className="text-muted-foreground">Per month (×30)</span>
+                    <span className="font-medium text-foreground">{formatCurrency(monthlyEstimate)}</span>
                   </div>
                   {setupFee > 0 && (
-                    <div className="flex justify-between border-t border-gray-200 pt-2">
-                      <span className="text-gray-600">Setup fee</span>
+                    <div className="flex justify-between border-t border-border pt-2">
+                      <span className="text-muted-foreground">Setup fee</span>
                       <span className="font-medium text-blue-600">+{formatCurrency(setupFee)}</span>
                     </div>
                   )}
                   {qrPrintingFee > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">QR sticker ({QR_CODE_STICKER_COUNT} × {formatCurrency(QR_CODE_STICKER_PRICE)})</span>
+                      <span className="text-muted-foreground">QR sticker ({QR_CODE_STICKER_COUNT} × {formatCurrency(QR_CODE_STICKER_PRICE)})</span>
                       <span className="font-medium text-orange-600">+{formatCurrency(qrPrintingFee)}</span>
                     </div>
                   )}
                   {(setupFee > 0 || qrPrintingFee > 0) && (
-                    <div className="flex justify-between border-t border-gray-200 pt-2 text-base">
-                      <span className="font-semibold text-gray-900">Initial total (one-time payment)</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(totalSetupFee)}</span>
+                    <div className="flex justify-between border-t border-border pt-2 text-base">
+                      <span className="font-semibold text-foreground">Initial total (one-time payment)</span>
+                      <span className="font-bold text-foreground">{formatCurrency(totalSetupFee)}</span>
                     </div>
                   )}
                 </div>
@@ -589,13 +589,13 @@ export default function RegisterPage() {
           )}
 
           {/* Navigation */}
-          <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

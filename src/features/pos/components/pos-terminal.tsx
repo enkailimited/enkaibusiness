@@ -126,6 +126,7 @@ export function POSTerminal({
   const [paymentType, setPaymentType] = useState<"cash" | "credit" | "partial">("cash");
   const [amountReceived, setAmountReceived] = useState("");
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
+  const [cartDrawerMaxHeight, setCartDrawerMaxHeight] = useState("calc(100dvh - 32px)");
   const [cartBounce, setCartBounce] = useState(false);
   const [measurementProduct, setMeasurementProduct] = useState<Product | null>(null);
   const [measurementInput, setMeasurementInput] = useState("1");
@@ -142,6 +143,18 @@ export function POSTerminal({
     }
     prevCartLength.current = cart.length;
   }, [cart.length]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const available = vv.height - (vv.offsetTop || 0) - 32;
+      setCartDrawerMaxHeight(`${Math.max(available, 200)}px`);
+    };
+    vv.addEventListener("resize", update);
+    update();
+    return () => vv.removeEventListener("resize", update);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -349,7 +362,7 @@ export function POSTerminal({
         </div>
       )}
 
-      <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-1.5 text-xs text-gray-500">
+      <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-1.5 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">
           <BackButton />
           <Circle className={`h-2.5 w-2.5 ${session ? "fill-emerald-500 text-emerald-500" : "fill-red-400 text-red-400"}`} />
@@ -367,27 +380,27 @@ export function POSTerminal({
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex items-center gap-2 border-b bg-white p-3">
+          <div className="flex items-center gap-2 border-b bg-background p-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
               <input
                 ref={searchRef}
                 type="text"
                 placeholder="Search products... (Ctrl+K)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                className="h-10 w-full rounded-lg border border-border bg-muted/50 pl-10 pr-4 text-sm outline-none focus:border-ring focus:bg-background focus:ring-2 focus:ring-ring/20"
               />
             </div>
           </div>
 
-          <div className="flex gap-1 flex-wrap border-b bg-gray-50 px-3 py-2">
+          <div className="flex gap-1 flex-wrap border-b bg-muted/50 px-3 py-2">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                 !selectedCategory
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100"
+                  ? "bg-primary text-white"
+                  : "bg-background text-muted-foreground hover:bg-accent"
               }`}
             >
               All
@@ -398,8 +411,8 @@ export function POSTerminal({
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   selectedCategory === cat.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
+                    ? "bg-primary text-white"
+                    : "bg-background text-muted-foreground hover:bg-accent"
                 }`}
               >
                 {cat.name}
@@ -407,9 +420,9 @@ export function POSTerminal({
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto bg-gray-50 p-3">
+          <div className="flex-1 overflow-y-auto bg-muted/50 p-3">
             {filteredProducts.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-gray-400">
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground/70">
                 {searchQuery
                   ? "No products match your search"
                   : "No products available"}
@@ -420,19 +433,19 @@ export function POSTerminal({
                   <button
                     key={product.id}
                     onClick={() => addToCart(product)}
-                    className="group relative flex flex-col rounded-xl border border-gray-200 bg-white p-2 text-left shadow-sm transition-all duration-200 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
+                    className="group relative flex flex-col rounded-xl border border-border bg-background p-2 text-left shadow-sm transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97]"
                   >
                     {product.trackStock && product.stockQuantity !== null && product.stockQuantity <= 0 && (
-                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-semibold text-red-600 shadow-sm">
+                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[9px] font-semibold text-destructive shadow-sm">
                         Out
                       </span>
                     )}
                     {product.trackStock && product.stockQuantity !== null && product.stockQuantity > 0 && product.stockQuantity <= 5 && (
-                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 shadow-sm">
+                      <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-warning/15 px-1.5 py-0.5 text-[9px] font-semibold text-warning shadow-sm">
                         {product.stockQuantity}
                       </span>
                     )}
-                    <div className="relative mb-1.5 overflow-hidden rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 aspect-square">
+                    <div className="relative mb-1.5 overflow-hidden rounded-lg bg-gradient-to-br from-muted/30 to-muted/10 aspect-square">
                       {product.imageUrl ? (
                         <img
                           src={product.imageUrl}
@@ -441,34 +454,34 @@ export function POSTerminal({
                           className="h-full w-full rounded-lg object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 transition-colors group-hover:from-blue-100 group-hover:to-indigo-200">
-                          <span className="text-xl font-bold text-blue-300 group-hover:text-blue-400 transition-colors">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 transition-colors group-hover:from-primary/10 group-hover:to-primary/20">
+                          <span className="text-xl font-bold text-primary/30 group-hover:text-primary transition-colors">
                             {product.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       )}
                       {product.unit?.type !== "count" && product.unit && (
-                        <span className="absolute left-1 bottom-1 rounded-md bg-white/90 px-1 py-0.5 text-[9px] font-medium text-gray-600 shadow-sm backdrop-blur-sm">
+                        <span className="absolute left-1 bottom-1 rounded-md bg-background/90 px-1 py-0.5 text-[9px] font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
                           <Scale className="inline h-2.5 w-2.5 mr-0.5" />
                           {product.unit.abbreviation}
                         </span>
                       )}
                     </div>
                     <div className="space-y-0.5">
-                      <span className="line-clamp-2 text-[11px] font-medium leading-tight text-gray-800 group-hover:text-blue-700 transition-colors">
+                      <span className="line-clamp-2 text-[11px] font-medium leading-tight text-foreground group-hover:text-primary transition-colors">
                         {product.name}
                       </span>
                       <div className="flex items-baseline gap-0.5 flex-wrap">
                         <span className="text-xs font-bold text-emerald-600">
                           {product.price.toLocaleString()}
                         </span>
-                        <span className="text-[9px] font-medium text-gray-400">TZS</span>
+                        <span className="text-[9px] font-medium text-muted-foreground/70">TZS</span>
                         {product.unit && (
-                          <span className="text-[9px] text-gray-400">/{product.unit.abbreviation}</span>
+                          <span className="text-[9px] text-muted-foreground/70">/{product.unit.abbreviation}</span>
                         )}
                       </div>
                       {product.trackStock && product.stockQuantity !== null && product.stockQuantity > 5 && (
-                        <span className="block text-[9px] text-gray-400">
+                        <span className="block text-[9px] text-muted-foreground/70">
                           {product.stockQuantity} in stock
                         </span>
                       )}
@@ -480,13 +493,13 @@ export function POSTerminal({
           </div>
         </div>
 
-        <div className="hidden w-full max-w-sm flex-col border-l bg-white lg:flex lg:max-w-md">
-          <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
+        <div className="hidden w-full max-w-sm flex-col border-l bg-background lg:flex lg:max-w-md">
+          <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-3">
             <div className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-gray-500" />
-              <span className="text-sm font-semibold text-gray-700">Cart</span>
+              <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-card-foreground">Cart</span>
               {cart.length > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
                   {cart.length}
                 </span>
               )}
@@ -504,29 +517,29 @@ export function POSTerminal({
           <div className="flex-1 overflow-y-auto">
             {cart.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
-                <ShoppingCart className="h-12 w-12 text-gray-200" />
-                <p className="text-sm text-gray-400">Cart is empty</p>
-                <p className="text-xs text-gray-300">
+                <ShoppingCart className="h-12 w-12 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground/70">Cart is empty</p>
+                <p className="text-xs text-muted-foreground/50">
                   Click products to add them
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border">
                 {cart.map((item) => (
                   <div key={item.product.id} className="p-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0 mr-2">
-                        <p className="truncate text-sm font-medium text-gray-800">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {item.product.name}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground/70">
                           {item.product.price.toLocaleString()} TZS
                           {item.product.unit && <span> /{item.product.unit.abbreviation}</span>}
                         </p>
                       </div>
                       <button
                         onClick={() => removeFromCart(item.product.id)}
-                        className="mt-0.5 text-gray-300 hover:text-red-500"
+                        className="mt-0.5 text-muted-foreground/50 hover:text-red-500"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -536,7 +549,7 @@ export function POSTerminal({
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => updateQuantity(item.product.id, -1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50"
+                          className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -545,7 +558,7 @@ export function POSTerminal({
                         </span>
                         <button
                           onClick={() => updateQuantity(item.product.id, 1)}
-                          className="flex h-7 w-7 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50"
+                          className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -559,10 +572,10 @@ export function POSTerminal({
                         onChange={(e) =>
                           updateDiscount(item.product.id, parseFloat(e.target.value) || 0)
                         }
-                        className="h-7 w-16 rounded-md border border-gray-200 px-1.5 text-right text-xs outline-none focus:border-blue-300"
+                        className="h-7 w-16 rounded-md border border-border px-1.5 text-right text-xs outline-none focus:border-primary/30"
                       />
 
-                      <span className="w-20 text-right text-sm font-semibold text-gray-800">
+                      <span className="w-20 text-right text-sm font-semibold text-foreground">
                         {(
                           item.product.price * item.quantity -
                           item.discount
@@ -575,25 +588,25 @@ export function POSTerminal({
             )}
           </div>
 
-          <div className="border-t bg-gray-50 p-4">
+          <div className="border-t bg-muted/50 p-4">
             <div className="relative mb-3">
               {showCustomers ? (
                 <div>
                   <input
                     type="text"
                     placeholder="Search customer..."
-                    className="h-9 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-blue-300"
+                    className="h-9 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
                     autoFocus
                   />
-                  <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
+                  <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-background shadow-lg">
                     <button
                       onClick={() => {
                         setSelectedCustomer("");
                         setShowCustomers(false);
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
                     >
-                      <User className="h-3.5 w-3.5 text-gray-400" />
+                      <User className="h-3.5 w-3.5 text-muted-foreground/70" />
                       Walk-in Customer
                     </button>
                     {customers.map((c) => (
@@ -603,9 +616,9 @@ export function POSTerminal({
                           setSelectedCustomer(c.id);
                           setShowCustomers(false);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50"
                       >
-                        <User className="h-3.5 w-3.5 text-gray-400" />
+                        <User className="h-3.5 w-3.5 text-muted-foreground/70" />
                         <span>
                           {c.firstName} {c.lastName}
                         </span>
@@ -616,9 +629,9 @@ export function POSTerminal({
               ) : (
                 <button
                   onClick={() => setShowCustomers(true)}
-                  className="flex h-9 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-left text-sm text-gray-600 hover:border-gray-300"
+                  className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 text-left text-sm text-muted-foreground hover:border-accent"
                 >
-                  <User className="h-4 w-4 text-gray-400" />
+                  <User className="h-4 w-4 text-muted-foreground/70" />
                   {selectedCustomerName
                     ? `${selectedCustomerName.firstName} ${selectedCustomerName.lastName || ""}`
                     : "Walk-in Customer"}
@@ -627,7 +640,7 @@ export function POSTerminal({
             </div>
 
             <div className="mb-3 space-y-1 text-sm">
-              <div className="flex justify-between text-gray-500">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
                 <span>{subtotal.toLocaleString()}</span>
               </div>
@@ -637,7 +650,7 @@ export function POSTerminal({
                   <span>-{discountTotal.toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-gray-200 pt-1 text-base font-bold text-gray-900">
+              <div className="flex justify-between border-t border-border pt-1 text-base font-bold text-foreground">
                 <span>Total</span>
                 <span className="text-emerald-600">
                   {grandTotal.toLocaleString()} TZS
@@ -653,8 +666,8 @@ export function POSTerminal({
                     onClick={() => { setPaymentType(type); if (type === "cash") setAmountReceived(String(grandTotal)); }}
                     className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
                       paymentType === type
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-primary text-white"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
                     }`}
                   >
                     {type === "cash" ? "Cash" : type === "partial" ? "Partial" : "Credit"}
@@ -670,10 +683,10 @@ export function POSTerminal({
                     value={amountReceived}
                     onChange={(e) => setAmountReceived(e.target.value)}
                     placeholder="Amount received"
-                    className="h-9 flex-1 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-blue-300"
+                    className="h-9 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
                     autoFocus
                   />
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-muted-foreground">
                     Change: {Math.max(0, (parseFloat(amountReceived) || 0) - grandTotal).toLocaleString()}
                   </span>
                 </div>
@@ -704,21 +717,21 @@ export function POSTerminal({
         </div>
       </div>
 
-      <div className={`sticky bottom-0 z-30 border-t bg-white px-3 py-2 shadow-lg transition-all duration-300 lg:hidden ${cart.length === 0 ? "opacity-60" : "opacity-100"}`}>
+      <div className={`sticky bottom-0 z-30 border-t bg-background px-3 py-2 shadow-lg transition-all duration-300 lg:hidden ${cart.length === 0 ? "opacity-60" : "opacity-100"}`}>
         <div className="flex items-center justify-between">
           <button
             onClick={() => setCartDrawerOpen(true)}
             className="flex flex-1 items-center gap-2"
           >
             <div className="relative">
-              <ShoppingBag className={`h-5 w-5 text-blue-600 transition-transform duration-300 ${cartBounce ? "scale-125" : "scale-100"}`} />
+              <ShoppingBag className={`h-5 w-5 text-primary transition-transform duration-300 ${cartBounce ? "scale-125" : "scale-100"}`} />
               {cart.length > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white animate-in zoom-in">
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white animate-in zoom-in">
                   {cart.length}
                 </span>
               )}
             </div>
-            <span className={`text-sm font-semibold transition-colors ${cart.length > 0 ? "text-gray-700" : "text-gray-400"}`}>
+            <span className={`text-sm font-semibold transition-colors ${cart.length > 0 ? "text-card-foreground" : "text-muted-foreground/70"}`}>
               {cart.length > 0 ? `${grandTotal.toLocaleString()} TZS` : "Cart is empty"}
             </span>
           </button>
@@ -726,7 +739,7 @@ export function POSTerminal({
             <Button
               size="sm"
               onClick={() => setCartDrawerOpen(true)}
-              className="rounded-lg bg-blue-600 text-xs font-medium text-white hover:bg-blue-700"
+              className="rounded-lg bg-primary text-xs font-medium text-white hover:bg-primary/90"
             >
               View Cart
             </Button>
@@ -734,20 +747,22 @@ export function POSTerminal({
         </div>
       </div>
 
-      <Drawer.Root open={cartDrawerOpen} onOpenChange={setCartDrawerOpen}>
+      <Drawer.Root open={cartDrawerOpen} onOpenChange={setCartDrawerOpen} repositionInputs fixed>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50" />
-          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom,16px)]">
+          <Drawer.Content
+            style={{ maxHeight: cartDrawerMaxHeight }}
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background pb-[env(safe-area-inset-bottom,16px)]">
             <DialogTitle className="sr-only">Cart</DialogTitle>
             <DialogDescription className="sr-only">Shopping cart items and checkout</DialogDescription>
-            <div className="mx-auto mb-2 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-gray-300" />
+            <div className="mx-auto mb-2 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
             <div className="flex-1 overflow-y-auto px-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm font-semibold text-gray-700">Cart</span>
+                  <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-card-foreground">Cart</span>
                   {cart.length > 0 && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
                       {cart.length}
                     </span>
                   )}
@@ -759,29 +774,29 @@ export function POSTerminal({
 
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                  <ShoppingCart className="h-10 w-10 text-gray-200" />
-                  <p className="text-sm text-gray-400">Cart is empty</p>
+                  <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground/70">Cart is empty</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-border">
                   {cart.map((item) => (
                     <div key={item.product.id} className="py-2.5">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1 pr-2">
-                          <p className="truncate text-sm font-medium text-gray-800">{item.product.name}</p>
-                          <p className="text-xs text-gray-400">{item.product.price.toLocaleString()} TZS</p>
+                          <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
+                          <p className="text-xs text-muted-foreground/70">{item.product.price.toLocaleString()} TZS</p>
                         </div>
-                        <button onClick={() => removeFromCart(item.product.id)} className="text-gray-300 hover:text-red-500">
+                        <button onClick={() => removeFromCart(item.product.id)} className="text-muted-foreground/50 hover:text-red-500">
                           <X className="h-4 w-4" />
                         </button>
                       </div>
                       <div className="mt-1.5 flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => updateQuantity(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50">
+                          <button onClick={() => updateQuantity(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
                             <Minus className="h-3 w-3" />
                           </button>
                           <span className="flex h-7 w-10 items-center justify-center text-sm font-semibold">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-gray-500 hover:bg-gray-50">
+                          <button onClick={() => updateQuantity(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
@@ -789,9 +804,9 @@ export function POSTerminal({
                           type="number" min="0" placeholder="Disc"
                           value={item.discount || ""}
                           onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
-                          className="h-7 w-16 rounded-md border border-gray-200 px-1.5 text-right text-xs outline-none focus:border-blue-300"
+                          className="h-7 w-16 rounded-md border border-border px-1.5 text-right text-xs outline-none focus:border-primary/30"
                         />
-                        <span className="w-20 text-right text-sm font-semibold text-gray-800">
+                        <span className="w-20 text-right text-sm font-semibold text-foreground">
                           {(item.product.price * item.quantity - item.discount).toLocaleString()}
                         </span>
                       </div>
@@ -802,9 +817,9 @@ export function POSTerminal({
             </div>
 
             {cart.length > 0 && (
-              <div className="border-t bg-gray-50 px-4 pb-4 pt-3">
+              <div className="border-t bg-muted/50 px-4 pb-4 pt-3">
                 <div className="mb-2 space-y-1 text-sm">
-                  <div className="flex justify-between text-gray-500">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Subtotal</span><span>{subtotal.toLocaleString()}</span>
                   </div>
                   {discountTotal > 0 && (
@@ -812,7 +827,7 @@ export function POSTerminal({
                       <span>Discount</span><span>-{discountTotal.toLocaleString()}</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t border-gray-200 pt-1 text-base font-bold text-gray-900">
+                  <div className="flex justify-between border-t border-border pt-1 text-base font-bold text-foreground">
                     <span>Total</span>
                     <span className="text-emerald-600">{grandTotal.toLocaleString()} TZS</span>
                   </div>
@@ -823,23 +838,23 @@ export function POSTerminal({
                     <div>
                       <input
                         type="text" placeholder="Search customer..."
-                        className="h-9 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-blue-300"
+                        className="h-9 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
                         autoFocus
                       />
-                      <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
-                        <button onClick={() => { setSelectedCustomer(""); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50">
-                          <User className="h-3.5 w-3.5 text-gray-400" /> Walk-in Customer
+                      <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-background shadow-lg">
+                        <button onClick={() => { setSelectedCustomer(""); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
+                          <User className="h-3.5 w-3.5 text-muted-foreground/70" /> Walk-in Customer
                         </button>
                         {customers.map((c) => (
-                          <button key={c.id} onClick={() => { setSelectedCustomer(c.id); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50">
-                            <User className="h-3.5 w-3.5 text-gray-400" /> {c.firstName} {c.lastName}
+                          <button key={c.id} onClick={() => { setSelectedCustomer(c.id); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
+                            <User className="h-3.5 w-3.5 text-muted-foreground/70" /> {c.firstName} {c.lastName}
                           </button>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => setShowCustomers(true)} className="flex h-9 w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-left text-sm text-gray-600 hover:border-gray-300">
-                      <User className="h-4 w-4 text-gray-400" />
+                    <button onClick={() => setShowCustomers(true)} className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 text-left text-sm text-muted-foreground hover:border-accent">
+                      <User className="h-4 w-4 text-muted-foreground/70" />
                       {selectedCustomerName ? `${selectedCustomerName.firstName} ${selectedCustomerName.lastName || ""}` : "Walk-in Customer"}
                     </button>
                   )}
@@ -851,7 +866,7 @@ export function POSTerminal({
                       key={type}
                       onClick={() => { setPaymentType(type); if (type === "cash") setAmountReceived(String(grandTotal)); }}
                       className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
-                        paymentType === type ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        paymentType === type ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {type === "cash" ? "Cash" : type === "partial" ? "Partial" : "Credit"}
@@ -865,10 +880,10 @@ export function POSTerminal({
                       value={amountReceived}
                       onChange={(e) => setAmountReceived(e.target.value)}
                       placeholder="Amount received"
-                      className="h-9 flex-1 rounded-lg border border-gray-200 px-3 text-sm outline-none focus:border-blue-300"
+                      className="h-9 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
                       autoFocus
                     />
-                    <span className="text-xs text-gray-500">Change: {Math.max(0, (parseFloat(amountReceived) || 0) - grandTotal).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">Change: {Math.max(0, (parseFloat(amountReceived) || 0) - grandTotal).toLocaleString()}</span>
                   </div>
                 )}
                 {paymentType === "credit" && (
@@ -922,7 +937,7 @@ export function POSTerminal({
               className="space-y-4"
             >
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Closing Float (TZS)</label>
+                <label className="text-sm font-medium text-card-foreground">Closing Float (TZS)</label>
                 <input
                   type="number"
                   min="0"
@@ -930,7 +945,7 @@ export function POSTerminal({
                   required
                   value={closeFloat}
                   onChange={(e) => setCloseFloat(e.target.value)}
-                  className="h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-blue-300"
+                  className="h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-primary/30"
                   placeholder="Enter closing float amount"
                   autoFocus
                 />
@@ -965,14 +980,14 @@ export function POSTerminal({
               className="space-y-4"
             >
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Opening Float (TZS)</label>
+                <label className="text-sm font-medium text-card-foreground">Opening Float (TZS)</label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={openFloat}
                   onChange={(e) => setOpenFloat(e.target.value)}
-                  className="h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-blue-300"
+                  className="h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-primary/30"
                   placeholder="Enter opening float amount"
                   autoFocus
                 />
@@ -990,7 +1005,7 @@ export function POSTerminal({
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-blue-600" />
+              <Scale className="h-5 w-5 text-primary" />
               {measurementProduct?.name}
             </DialogTitle>
             <DialogDescription>
@@ -1006,9 +1021,9 @@ export function POSTerminal({
                     <button
                       key={preset.label}
                       onClick={() => addWithMeasurement(measurementProduct, preset.value)}
-                      className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white p-3 text-center transition-all hover:border-blue-300 hover:bg-blue-50 active:scale-95"
+                      className="flex flex-col items-center justify-center rounded-xl border border-border bg-background p-3 text-center transition-all hover:border-primary/30 hover:bg-primary/5 active:scale-95"
                     >
-                      <span className="text-sm font-semibold text-gray-800">{preset.label}</span>
+                      <span className="text-sm font-semibold text-foreground">{preset.label}</span>
                       <span className="mt-0.5 text-xs font-medium text-emerald-600">
                         {(measurementProduct.price * preset.value).toLocaleString()} TZS
                       </span>
@@ -1017,10 +1032,10 @@ export function POSTerminal({
                 </div>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-200" />
+                    <span className="w-full border-t border-border" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-400">au ingiza kiasi</span>
+                    <span className="bg-background px-2 text-muted-foreground/70">au ingiza kiasi</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1030,16 +1045,16 @@ export function POSTerminal({
                     min="0.01"
                     value={measurementInput}
                     onChange={(e) => setMeasurementInput(e.target.value)}
-                    className="h-11 flex-1 rounded-xl border border-gray-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 flex-1 rounded-xl border border-border px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
                     placeholder="Kiasi"
                     autoFocus
                   />
                   {measurementProduct.unit && (
-                    <span className="text-sm font-medium text-gray-500 w-8">{measurementProduct.unit.abbreviation}</span>
+                    <span className="text-sm font-medium text-muted-foreground w-8">{measurementProduct.unit.abbreviation}</span>
                   )}
                   <Button
                     onClick={() => addWithMeasurement(measurementProduct, parseFloat(measurementInput) || 1)}
-                    className="h-11 rounded-xl bg-blue-600 px-4 text-white hover:bg-blue-700"
+                    className="h-11 rounded-xl bg-primary px-4 text-white hover:bg-primary/90"
                   >
                     +
                   </Button>

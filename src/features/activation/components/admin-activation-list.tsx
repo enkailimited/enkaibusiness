@@ -85,7 +85,7 @@ export function AdminActivationList() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${filter === f ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${filter === f ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground hover:bg-accent"}`}
           >
             {f === "all" ? "All" : f === "pending" ? "Pending Setup" : f === "hasDeposit" ? "With Deposits" : "Active"}
           </button>
@@ -93,23 +93,23 @@ export function AdminActivationList() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500">
+        <div className="bg-background rounded-xl shadow-sm p-12 text-center text-muted-foreground">
           No businesses found
         </div>
       )}
 
       {filtered.map((b) => (
-        <div key={b.id} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div key={b.id} className="bg-background rounded-xl shadow-sm p-6 space-y-4">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{b.name}</h3>
-              <p className="text-sm text-gray-500">{b.ownerName ?? "N/A"} &middot; {b.ownerEmail ?? "N/A"}</p>
+              <h3 className="text-lg font-semibold text-foreground">{b.name}</h3>
+              <p className="text-sm text-muted-foreground">{b.ownerName ?? "N/A"} &middot; {b.ownerEmail ?? "N/A"}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                 b.status === "ACTIVE" ? "bg-green-100 text-green-800" :
                 b.status === "PENDING_SETUP" ? "bg-yellow-100 text-yellow-800" :
-                "bg-gray-100 text-gray-800"
+                "bg-muted text-foreground"
               }`}>
                 {b.status}
               </span>
@@ -117,7 +117,7 @@ export function AdminActivationList() {
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                   b.subscriptionStatus === "ACTIVE" ? "bg-green-100 text-green-800" :
                   b.subscriptionStatus === "PENDING" ? "bg-yellow-100 text-yellow-800" :
-                  "bg-gray-100 text-gray-800"
+                  "bg-muted text-foreground"
                 }`}>
                   {b.subscriptionStatus}
                 </span>
@@ -127,19 +127,19 @@ export function AdminActivationList() {
 
           <div className="grid grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Plan:</span>
+              <span className="text-muted-foreground">Plan:</span>
               <span className="ml-1 font-medium">{b.planName ?? "N/A"}</span>
             </div>
             <div>
-              <span className="text-gray-500">Amount:</span>
+              <span className="text-muted-foreground">Amount:</span>
               <span className="ml-1 font-medium">{b.planAmount?.toLocaleString() ?? "N/A"} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Wallet:</span>
+              <span className="text-muted-foreground">Wallet:</span>
               <span className="ml-1 font-medium">{b.walletBalance.toLocaleString()} TZS</span>
             </div>
             <div>
-              <span className="text-gray-500">Deposited:</span>
+              <span className="text-muted-foreground">Deposited:</span>
               <span className="ml-1 font-medium">{b.totalDeposited.toLocaleString()} TZS</span>
             </div>
           </div>
@@ -156,10 +156,10 @@ export function AdminActivationList() {
                 <span className="text-sm font-medium text-yellow-800">
                   Pending Deposit: {b.pendingDepositAmount?.toLocaleString()} TZS
                 </span>
-                <span className="text-xs text-gray-500">Ref: {b.pendingDepositReference ?? "N/A"}</span>
+                <span className="text-xs text-muted-foreground">Ref: {b.pendingDepositReference ?? "N/A"}</span>
               </div>
               {b.pendingDepositProof && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Payment Proof: <a href={b.pendingDepositProof} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View</a>
                 </div>
               )}

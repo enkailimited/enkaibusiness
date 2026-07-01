@@ -293,7 +293,7 @@ export function BusinessForm({ workspaceId, onSuccess }: BusinessFormProps) {
                 type="checkbox"
                 checked={formData.qrOrderingEnabled}
                 onChange={(e) => updateField("qrOrderingEnabled", e.target.checked)}
-                className="mt-1 h-5 w-5 rounded-lg border-gray-300 text-blue-600"
+                className="mt-1 h-5 w-5 rounded-lg border-input text-blue-600"
               />
               <div>
                 <div className="flex items-center gap-2">

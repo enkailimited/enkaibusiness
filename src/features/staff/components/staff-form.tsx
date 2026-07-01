@@ -106,8 +106,8 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <Briefcase className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Edit Staff</h3>
-                  <p className="text-sm text-gray-500">{staff.user.firstName} {staff.user.lastName}</p>
+                  <h3 className="font-semibold text-foreground">Edit Staff</h3>
+                  <p className="text-sm text-muted-foreground">{staff.user.firstName} {staff.user.lastName}</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -117,7 +117,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                       First Name <span className="text-red-500">*</span>
                     </Label>
                     <Input id="firstName" name="firstName" defaultValue={staff?.user.firstName ?? ""}
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       onKeyDown={handleKeyDown} />
                     {state?.errors?.firstName && (
                       <p className="text-sm text-red-500">{state.errors.firstName[0]}</p>
@@ -128,7 +128,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                       Last Name <span className="text-red-500">*</span>
                     </Label>
                     <Input id="lastName" name="lastName" defaultValue={staff?.user.lastName ?? ""}
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       onKeyDown={handleKeyDown} />
                     {state?.errors?.lastName && (
                       <p className="text-sm text-red-500">{state.errors.lastName[0]}</p>
@@ -140,7 +140,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     Email <span className="text-red-500">*</span>
                   </Label>
                   <Input id="email" name="email" type="email" defaultValue={staff?.user.email ?? ""}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown} />
                   {state?.errors?.email && (
                     <p className="text-sm text-red-500">{state.errors.email[0]}</p>
@@ -151,23 +151,23 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     Phone
                   </Label>
                   <Input id="phone" name="phone" type="tel" defaultValue={staff?.user.phone ?? ""}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown} />
                   {state?.errors?.phone && (
                     <p className="text-sm text-red-500">{state.errors.phone[0]}</p>
                   )}
                 </div>
-                <hr className="border-gray-100" />
+                <hr className="border-border" />
                 <div className="space-y-2">
                   <Label htmlFor="employeeCode" className="text-sm font-medium">
-                    Employee Code <span className="text-gray-400">(Optional)</span>
+                    Employee Code <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="employeeCode"
                     name="employeeCode"
                     defaultValue={staff?.employeeCode ?? ""}
                     placeholder="e.g. EMP-001"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                   {state?.errors?.employeeCode && (
@@ -183,7 +183,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                     name="position"
                     defaultValue={staff?.position ?? ""}
                     placeholder="e.g. Cashier"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                   {state?.errors?.position && (
@@ -192,14 +192,14 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="hireDate" className="text-sm font-medium">
-                    Hire Date <span className="text-gray-400">(Optional)</span>
+                    Hire Date <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="hireDate"
                     name="hireDate"
                     type="date"
                     defaultValue={staff?.hireDate ? new Date(staff.hireDate).toISOString().split("T")[0] : ""}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                   {state?.errors?.hireDate && (
@@ -221,7 +221,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
               </div>
             )}
 
-            <div className="flex items-center justify-end border-t border-gray-100 pt-6">
+            <div className="flex items-center justify-end border-t border-border pt-6">
               <Button
                 type="submit"
                 disabled={pending}
@@ -259,8 +259,8 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <User className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Personal Info</h3>
-                  <p className="text-sm text-gray-500">Name, email and phone</p>
+                  <h3 className="font-semibold text-foreground">Personal Info</h3>
+                  <p className="text-sm text-muted-foreground">Name, email and phone</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -270,7 +270,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   </Label>
                   <Input id="firstName" name="firstName" required autoComplete="given-name" onKeyDown={handleKeyDown}
                     value={firstName} onChange={(e) => setFirstName(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName" className="text-sm font-medium">
@@ -278,7 +278,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   </Label>
                   <Input id="lastName" name="lastName" required autoComplete="family-name" onKeyDown={handleKeyDown}
                     value={lastName} onChange={(e) => setLastName(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -288,7 +288,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                 </Label>
                 <Input id="email" name="email" type="email" required autoComplete="email" onKeyDown={handleKeyDown}
                   value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
@@ -298,7 +298,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   </Label>
                   <Input id="phone" name="phone" type="tel" autoComplete="tel" required onKeyDown={handleKeyDown}
                     value={phone} onChange={(e) => setPhone(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-sm font-medium">
@@ -320,8 +320,8 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <ShieldCheck className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Gender & Role</h3>
-                  <p className="text-sm text-gray-500">Gender and platform role</p>
+                  <h3 className="font-semibold text-foreground">Gender & Role</h3>
+                  <p className="text-sm text-muted-foreground">Gender and platform role</p>
                 </div>
               </div>
 
@@ -339,10 +339,10 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                           "relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200",
                           isSelected
                             ? "border-blue-500 bg-blue-50 shadow-sm"
-                            : "border-gray-200 bg-white hover:border-gray-300",
+                            : "border-input bg-background hover:border-input",
                         )}
                       >
-                        <span className={cn("text-sm font-semibold", isSelected ? "text-blue-600" : "text-gray-700")}>
+                        <span className={cn("text-sm font-semibold", isSelected ? "text-blue-600" : "text-foreground")}>
                           {opt === "MALE" ? "Male" : "Female"}
                         </span>
                       </button>
@@ -353,7 +353,7 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
 
               <div>
                 <Label className="text-sm font-medium mb-3 block">
-                  Business Role <span className="text-gray-400">(Optional)</span>
+                  Business Role <span className="text-muted-foreground/70">(Optional)</span>
                 </Label>
                 {rolesLoading ? (
                   <div className="flex items-center justify-center py-4">
@@ -372,13 +372,13 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                             "relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all duration-200",
                             isSelected
                               ? "border-blue-500 bg-blue-50 shadow-sm"
-                              : "border-gray-200 bg-white hover:border-gray-300",
+                              : "border-input bg-background hover:border-input",
                           )}
                         >
-                          <span className={cn("text-xs font-semibold", isSelected ? "text-blue-600" : "text-gray-700")}>
+                          <span className={cn("text-xs font-semibold", isSelected ? "text-blue-600" : "text-foreground")}>
                             {role.name}
                           </span>
-                          <span className="text-[10px] text-gray-400">{role.slug}</span>
+                          <span className="text-[10px] text-muted-foreground/70">{role.slug}</span>
                         </button>
                       );
                     })}
@@ -396,19 +396,19 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <Briefcase className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Staff Details</h3>
-                  <p className="text-sm text-gray-500">Position and employee code</p>
+                  <h3 className="font-semibold text-foreground">Staff Details</h3>
+                  <p className="text-sm text-muted-foreground">Position and employee code</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="employeeCode" className="text-sm font-medium">
-                    Employee Code <span className="text-gray-400">(Optional)</span>
+                    Employee Code <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="employeeCode" name="employeeCode"
                     placeholder="e.g. EMP-001"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                 </div>
@@ -419,17 +419,17 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
                   <Input
                     id="position" name="position"
                     placeholder="e.g. Cashier" required
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="hireDate" className="text-sm font-medium">
-                    Hire Date <span className="text-gray-400">(Optional)</span>
+                    Hire Date <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="hireDate" name="hireDate" type="date"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     onKeyDown={handleKeyDown}
                   />
                 </div>
@@ -449,13 +449,13 @@ export function StaffForm({ businessId, staff, onSuccess }: StaffFormProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

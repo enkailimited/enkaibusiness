@@ -63,8 +63,8 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                   <Truck className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name and supplier type</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name and supplier type</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -77,7 +77,7 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                     name="name"
                     required
                     placeholder="e.g. Product Company"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.name && (
                     <p className="text-sm text-red-500">{state.errors.name[0]}</p>
@@ -85,12 +85,12 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="supplierType" className="text-sm font-medium">
-                    Type <span className="text-gray-400">(Optional)</span>
+                    Type <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <select
                     id="supplierType"
                     name="supplierType"
-                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">Select a type</option>
                     {SUPPLIER_TYPES.map((t) => (
@@ -109,57 +109,57 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                   <Phone className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Contact</h3>
-                  <p className="text-sm text-gray-500">Address, phone and email</p>
+                  <h3 className="font-semibold text-foreground">Contact</h3>
+                  <p className="text-sm text-muted-foreground">Address, phone and email</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
-                      Email <span className="text-gray-400">(Optional)</span>
+                      Email <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       placeholder="supplier@business.co.tz"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="text-sm font-medium">
-                      Phone <span className="text-gray-400">(Optional)</span>
+                      Phone <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="phone"
                       name="phone"
                       placeholder="+255 712 345 678"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-sm font-medium">
-                      Address <span className="text-gray-400">(Optional)</span>
+                      Address <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="address"
                       name="address"
                       placeholder="Samora Avenue, ABC Building"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="city" className="text-sm font-medium">
-                      City <span className="text-gray-400">(Optional)</span>
+                      City <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="city"
                       name="city"
                       placeholder="Dar es Salaam"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
@@ -174,20 +174,20 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                   <FileText className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">More Info</h3>
-                  <p className="text-sm text-gray-500">Country, currency and payment terms</p>
+                  <h3 className="font-semibold text-foreground">More Info</h3>
+                  <p className="text-sm text-muted-foreground">Country, currency and payment terms</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="country" className="text-sm font-medium">
-                      Country <span className="text-gray-400">(Optional)</span>
+                      Country <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <select
                       id="country"
                       name="country"
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
                       {COUNTRIES.map((c) => (
                         <option key={c} value={c}>{c}</option>
@@ -196,12 +196,12 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency" className="text-sm font-medium">
-                      Currency <span className="text-gray-400">(Optional)</span>
+                      Currency <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <select
                       id="currency"
                       name="currency"
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
                       {CURRENCIES.map((c) => (
                         <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
@@ -211,23 +211,23 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="taxId" className="text-sm font-medium">
-                    Tax ID <span className="text-gray-400">(Optional)</span>
+                    Tax ID <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="taxId"
                     name="taxId"
                     placeholder="e.g. TIN-123-456"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="paymentTerms" className="text-sm font-medium">
-                    Payment Terms <span className="text-gray-400">(Optional)</span>
+                    Payment Terms <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <select
                     id="paymentTerms"
                     name="paymentTerms"
-                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">Select terms</option>
                     {PAYMENT_TERMS.map((t) => (
@@ -235,18 +235,18 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
                     ))}
                   </select>
                 </div>
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-200 hover:bg-blue-50/50">
+                <label className="flex items-center gap-3 rounded-xl border border-input bg-background p-4 transition-all hover:border-blue-200 hover:bg-blue-50/50">
                   <input
                     type="checkbox"
                     id="isActive"
                     name="isActive"
                     value="true"
                     defaultChecked
-                    className="h-5 w-5 rounded-lg border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-5 w-5 rounded-lg border-input text-blue-600 focus:ring-blue-500"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Active</span>
-                    <p className="text-xs text-gray-500">This supplier is available for use</p>
+                    <span className="text-sm font-medium text-foreground">Active</span>
+                    <p className="text-xs text-muted-foreground">This supplier is available for use</p>
                   </div>
                 </label>
               </div>
@@ -272,13 +272,13 @@ export function SupplierForm({ businessId, onSuccess }: SupplierFormProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

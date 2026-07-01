@@ -82,8 +82,8 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <Package className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name, SKU, and product category</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name, SKU, and product category</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -97,7 +97,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                     defaultValue={product?.name ?? ""}
                     placeholder="e.g. Wheat Bread"
                     required
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.name && (
                     <p className="text-sm text-red-500">{state.errors.name[0]}</p>
@@ -106,39 +106,39 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="sku" className="text-sm font-medium">
-                      SKU <span className="text-gray-400">(Optional)</span>
+                      SKU <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="sku"
                       name="sku"
                       defaultValue={product?.sku ?? ""}
                       placeholder="e.g. SKU-001"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="barcode" className="text-sm font-medium">
-                      Barcode <span className="text-gray-400">(Optional)</span>
+                      Barcode <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="barcode"
                       name="barcode"
                       defaultValue={product?.barcode ?? ""}
                       placeholder="e.g. 1234567890"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="categoryId" className="text-sm font-medium">
-                      Category <span className="text-gray-400">(Optional)</span>
+                      Category <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <select
                       id="categoryId"
                       name="categoryId"
                       defaultValue={product?.categoryId ?? ""}
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
                       <option value="">No category</option>
                       {categories.map((cat) => (
@@ -148,13 +148,13 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="unitId" className="text-sm font-medium">
-                      Unit <span className="text-gray-400">(Optional)</span>
+                      Unit <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <select
                       id="unitId"
                       name="unitId"
                       defaultValue={product?.unitId ?? ""}
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
                       <option value="">No unit</option>
                       {units.map((u) => (
@@ -174,8 +174,8 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <DollarSign className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Pricing</h3>
-                  <p className="text-sm text-gray-500">Selling and cost price</p>
+                  <h3 className="font-semibold text-foreground">Pricing</h3>
+                  <p className="text-sm text-muted-foreground">Selling and cost price</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -193,7 +193,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                       defaultValue={product ? Number(product.price) : ""}
                       placeholder="0.00"
                       required
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                     {state?.errors?.price && (
                       <p className="text-sm text-red-500">{state.errors.price[0]}</p>
@@ -201,7 +201,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="costPrice" className="text-sm font-medium">
-                      Cost Price <span className="text-gray-400">(Optional)</span>
+                      Cost Price <span className="text-muted-foreground/70">(Optional)</span>
                     </Label>
                     <Input
                       id="costPrice"
@@ -211,7 +211,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                       min="0"
                       defaultValue={product?.costPrice ? Number(product.costPrice) : ""}
                       placeholder="0.00"
-                      className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
@@ -226,26 +226,26 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                   <FileText className="h-5 w-5 text-orange-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Description, image and variants</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Description, image and variants</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Description <span className="text-gray-400">(Optional)</span>
+                    Description <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <textarea
                     id="description"
                     name="description"
                     defaultValue={product?.description ?? ""}
-                    className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     placeholder="Product description..."
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    Product Image <span className="text-gray-400">(Optional)</span>
+                    Product Image <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <input type="hidden" name="imageUrl" value={imageUrl} />
                   <ImageUploader
@@ -256,7 +256,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                     existingImages={imageUrl ? [{ id: "existing", url: imageUrl, name: "product-image", fileId: "existing", size: 0, mimeType: "image/jpeg", createdAt: "" }] : []}
                   />
                 </div>
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-200 hover:bg-blue-50/50">
+                <label className="flex items-center gap-3 rounded-xl border border-input bg-background p-4 transition-all hover:border-blue-200 hover:bg-blue-50/50">
                   <Switch
                     id="trackStock"
                     name="trackStock"
@@ -264,14 +264,14 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
                     value="true"
                   />
                   <div>
-                    <span className="text-sm font-medium text-gray-900">Track Stock</span>
-                    <p className="text-xs text-gray-500">Enable to track product stock quantities</p>
+                    <span className="text-sm font-medium text-foreground">Track Stock</span>
+                    <p className="text-xs text-muted-foreground">Enable to track product stock quantities</p>
                   </div>
                 </label>
                 {!product && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">Variants</h3>
+                      <h3 className="text-sm font-medium text-foreground">Variants</h3>
                       <Button type="button" variant="outline" size="sm" onClick={addVariant}>
                         Add Variant
                       </Button>
@@ -304,13 +304,13 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

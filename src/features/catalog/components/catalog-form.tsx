@@ -169,8 +169,8 @@ export function CatalogForm({
                   <Package className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name, SKU and organization</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name, SKU and organization</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -181,7 +181,7 @@ export function CatalogForm({
                   <Input
                     id="name" name="name" defaultValue={initialData?.name}
                     placeholder="e.g. Organic Wheat Flour" required
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
 
@@ -195,7 +195,7 @@ export function CatalogForm({
                       value={itemType}
                       onChange={(e) => setItemType(e.target.value)}
                       required
-                      className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     >
                       {availableTypes.map((type) => (
                         <option key={type} value={type}>{ITEM_TYPE_LABELS[type] ?? type}</option>
@@ -213,7 +213,7 @@ export function CatalogForm({
                     <Input
                       id="sku" name="sku" defaultValue={initialData?.sku ?? ""}
                       placeholder="e.g. WF-001"
-                      className="h-11 w-full rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 w-full rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="space-y-2">
@@ -221,7 +221,7 @@ export function CatalogForm({
                     <Input
                       id="barcode" name="barcode" defaultValue={initialData?.barcode ?? ""}
                       placeholder="e.g. 123456789012"
-                      className="h-11 w-full rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 w-full rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export function CatalogForm({
                       <select
                         id="categoryId" name="categoryId"
                         defaultValue={initialData?.categoryId ?? ""}
-                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="">No category</option>
                         {(categories ?? []).map((cat) => (
@@ -251,7 +251,7 @@ export function CatalogForm({
                       <select
                         id="brandId" name="brandId"
                         defaultValue={initialData?.brandId ?? ""}
-                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="">No brand</option>
                         {(brands ?? []).map((b) => (
@@ -269,7 +269,7 @@ export function CatalogForm({
                       <select
                         id="unitId" name="unitId"
                         defaultValue={initialData?.unitId ?? ""}
-                        className="flex h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                       >
                         <option value="">No unit</option>
                         {(units ?? []).map((u) => (
@@ -285,8 +285,8 @@ export function CatalogForm({
 
                 <div className="flex items-center gap-6 pt-2">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" name="trackStock" defaultChecked={initialData?.trackStock ?? true} className="h-4 w-4 rounded border-gray-300" />
-                    <span className="text-sm font-medium text-gray-700">Track Stock</span>
+                    <input type="checkbox" name="trackStock" defaultChecked={initialData?.trackStock ?? true} className="h-4 w-4 rounded border-input" />
+                    <span className="text-sm font-medium text-foreground">Track Stock</span>
                   </label>
                 </div>
               </div>
@@ -301,8 +301,8 @@ export function CatalogForm({
                   <FileText className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Description, image and variants</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Description, image and variants</p>
                 </div>
               </div>
 
@@ -312,7 +312,7 @@ export function CatalogForm({
                   id="description" name="description"
                   defaultValue={initialData?.description ?? ""}
                   placeholder="Optional description" rows={3}
-                  className="rounded-xl border-gray-200 h-24"
+                  className="rounded-xl border-border h-24"
                 />
               </div>
 
@@ -337,12 +337,12 @@ export function CatalogForm({
                     </Button>
                   </div>
                   {variants.length === 0 && (
-                    <p className="text-sm text-gray-400">No variants. Click &quot;Add Variant&quot; to create variants.</p>
+                    <p className="text-sm text-muted-foreground/70">No variants. Click &quot;Add Variant&quot; to create variants.</p>
                   )}
                   {variants.map((v, i) => (
-                    <div key={i} className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                    <div key={i} className="rounded-xl border border-border bg-muted p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Variant {i + 1}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Variant {i + 1}</span>
                         <Button type="button" variant="ghost" size="sm" onClick={() => removeVariant(i)} className="h-7 text-xs text-red-500 hover:text-red-700">
                           Remove
                         </Button>
@@ -351,19 +351,19 @@ export function CatalogForm({
                         <Input
                           placeholder="Variant name" value={v.name}
                           onChange={(e) => updateVariant(i, "name", e.target.value)}
-                          className="h-9 rounded-lg border-gray-200 text-sm"
+                          className="h-9 rounded-lg border-border text-sm"
                         />
                         <Input
                           placeholder="SKU" value={v.sku}
                           onChange={(e) => updateVariant(i, "sku", e.target.value)}
-                          className="h-9 rounded-lg border-gray-200 text-sm"
+                          className="h-9 rounded-lg border-border text-sm"
                         />
                       </div>
                       <div className="grid gap-3 sm:grid-cols-1">
                         <Input
                           placeholder="Barcode" value={v.barcode}
                           onChange={(e) => updateVariant(i, "barcode", e.target.value)}
-                          className="h-9 rounded-lg border-gray-200 text-sm"
+                          className="h-9 rounded-lg border-border text-sm"
                         />
                       </div>
                     </div>
@@ -419,8 +419,8 @@ export function CatalogForm({
             </DialogContent>
           </Dialog>
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (

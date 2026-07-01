@@ -35,7 +35,7 @@ const baseActions = [
   { title: "QR Menu", id: "qr-ordering", icon: QrCode, color: "text-violet-600", bg: "bg-violet-100" },
   { title: "Wallet", id: "wallet", icon: PiggyBank, color: "text-yellow-600", bg: "bg-yellow-100" },
   { title: "Reports", id: "reports", icon: BarChart3, color: "text-sky-600", bg: "bg-sky-100" },
-  { title: "Settings", id: "settings", icon: Settings, color: "text-gray-600", bg: "bg-gray-100" },
+  { title: "Settings", id: "settings", icon: Settings, color: "text-muted-foreground", bg: "bg-muted" },
 ];
 
 const advancedActions = [

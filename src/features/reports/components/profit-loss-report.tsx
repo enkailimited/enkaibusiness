@@ -28,7 +28,7 @@ export function ProfitLossReportView({ businessId }: { businessId: string }) {
       .finally(() => setLoading(false));
   }, [businessId, period]);
 
-  if (loading) return <div className="space-y-4"><div className="h-24 animate-pulse rounded-xl bg-gray-100" /><div className="h-48 animate-pulse rounded-xl bg-gray-100" /></div>;
+  if (loading) return <div className="space-y-4"><div className="h-24 animate-pulse rounded-xl bg-muted" /><div className="h-48 animate-pulse rounded-xl bg-muted" /></div>;
   if (!data) return <p className="text-sm text-muted-foreground">No data available</p>;
 
   return (
@@ -113,7 +113,7 @@ export function CashFlowReportView({ businessId }: { businessId: string }) {
       .finally(() => setLoading(false));
   }, [businessId, period]);
 
-  if (loading) return <div className="space-y-4"><div className="h-24 animate-pulse rounded-xl bg-gray-100" /><div className="h-48 animate-pulse rounded-xl bg-gray-100" /></div>;
+  if (loading) return <div className="space-y-4"><div className="h-24 animate-pulse rounded-xl bg-muted" /><div className="h-48 animate-pulse rounded-xl bg-muted" /></div>;
   if (!data) return <p className="text-sm text-muted-foreground">No data available</p>;
 
   return (

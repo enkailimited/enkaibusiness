@@ -20,17 +20,17 @@ export default async function PublicMenuPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       {/* Business Header */}
-      <div className="bg-white border-b">
+      <div className="bg-background border-b">
         <div className="mx-auto max-w-lg px-4 py-6">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
               <Store className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{menu.businessName}</h1>
-              <p className="text-sm text-gray-500">Scan to order</p>
+              <h1 className="text-xl font-bold text-foreground">{menu.businessName}</h1>
+              <p className="text-sm text-muted-foreground">Scan to order</p>
             </div>
           </div>
         </div>
@@ -40,18 +40,18 @@ export default async function PublicMenuPage({ params }: Props) {
       <div className="mx-auto max-w-lg px-4 py-6">
         {menu.items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Package className="h-12 w-12 text-gray-300 mb-3" />
-            <p className="text-gray-500">No menu items available</p>
+            <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+            <p className="text-muted-foreground">No menu items available</p>
           </div>
         ) : (
           <div className="space-y-3">
             {menu.items.map((item) => (
               <div
                 key={item.id}
-                className="flex gap-4 rounded-xl bg-white p-4 shadow-sm border border-gray-100"
+                className="flex gap-4 rounded-xl bg-background p-4 shadow-sm border border-border"
               >
                 {item.imageUrl && (
-                  <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                  <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
                     <img
                       src={item.imageUrl}
                       alt={item.name}
@@ -60,11 +60,11 @@ export default async function PublicMenuPage({ params }: Props) {
                   </div>
                 )}
                 <div className="flex min-w-0 flex-1 flex-col justify-center">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-foreground truncate">
                     {item.name}
                   </h3>
                   {item.description && (
-                    <p className="mt-0.5 text-sm text-gray-500 line-clamp-2">
+                    <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
                       {item.description}
                     </p>
                   )}
@@ -80,7 +80,7 @@ export default async function PublicMenuPage({ params }: Props) {
 
       {/* Footer */}
       <div className="mx-auto max-w-lg px-4 py-6 text-center">
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-muted-foreground/70">
           Powered by Enkai Business
         </p>
       </div>

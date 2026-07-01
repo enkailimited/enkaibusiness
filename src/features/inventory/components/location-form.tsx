@@ -79,8 +79,8 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
                   <MapPin className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Location name</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Location name</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -88,7 +88,7 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
                   <Label htmlFor="name" className="text-sm font-medium">
                     Location Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" defaultValue={location?.name ?? ""}                     placeholder="Main Warehouse" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" defaultValue={location?.name ?? ""}                     placeholder="Main Warehouse" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                   {state?.errors?.name && (
                     <p className="text-sm text-destructive">{state.errors.name[0]}</p>
                   )}
@@ -104,14 +104,14 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
                   <Navigation className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Location</h3>
-                  <p className="text-sm text-gray-500">Branch and store</p>
+                  <h3 className="font-semibold text-foreground">Location</h3>
+                  <p className="text-sm text-muted-foreground">Branch and store</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="branchId" className="text-sm font-medium">
-                    Branch <span className="text-gray-400">(Optional)</span>
+                    Branch <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Select
                     id="branchId"
@@ -120,12 +120,12 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
                     placeholder="Select a branch"
                     defaultValue={location?.branchId ?? ""}
                     onChange={(e) => { setSelectedBranchId(e.target.value); }}
-                    className="h-11 rounded-xl border-gray-200 bg-white"
+                    className="h-11 rounded-xl border-border bg-background"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="storeId" className="text-sm font-medium">
-                    Store <span className="text-gray-400">(Optional)</span>
+                    Store <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Select
                     id="storeId"
@@ -133,10 +133,10 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
                     options={storeOptions.map((s) => ({ value: s.id, label: s.name }))}
                     placeholder="Select a store"
                     defaultValue={location?.storeId ?? ""}
-                    className="h-11 rounded-xl border-gray-200 bg-white"
+                    className="h-11 rounded-xl border-border bg-background"
                   />
                   {!selectedBranch && (
-                    <p className="text-xs text-gray-400">Select a branch first to see available stores</p>
+                    <p className="text-xs text-muted-foreground/70">Select a branch first to see available stores</p>
                   )}
                 </div>
               </div>
@@ -149,8 +149,8 @@ export function LocationForm({ businessId, branches, location, onSuccess }: Loca
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (

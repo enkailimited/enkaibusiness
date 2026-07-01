@@ -38,6 +38,21 @@ enum CatalogItemType {
   MENU_ITEM
   RAW_MATERIAL
   FINISHED_GOOD
+  ADMISSION
+  FEE
+  LESSON
+  ROOM
+  PACKAGE
+  LISTING
+  LIVESTOCK
+  CROP
+  MEMBERSHIP
+  DONATION
+  APPOINTMENT
+  LAB_SERVICE
+  TRANSPORT
+  MEAL
+  LEARNING_MATERIAL
 }
 
 enum RoleScope {
@@ -112,6 +127,8 @@ enum QRCodeStatus {
   ACTIVE
   INACTIVE
   DAMAGED
+  PENDING_INSTALLATION
+  REPLACED
 }
 
 enum TicketStatus {
@@ -132,6 +149,15 @@ enum CustomerType {
   RETAIL
   WHOLESALE
   WALK_IN
+  PATIENT
+  STUDENT
+  PARENT
+  GUARDIAN
+  GUEST
+  MEMBER
+  DONOR
+  BENEFICIARY
+  CORPORATE
 }
 
 enum PricingTier {
@@ -3310,4 +3336,1044 @@ model JournalLine {
   @@index([journalEntryId])
   @@index([chartAccountId])
   @@map("journal_lines")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUSTOMER EXPERIENCE PLATFORM — Universal Customer Domain
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum CustomerAccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  VERIFIED
+  GUEST
+}
+
+enum CustomerAccountSource {
+  SELF_REGISTRATION
+  INVITATION
+  SOCIAL_LOGIN
+  OTP
+  GUEST_CHECKOUT
+  QR_SCAN
+}
+
+enum CustomerTypeUniversal {
+  RETAIL_CUSTOMER
+  WHOLESALE_BUYER
+  PARENT
+  PATIENT
+  STUDENT
+  GUARDIAN
+  RESTAURANT_GUEST
+  HOTEL_GUEST
+  BUSINESS_BUYER
+  CORPORATE_CUSTOMER
+  MEMBER
+  DONOR
+  BENEFICIARY
+}
+
+enum StorefrontStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QRExperienceStatus {
+  PENDING_INSTALLATION
+  ACTIVE
+  INACTIVE
+  DAMAGED
+  REPLACED
+}
+
+enum QRExperienceMode {
+  COMMERCE_BROWSE
+  COMMERCE_ORDER
+  RESTAURANT_MENU
+  RESTAURANT_ORDER
+  RESTAURANT_PAY
+  HEALTHCARE_APPOINTMENT
+  HEALTHCARE_QUEUE
+  HEALTHCARE_SERVICES
+  EDUCATION_ADMISSIONS
+  EDUCATION_PARENT_PORTAL
+  EDUCATION_ATTENDANCE
+  EDUCATION_FEES
+  EDUCATION_REPORTS
+  HOTEL_ROOM_SERVICE
+  HOTEL_CHECKIN
+  HOTEL_HOUSEKEEPING
+  MANUFACTURING_MACHINE
+  MANUFACTURING_MAINTENANCE
+  AGRICULTURE_FARM
+  AGRICULTURE_EQUIPMENT
+  REAL_ESTATE_PROPERTY
+  REAL_ESTATE_VIEWING
+  SERVICES_BOOKING
+  LOGISTICS_TRACKING
+  NON_PROFIT_DONATION
+  GENERAL_INFO
+}
+
+enum InstallationStatus {
+  PENDING
+  DISTRIBUTOR_ASSIGNED
+  SITE_VISIT_SCHEDULED
+  SITE_VISIT_COMPLETED
+  CONFIGURATION_IN_PROGRESS
+  CATALOG_PUBLISHED
+  PAYMENT_CONFIGURED
+  DELIVERY_CONFIGURED
+  QR_GENERATED
+  QR_PRINTED
+  QR_INSTALLED
+  STAFF_TRAINED
+  TESTING_IN_PROGRESS
+  CUSTOMER_TEST_COMPLETED
+  AWAITING_APPROVAL
+  ACTIVATED
+  DECLINED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  REFUNDED
+}
+
+enum BookingType {
+  ORDER
+  BOOKING
+  APPOINTMENT
+  RESERVATION
+  ADMISSION
+  APPLICATION
+  SERVICE_REQUEST
+  SUBSCRIPTION
+}
+
+enum CustomerWalletStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  DIAMOND
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum CustomerNotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+// ─── CustomerAccount ──────────────────────────────────────────────────────────
+
+model CustomerAccount {
+  id                String                @id @default(uuid()) @db.Uuid
+  email             String?
+  phone             String?
+  firstName         String                @map("first_name")
+  lastName          String?               @map("last_name")
+  avatarUrl         String?               @map("avatar_url")
+  locale            String                @default("en")
+  timezone          String                @default("Africa/Dar_es_Salaam")
+  status            CustomerAccountStatus @default(ACTIVE)
+  source            CustomerAccountSource @default(SELF_REGISTRATION)
+  customerType      CustomerTypeUniversal @default(RETAIL_CUSTOMER)
+  passwordHash      String?               @map("password_hash")
+  otpSecret         String?               @map("otp_secret")
+  emailVerified     Boolean               @default(false) @map("email_verified")
+  phoneVerified     Boolean               @default(false) @map("phone_verified")
+  socialProvider    String?               @map("social_provider")
+  socialId          String?               @map("social_id")
+  metadata          Json?                 @default("{}")
+  lastLoginAt       DateTime?             @map("last_login_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  addresses         CustomerAddress[]
+  wallet            CustomerWallet?
+  loyaltyAccounts   LoyaltyAccount[]
+  wishlist          CustomerWishlist[]
+  favorites         CustomerFavorite[]
+  reviews           CustomerReview[]
+  bookings          Booking[]
+  referralsMade     CustomerReferral[]    @relation("ReferralMade")
+  referralsReceived CustomerReferral[]    @relation("ReferralReceived")
+  notifications     CustomerNotification[]
+  sessions          CustomerSession[]
+
+  @@unique([email])
+  @@unique([phone])
+  @@unique([socialProvider, socialId])
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@map("customer_accounts")
+}
+
+// ─── CustomerAddress ──────────────────────────────────────────────────────────
+
+model CustomerAddress {
+  id            String  @id @default(uuid()) @db.Uuid
+  accountId     String  @map("account_id") @db.Uuid
+  label         String  @default("Home")
+  line1         String
+  line2         String?
+  city          String?
+  state         String?
+  postalCode    String? @map("postal_code")
+  country       String  @default("Tanzania")
+  latitude      Float?
+  longitude     Float?
+  isDefault     Boolean @default(false) @map("is_default")
+  isBilling     Boolean @default(false) @map("is_billing")
+  isShipping    Boolean @default(true) @map("is_shipping")
+  phone         String?
+  instructions  String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  account CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("customer_addresses")
+}
+
+// ─── CustomerWallet ───────────────────────────────────────────────────────────
+
+model CustomerWallet {
+  id             String               @id @default(uuid()) @db.Uuid
+  accountId      String               @unique @map("account_id") @db.Uuid
+  businessId     String               @map("business_id") @db.Uuid
+  balance        Decimal              @default(0) @db.Decimal(15, 2)
+  totalDeposited Decimal              @default(0) @map("total_deposited") @db.Decimal(15, 2)
+  totalSpent     Decimal              @default(0) @map("total_spent") @db.Decimal(15, 2)
+  currency       String               @default("TZS")
+  status         CustomerWalletStatus @default(ACTIVE)
+  metadata       Json?                @default("{}")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+
+  account      CustomerAccount          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business     Business                 @relation(fields: [businessId], references: [id])
+  transactions CustomerWalletTransaction[]
+
+  @@unique([accountId, businessId])
+  @@index([accountId])
+  @@index([businessId])
+  @@map("customer_wallets")
+}
+
+// ─── CustomerWalletTransaction ────────────────────────────────────────────────
+
+model CustomerWalletTransaction {
+  id            String   @id @default(uuid()) @db.Uuid
+  walletId      String   @map("wallet_id") @db.Uuid
+  type          String   // deposit, payment, refund, withdrawal, bonus, adjustment
+  amount        Decimal  @db.Decimal(15, 2)
+  balanceBefore Decimal  @map("balance_before") @db.Decimal(15, 2)
+  balanceAfter  Decimal  @map("balance_after") @db.Decimal(15, 2)
+  reference     String?
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id")
+  description   String?
+  metadata      Json?    @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  wallet CustomerWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([createdAt])
+  @@map("customer_wallet_transactions")
+}
+
+// ─── LoyaltyAccount ───────────────────────────────────────────────────────────
+
+model LoyaltyAccount {
+  id               String      @id @default(uuid()) @db.Uuid
+  accountId        String      @map("account_id") @db.Uuid
+  businessId       String      @map("business_id") @db.Uuid
+  tier             LoyaltyTier @default(BRONZE)
+  points           Int         @default(0)
+  lifetimePoints   Int         @default(0) @map("lifetime_points")
+  pointsExpireAt   DateTime?   @map("points_expire_at")
+  enrolledAt       DateTime    @default(now()) @map("enrolled_at")
+  lastActivityAt   DateTime?   @map("last_activity_at")
+  metadata         Json?       @default("{}")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  account      CustomerAccount          @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business     Business                 @relation(fields: [businessId], references: [id])
+  transactions LoyaltyPointTransaction[]
+  rewards      LoyaltyReward[]
+
+  @@unique([accountId, businessId])
+  @@index([accountId])
+  @@index([businessId])
+  @@index([tier])
+  @@map("loyalty_accounts")
+}
+
+// ─── LoyaltyPointTransaction ──────────────────────────────────────────────────
+
+model LoyaltyPointTransaction {
+  id              String   @id @default(uuid()) @db.Uuid
+  accountId       String   @map("account_id") @db.Uuid
+  points          Int
+  type            String   // earned, redeemed, expired, adjusted, bonus
+  balanceBefore   Int      @map("balance_before")
+  balanceAfter    Int      @map("balance_after")
+  reference       String?
+  referenceType   String?  @map("reference_type")
+  referenceId     String?  @map("reference_id")
+  description     String?
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  account LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([createdAt])
+  @@map("loyalty_point_transactions")
+}
+
+// ─── LoyaltyReward ────────────────────────────────────────────────────────────
+
+model LoyaltyReward {
+  id              String    @id @default(uuid()) @db.Uuid
+  accountId       String    @map("account_id") @db.Uuid
+  businessId      String    @map("business_id") @db.Uuid
+  name            String
+  description     String?
+  pointsRequired  Int       @map("points_required")
+  rewardType      String    // discount, free_item, cashback, voucher, product
+  rewardValue     String?   // JSON
+  isRedeemed      Boolean   @default(false) @map("is_redeemed")
+  redeemedAt      DateTime? @map("redeemed_at")
+  expiresAt       DateTime? @map("expires_at")
+  metadata        Json?     @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  account  LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business Business       @relation(fields: [businessId], references: [id])
+
+  @@index([accountId])
+  @@index([businessId])
+  @@map("loyalty_rewards")
+}
+
+// ─── CustomerReferral ─────────────────────────────────────────────────────────
+
+model CustomerReferral {
+  id              String   @id @default(uuid()) @db.Uuid
+  referrerId      String   @map("referrer_id") @db.Uuid
+  referredId      String?  @map("referred_id") @db.Uuid
+  code            String   @unique
+  email           String?
+  phone           String?
+  status          String   @default("pending")
+  referrerPoints  Int      @default(0) @map("referrer_points")
+  referredPoints  Int      @default(0) @map("referred_points")
+  convertedAt     DateTime? @map("converted_at")
+  rewardedAt      DateTime? @map("rewarded_at")
+  expiresAt       DateTime? @map("expires_at")
+  metadata        Json?    @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  referrer CustomerAccount @relation("ReferralMade", fields: [referrerId], references: [id])
+  referred CustomerAccount? @relation("ReferralReceived", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@index([code])
+  @@index([status])
+  @@map("customer_referrals")
+}
+
+// ─── CustomerWishlist ─────────────────────────────────────────────────────────
+
+model CustomerWishlist {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  catalogItemId String   @map("catalog_item_id") @db.Uuid
+  notes         String?
+  priority      Int      @default(0)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem     @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, catalogItemId])
+  @@index([accountId])
+  @@map("customer_wishlist")
+}
+
+// ─── CustomerFavorite ─────────────────────────────────────────────────────────
+
+model CustomerFavorite {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountId     String   @map("account_id") @db.Uuid
+  catalogItemId String   @map("catalog_item_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem     @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, catalogItemId])
+  @@index([accountId])
+  @@map("customer_favorites")
+}
+
+// ─── CustomerReview ───────────────────────────────────────────────────────────
+
+model CustomerReview {
+  id            String       @id @default(uuid()) @db.Uuid
+  accountId     String       @map("account_id") @db.Uuid
+  businessId    String       @map("business_id") @db.Uuid
+  catalogItemId String?      @map("catalog_item_id") @db.Uuid
+  branchId      String?      @map("branch_id") @db.Uuid
+  bookingId     String?      @map("booking_id") @db.Uuid
+  rating        Int
+  title         String?
+  body          String?
+  photos        Json?        @default("[]")
+  status        ReviewStatus @default(PENDING)
+  isVerified    Boolean      @default(false) @map("is_verified")
+  helpfulCount  Int          @default(0) @map("helpful_count")
+  metadata      Json?        @default("{}")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  business    Business        @relation(fields: [businessId], references: [id])
+  catalogItem CatalogItem?    @relation(fields: [catalogItemId], references: [id])
+  branch      Branch?         @relation(fields: [branchId], references: [id])
+
+  @@index([businessId])
+  @@index([catalogItemId])
+  @@index([accountId])
+  @@index([status])
+  @@map("customer_reviews")
+}
+
+// ─── CustomerNotification ─────────────────────────────────────────────────────
+
+model CustomerNotification {
+  id            String    @id @default(uuid()) @db.Uuid
+  accountId     String    @map("account_id") @db.Uuid
+  businessId    String?   @map("business_id") @db.Uuid
+  title         String
+  body          String?
+  type          String    // order_update, booking_reminder, promotion, loyalty, system
+  channel       CustomerNotificationChannel @default(IN_APP)
+  referenceType String?   @map("reference_type")
+  referenceId   String?   @map("reference_id")
+  imageUrl      String?   @map("image_url")
+  actionUrl     String?   @map("action_url")
+  isRead        Boolean   @default(false) @map("is_read")
+  readAt        DateTime? @map("read_at")
+  sentAt        DateTime? @map("sent_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  metadata      Json?     @default("{}")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  account CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, isRead])
+  @@index([businessId])
+  @@index([createdAt])
+  @@map("customer_notifications")
+}
+
+// ─── CustomerSession ──────────────────────────────────────────────────────────
+
+model CustomerSession {
+  id            String    @id @default(uuid()) @db.Uuid
+  accountId     String    @map("account_id") @db.Uuid
+  businessId    String?   @map("business_id") @db.Uuid
+  branchId      String?   @map("branch_id") @db.Uuid
+  token         String    @unique
+  refreshToken  String?   @unique @map("refresh_token")
+  ipAddress     String?   @map("ip_address")
+  userAgent     String?   @map("user_agent")
+  deviceId      String?   @map("device_id")
+  deviceType    String?   @map("device_type")
+  isActive      Boolean   @default(true) @map("is_active")
+  expiresAt     DateTime  @map("expires_at")
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  account CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([token])
+  @@index([isActive, expiresAt])
+  @@map("customer_sessions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STOREFRONT DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Storefront ───────────────────────────────────────────────────────────────
+
+model Storefront {
+  id              String           @id @default(uuid()) @db.Uuid
+  businessId      String           @unique @map("business_id") @db.Uuid
+  subdomain       String           @unique
+  customDomain    String?          @unique @map("custom_domain")
+  name            String
+  tagline         String?
+  description     String?
+  logoUrl         String?          @map("logo_url")
+  faviconUrl      String?          @map("favicon_url")
+  ogImageUrl      String?          @map("og_image_url")
+  primaryColor    String           @default("#3B82F6") @map("primary_color")
+  secondaryColor  String           @default("#1E40AF") @map("secondary_color")
+  accentColor     String           @default("#F59E0B") @map("accent_color")
+  fontFamily      String           @default("Inter") @map("font_family")
+  status          StorefrontStatus @default(DRAFT)
+  isDefault       Boolean          @default(false) @map("is_default")
+  locale          String           @default("en")
+  currency        String           @default("TZS")
+  language        Json             @default("[\"en\", \"sw\"]")
+  seoTitle        String?          @map("seo_title")
+  seoDescription  String?          @map("seo_description")
+  announcement    String?
+  announcementEnabled Boolean       @default(false) @map("announcement_enabled")
+  showPrices      Boolean          @default(true) @map("show_prices")
+  enableCart      Boolean          @default(true) @map("enable_cart")
+  enableBooking   Boolean          @default(true) @map("enable_booking")
+  enableChat      Boolean          @default(false) @map("enable_chat")
+  enableReviews   Boolean          @default(true) @map("enable_reviews")
+  enableAiAssistant Boolean        @default(false) @map("enable_ai_assistant")
+  showStock       Boolean          @default(false) @map("show_stock")
+  requireAuth     Boolean          @default(false) @map("require_auth")
+  socialLinks     Json?            @default("{}") @map("social_links")
+  metadata        Json?            @default("{}")
+  publishedAt     DateTime?        @map("published_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  themes   StorefrontTheme[]
+
+  @@index([subdomain])
+  @@index([customDomain])
+  @@index([businessId])
+  @@map("storefronts")
+}
+
+// ─── StorefrontTheme ──────────────────────────────────────────────────────────
+
+model StorefrontTheme {
+  id              String   @id @default(uuid()) @db.Uuid
+  storefrontId    String   @map("storefront_id") @db.Uuid
+  name            String
+  isActive        Boolean  @default(false) @map("is_active")
+  layout          String   @default("modern")
+  headerStyle     String   @default("standard")
+  footerStyle     String   @default("standard")
+  cardStyle       String   @default("rounded")
+  animation       String   @default("fade")
+  css             String?
+  metadata        Json?    @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@index([storefrontId])
+  @@map("storefront_themes")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// QR EXPERIENCE DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── QRExperience ─────────────────────────────────────────────────────────────
+
+model QRExperience {
+  id              String              @id @default(uuid()) @db.Uuid
+  businessId      String              @map("business_id") @db.Uuid
+  branchId        String?             @map("branch_id") @db.Uuid
+  code            String              @unique
+  label           String?
+  mode            QRExperienceMode
+  status          QRExperienceStatus  @default(PENDING_INSTALLATION)
+  destinationUrl  String?             @map("destination_url")
+  scanCount       Int                 @default(0) @map("scan_count")
+  lastScannedAt   DateTime?           @map("last_scanned_at")
+  metadata        Json?               @default("{}")
+  activatedAt     DateTime?           @map("activated_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  business     Business              @relation(fields: [businessId], references: [id])
+  branch       Branch?               @relation(fields: [branchId], references: [id])
+  installation QRExperienceInstallation?
+
+  @@index([businessId])
+  @@index([branchId])
+  @@index([status])
+  @@index([mode])
+  @@map("qr_experiences")
+}
+
+// ─── QRExperienceInstallation ─────────────────────────────────────────────────
+
+model QRExperienceInstallation {
+  id              String   @id @default(uuid()) @db.Uuid
+  experienceId    String   @unique @map("experience_id") @db.Uuid
+  printedBy       String?  @map("printed_by")
+  printedAt       DateTime? @map("printed_at")
+  installedBy     String   @map("installed_by")
+  installedAt     DateTime @default(now()) @map("installed_at")
+  location        String?
+  locationPhoto   String?  @map("location_photo")
+  material        String   @default("vinyl")
+  size            String   @default("8cm x 8cm")
+  orientation     String   @default("portrait")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  experience QRExperience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@map("qr_experience_installations")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INSTALLATION MANAGEMENT DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum InstallationType {
+  NEW_BUSINESS
+  NEW_BRANCH
+  UPGRADE
+  MAINTENANCE
+  REPLACEMENT
+  REINSTALLATION
+}
+
+// ─── InstallationTicket ───────────────────────────────────────────────────────
+
+model InstallationTicket {
+  id                String             @id @default(uuid()) @db.Uuid
+  businessId        String             @map("business_id") @db.Uuid
+  branchId          String?            @map("branch_id") @db.Uuid
+  ticketNumber      String             @unique @map("ticket_number")
+  type              InstallationType   @default(NEW_BUSINESS)
+  status            InstallationStatus @default(PENDING)
+  distributorId     String?            @map("distributor_id") @db.Uuid
+  requestedById     String             @map("requested_by") @db.Uuid
+  assignedAt        DateTime?          @map("assigned_at")
+  siteVisitDate     DateTime?          @map("site_visit_date")
+  siteVisitNotes    String?            @map("site_visit_notes")
+  verificationNotes String?            @map("verification_notes")
+  ownerApproved     Boolean            @default(false) @map("owner_approved")
+  ownerApprovedAt   DateTime?          @map("owner_approved_at")
+  activatedAt       DateTime?          @map("activated_at")
+  metadata          Json?              @default("{}")
+  notes             String?
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  business        Business              @relation(fields: [businessId], references: [id])
+  branch          Branch?               @relation(fields: [branchId], references: [id])
+  distributor     Distributor?          @relation(fields: [distributorId], references: [id])
+  tasks           InstallationTask[]
+  photos          InstallationPhoto[]
+  trainingRecords InstallationTraining[]
+  verifications   InstallationVerification[]
+
+  @@index([businessId])
+  @@index([distributorId])
+  @@index([status])
+  @@index([ticketNumber])
+  @@map("installation_tickets")
+}
+
+// ─── InstallationTask ─────────────────────────────────────────────────────────
+
+model InstallationTask {
+  id              String    @id @default(uuid()) @db.Uuid
+  ticketId        String    @map("ticket_id") @db.Uuid
+  name            String
+  description     String?
+  category        String    // setup, configuration, catalog, payment, delivery, qr, training, testing
+  sortOrder       Int       @default(0) @map("sort_order")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     DateTime? @map("completed_at")
+  completedById   String?   @map("completed_by") @db.Uuid
+  notes           String?
+  metadata        Json?     @default("{}")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([category])
+  @@map("installation_tasks")
+}
+
+// ─── InstallationPhoto ────────────────────────────────────────────────────────
+
+model InstallationPhoto {
+  id          String   @id @default(uuid()) @db.Uuid
+  ticketId    String   @map("ticket_id") @db.Uuid
+  url         String
+  caption     String?
+  category    String   // site_visit, qr_installation, training, verification, completion
+  uploadedBy  String   @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("installation_photos")
+}
+
+// ─── InstallationTraining ─────────────────────────────────────────────────────
+
+model InstallationTraining {
+  id              String    @id @default(uuid()) @db.Uuid
+  ticketId        String    @map("ticket_id") @db.Uuid
+  topic           String
+  description     String?
+  trainerId       String    @map("trainer_id") @db.Uuid
+  traineeId       String?   @map("trainee_id") @db.Uuid
+  trainedStaff    Int       @default(0) @map("trained_staff")
+  durationMinutes Int       @default(60) @map("duration_minutes")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     DateTime? @map("completed_at")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("installation_training")
+}
+
+// ─── InstallationVerification ─────────────────────────────────────────────────
+
+model InstallationVerification {
+  id              String    @id @default(uuid()) @db.Uuid
+  ticketId        String    @map("ticket_id") @db.Uuid
+  type            String    // business_verification, customer_test, owner_approval
+  verifiedById    String    @map("verified_by") @db.Uuid
+  isApproved      Boolean   @default(false) @map("is_approved")
+  notes           String?
+  metadata        Json?     @default("{}")
+  verifiedAt      DateTime  @default(now()) @map("verified_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("installation_verifications")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISTRIBUTOR DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum DistributorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BUSY
+  AVAILABLE
+}
+
+// ─── Distributor ──────────────────────────────────────────────────────────────
+
+model Distributor {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @unique @map("user_id") @db.Uuid
+  employeeCode    String?           @unique @map("employee_code")
+  firstName       String            @map("first_name")
+  lastName        String            @map("last_name")
+  email           String?
+  phone           String?
+  region          String?
+  city            String?
+  specialization  String?
+  status          DistributorStatus @default(ACTIVE)
+  maxAssignments  Int               @default(5) @map("max_assignments")
+  currentLoad     Int               @default(0) @map("current_load")
+  rating          Float             @default(0)
+  totalInstallations Int            @default(0) @map("total_installations")
+  metadata        Json?             @default("{}")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  user         User                  @relation(fields: [userId], references: [id])
+  tickets      InstallationTicket[]
+  assignments  DistributorAssignment[]
+
+  @@index([region])
+  @@index([status])
+  @@index([userId])
+  @@map("distributors")
+}
+
+// ─── DistributorAssignment ────────────────────────────────────────────────────
+
+model DistributorAssignment {
+  id              String    @id @default(uuid()) @db.Uuid
+  distributorId   String    @map("distributor_id") @db.Uuid
+  ticketId        String    @unique @map("ticket_id") @db.Uuid
+  assignedById    String    @map("assigned_by") @db.Uuid
+  reason          String?
+  priority        String    @default("normal")
+  scheduledDate   DateTime? @map("scheduled_date")
+  completedAt     DateTime? @map("completed_at")
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  distributor Distributor         @relation(fields: [distributorId], references: [id])
+  ticket      InstallationTicket  @relation(fields: [ticketId], references: [id])
+
+  @@index([distributorId])
+  @@index([ticketId])
+  @@map("distributor_assignments")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOKING / ORDERING DOMAIN (Universal)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Booking ──────────────────────────────────────────────────────────────────
+
+model Booking {
+  id                String       @id @default(uuid()) @db.Uuid
+  accountId         String       @map("account_id") @db.Uuid
+  businessId        String       @map("business_id") @db.Uuid
+  branchId          String?      @map("branch_id") @db.Uuid
+  type              BookingType
+  status            BookingStatus @default(PENDING)
+  bookingNumber     String       @unique @map("booking_number")
+  title             String?
+  description       String?
+  quantity          Int          @default(1)
+  startTime         DateTime?    @map("start_time")
+  endTime           DateTime?    @map("end_time")
+  durationMinutes   Int?         @map("duration_minutes")
+  partySize         Int?         @map("party_size")
+  resourceId        String?      @map("resource_id")
+  resourceType      String?      @map("resource_type")
+  catalogItemId     String?      @map("catalog_item_id") @db.Uuid
+  subtotal          Decimal?     @db.Decimal(15, 2)
+  discount          Decimal?     @default(0) @db.Decimal(15, 2)
+  tax               Decimal?     @default(0) @db.Decimal(15, 2)
+  total             Decimal?     @db.Decimal(15, 2)
+  currency          String       @default("TZS")
+  paidAmount        Decimal?     @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  balanceDue        Decimal?     @default(0) @map("balance_due") @db.Decimal(15, 2)
+  notes             String?
+  specialRequests   String?      @map("special_requests")
+  metadata          Json?        @default("{}")
+  checkedInAt       DateTime?    @map("checked_in_at")
+  completedAt       DateTime?    @map("completed_at")
+  cancelledAt       DateTime?    @map("cancelled_at")
+  cancellationReason String?     @map("cancellation_reason")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  account      CustomerAccount @relation(fields: [accountId], references: [id])
+  business     Business        @relation(fields: [businessId], references: [id])
+  branch       Branch?         @relation(fields: [branchId], references: [id])
+  catalogItem  CatalogItem?    @relation(fields: [catalogItemId], references: [id])
+  items        BookingItem[]
+  reviews      CustomerReview[]
+
+  @@index([accountId])
+  @@index([businessId])
+  @@index([branchId])
+  @@index([status])
+  @@index([startTime])
+  @@index([bookingNumber])
+  @@map("bookings")
+}
+
+// ─── BookingItem ──────────────────────────────────────────────────────────────
+
+model BookingItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  bookingId     String   @map("booking_id") @db.Uuid
+  catalogItemId String   @map("catalog_item_id") @db.Uuid
+  variantId     String?  @map("variant_id") @db.Uuid
+  name          String   @map("name")
+  quantity      Decimal  @db.Decimal(15, 2)
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(15, 2)
+  discount      Decimal  @default(0) @db.Decimal(15, 2)
+  subtotal      Decimal  @db.Decimal(15, 2)
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  booking     Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  catalogItem CatalogItem @relation(fields: [catalogItemId], references: [id])
+
+  @@index([bookingId])
+  @@map("booking_items")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DELIVERY ZONE DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── DeliveryZone ─────────────────────────────────────────────────────────────
+
+model DeliveryZone {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessId      String   @map("business_id") @db.Uuid
+  branchId        String?  @map("branch_id") @db.Uuid
+  name            String
+  description     String?
+  boundaries      Json?    @default("{}")
+  cities          Json?    @default("[]")
+  postalCodes     Json?    @map("postal_codes") @default("[]")
+  minOrderAmount  Decimal? @map("min_order_amount") @db.Decimal(15, 2)
+  deliveryFee     Decimal? @map("delivery_fee") @db.Decimal(15, 2)
+  freeDeliveryMin Decimal? @map("free_delivery_min") @db.Decimal(15, 2)
+  estimatedTime   Int?     @map("estimated_time")
+  isActive        Boolean  @default(true) @map("is_active")
+  sortOrder       Int      @default(0) @map("sort_order")
+  metadata        Json?    @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+
+  @@unique([businessId, name])
+  @@index([businessId])
+  @@map("delivery_zones")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENHANCED CRM DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum CRMPipelineStage {
+  LEAD
+  CONTACTED
+  QUALIFIED
+  DEMO_SCHEDULED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+  INSTALLED
+  ACTIVATED
+  CUSTOMER_SUCCESS
+  RENEWAL
+  CHURNED
+}
+
+// ─── CRMPipeline ──────────────────────────────────────────────────────────────
+
+model CRMPipeline {
+  id          String          @id @default(uuid()) @db.Uuid
+  businessId  String          @map("business_id") @db.Uuid
+  name        String
+  description String?
+  stages      Json            @default("[]")
+  isActive    Boolean         @default(true) @map("is_active")
+  isDefault   Boolean         @default(false) @map("is_default")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  deals    CRMDeal[]
+
+  @@index([businessId])
+  @@map("crm_pipelines")
+}
+
+// ─── CRMDeal ──────────────────────────────────────────────────────────────────
+
+model CRMDeal {
+  id            String    @id @default(uuid()) @db.Uuid
+  pipelineId    String    @map("pipeline_id") @db.Uuid
+  businessId    String    @map("business_id") @db.Uuid
+  contactId     String?   @map("contact_id") @db.Uuid
+  accountId     String?   @map("account_id") @db.Uuid
+  leadId        String?   @map("lead_id") @db.Uuid
+  title         String
+  description   String?
+  value         Decimal?  @db.Decimal(15, 2)
+  currency      String    @default("TZS")
+  stage         CRMPipelineStage @default(LEAD)
+  probability   Int       @default(0)
+  expectedCloseDate DateTime? @map("expected_close_date") @db.Date
+  assignedToId  String?   @map("assigned_to") @db.Uuid
+  notes         String?
+  metadata      Json?     @default("{}")
+  wonAt         DateTime? @map("won_at")
+  lostAt        DateTime? @map("lost_at")
+  lostReason    String?   @map("lost_reason")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  pipeline CRMPipeline @relation(fields: [pipelineId], references: [id])
+  business Business    @relation(fields: [businessId], references: [id])
+  contact  Contact?    @relation(fields: [contactId], references: [id])
+
+  @@index([pipelineId])
+  @@index([businessId])
+  @@index([stage])
+  @@index([assignedToId])
+  @@map("crm_deals")
+}
+
+// ─── CRMDealActivity ──────────────────────────────────────────────────────────
+
+model CRMDealActivity {
+  id          String   @id @default(uuid()) @db.Uuid
+  dealId      String   @map("deal_id") @db.Uuid
+  type        String   // call, email, meeting, note, task, demo, proposal
+  subject     String
+  description String?
+  performedById String? @map("performed_by") @db.Uuid
+  scheduledAt DateTime? @map("scheduled_at")
+  completedAt DateTime? @map("completed_at")
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  deal CRMDeal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([performedById])
+  @@map("crm_deal_activities")
 }

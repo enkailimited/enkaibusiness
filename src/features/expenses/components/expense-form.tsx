@@ -53,8 +53,8 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                   <Receipt className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Expense type and amount</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Expense type and amount</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -66,7 +66,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                     id="categoryId"
                     name="categoryId"
                     required
-                    className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   >
                     <option value="">Select a type</option>
                     {categories.map((c) => (
@@ -89,7 +89,7 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                     min="0.01"
                     required
                     placeholder="e.g. 50000"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   {state?.errors?.amount && (
                     <p className="text-sm text-red-500">{state.errors.amount[0]}</p>
@@ -106,42 +106,42 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
                   <FileText className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Date, description and payee</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Date, description and payee</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="expenseDate" className="text-sm font-medium">
-                    Date <span className="text-gray-400">(Optional)</span>
+                    Date <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="expenseDate"
                     name="expenseDate"
                     type="date"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Description <span className="text-gray-400">(Optional)</span>
+                    Description <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <textarea
                     id="description"
                     name="description"
                     placeholder="Additional info about this expense"
-                    className="flex min-h-[80px] w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex min-h-[80px] w-full rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="paidTo" className="text-sm font-medium">
-                    Paid To <span className="text-gray-400">(Optional)</span>
+                    Paid To <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <Input
                     id="paidTo"
                     name="paidTo"
                     placeholder="Vendor or recipient name"
-                    className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                 </div>
               </div>
@@ -167,13 +167,13 @@ export function ExpenseForm({ businessId, categories }: ExpenseFormProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={() => setStep((s) => Math.max(0, s - 1))}
               disabled={step === 0}
-              className="h-11 rounded-xl border-gray-200 px-6"
+              className="h-11 rounded-xl border-border px-6"
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back

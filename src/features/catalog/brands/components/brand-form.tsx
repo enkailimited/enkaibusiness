@@ -75,8 +75,8 @@ export function BrandForm({ mode, businessId, initialData, onSuccess }: BrandFor
                   <Tag className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Brand name</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Brand name</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -84,7 +84,7 @@ export function BrandForm({ mode, businessId, initialData, onSuccess }: BrandFor
                   <Label htmlFor="name" className="text-sm font-medium">
                     Brand Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Nestlé" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Nestlé" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -97,22 +97,22 @@ export function BrandForm({ mode, businessId, initialData, onSuccess }: BrandFor
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Description and image</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Description and image</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Description <span className="text-gray-400">(Optional)</span>
+                    Description <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Textarea id="description" name="description" defaultValue={initialData?.description ?? ""}                     placeholder="Optional description" rows={3} className="rounded-xl border-gray-200 h-24" />
+                  <Textarea id="description" name="description" defaultValue={initialData?.description ?? ""}                     placeholder="Optional description" rows={3} className="rounded-xl border-border h-24" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="logoUrl" className="text-sm font-medium">
-                    Image URL <span className="text-gray-400">(Optional)</span>
+                    Image URL <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Input id="logoUrl" name="logoUrl" defaultValue={initialData?.logoUrl ?? ""} placeholder="https://example.com/logo.png" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="logoUrl" name="logoUrl" defaultValue={initialData?.logoUrl ?? ""} placeholder="https://example.com/logo.png" className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -130,8 +130,8 @@ export function BrandForm({ mode, businessId, initialData, onSuccess }: BrandFor
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (

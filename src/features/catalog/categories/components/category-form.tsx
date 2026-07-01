@@ -89,8 +89,8 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
                   <FolderTree className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name and parent category</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name and parent category</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -98,13 +98,13 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
                   <Label htmlFor="name" className="text-sm font-medium">
                     Category Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Grains" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" defaultValue={initialData?.name}                     placeholder="e.g. Grains" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parentId" className="text-sm font-medium">
-                    Parent Category <span className="text-gray-400">(Optional)</span>
+                    Parent Category <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <select id="parentId" name="parentId" defaultValue={initialData?.parentId ?? ""} className="flex h-11 w-full rounded-xl border border-gray-200 bg-white px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                  <select id="parentId" name="parentId" defaultValue={initialData?.parentId ?? ""} className="flex h-11 w-full rounded-xl border border-border bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
                     <option value="">None (top level)</option>
                     {availableParents.map((cat) => (
                       <option key={cat.id} value={cat.id}>
@@ -124,26 +124,26 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Sort order, description and image</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Sort order, description and image</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="sortOrder" className="text-sm font-medium">
-                    Sort Order <span className="text-gray-400">(Optional)</span>
+                    Sort Order <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Input id="sortOrder" name="sortOrder" type="number" min="0" defaultValue={initialData?.sortOrder ?? 0} className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="sortOrder" name="sortOrder" type="number" min="0" defaultValue={initialData?.sortOrder ?? 0} className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Description <span className="text-gray-400">(Optional)</span>
+                    Description <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Textarea id="description" name="description" defaultValue={initialData?.description ?? ""}                     placeholder="Optional description" rows={3} className="rounded-xl border-gray-200 h-24" />
+                  <Textarea id="description" name="description" defaultValue={initialData?.description ?? ""}                     placeholder="Optional description" rows={3} className="rounded-xl border-border h-24" />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
-                    Category Image <span className="text-gray-400">(Optional)</span>
+                    Category Image <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
                   <input type="hidden" name="imageUrl" value={imageUrl} />
                   <ImageUploader
@@ -180,8 +180,8 @@ export function CategoryForm({ mode, businessId, categories, initialData, onSucc
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (

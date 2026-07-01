@@ -49,8 +49,8 @@ export function StoreForm({ branchId }: StoreFormProps) {
                   <Store className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Basic Info</h3>
-                  <p className="text-sm text-gray-500">Name and code</p>
+                  <h3 className="font-semibold text-foreground">Basic Info</h3>
+                  <p className="text-sm text-muted-foreground">Name and code</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -58,13 +58,13 @@ export function StoreForm({ branchId }: StoreFormProps) {
                   <Label htmlFor="name" className="text-sm font-medium">
                     Store Name <span className="text-red-500">*</span>
                   </Label>
-                  <Input id="name" name="name" required className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="name" name="name" required className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="code" className="text-sm font-medium">
-                    Code <span className="text-gray-400">(Optional)</span>
+                    Code <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Input id="code" name="code" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="code" name="code" className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -77,16 +77,16 @@ export function StoreForm({ branchId }: StoreFormProps) {
                   <FileText className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Details</h3>
-                  <p className="text-sm text-gray-500">Store details</p>
+                  <h3 className="font-semibold text-foreground">Details</h3>
+                  <p className="text-sm text-muted-foreground">Store details</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">
-                    Description <span className="text-gray-400">(Optional)</span>
+                    Description <span className="text-muted-foreground/70">(Optional)</span>
                   </Label>
-                  <Input id="description" name="description" className="h-11 rounded-xl border-gray-200 bg-white transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+                  <Input id="description" name="description" className="h-11 rounded-xl border-border bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
                 </div>
               </div>
             </div>
@@ -98,8 +98,8 @@ export function StoreForm({ branchId }: StoreFormProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-gray-200 px-6">
+          <div className="flex items-center justify-between border-t border-border pt-6">
+            <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0} className="h-11 rounded-xl border-border px-6">
               <ChevronLeft className="mr-2 h-4 w-4" /> Back
             </Button>
             {step < STEPS.length - 1 ? (
