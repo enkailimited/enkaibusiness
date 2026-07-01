@@ -99,7 +99,7 @@ export function PurchaseList({ businessId, workspaceId }: PurchaseListProps) {
       key: "balanceDue",
       header: "Balance",
       cell: (purchase: PurchaseListItem) => (
-        <span className={purchase.balanceDue > 0 ? "text-red-600 font-medium" : "text-muted-foreground"}>
+        <span className={purchase.balanceDue > 0 ? "text-destructive font-medium" : "text-muted-foreground"}>
           {formatCurrency(purchase.balanceDue)}
         </span>
       ),

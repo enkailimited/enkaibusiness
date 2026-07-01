@@ -79,7 +79,7 @@ export function GoodsReceivedForm({ workspaceId, businessId, purchaseOrderId }: 
           )}
 
           {state?.message && !state.errors && (
-            <p className={state.success ? "text-sm text-green-600" : "text-sm text-destructive"}>
+            <p className={state.success ? "text-sm text-success" : "text-sm text-destructive"}>
               {state.message}
             </p>
           )}

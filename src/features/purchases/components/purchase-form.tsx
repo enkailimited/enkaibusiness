@@ -110,8 +110,8 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
           <div className={cn(step !== 0 && "hidden")}>
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
-                  <ShoppingBag className="h-5 w-5 text-blue-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <ShoppingBag className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Basic Info</h3>
@@ -129,7 +129,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                         id="supplierId"
                         name="supplierId"
                         required
-                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 flex-1 rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                       >
                         <option value="">Select a supplier</option>
                         {suppliers.map((s) => (
@@ -150,7 +150,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                       name="purchaseDate"
                       type="date"
                       defaultValue={new Date().toISOString().split("T")[0]}
-                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                     />
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                     id="reference"
                     name="reference"
                     placeholder="e.g. PO-001"
-                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -172,7 +172,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                   <select
                     id="status"
                     name="status"
-                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                   >
                     {PURCHASE_STATUSES.map((s) => (
                       <option key={s.value} value={s.value}>{s.label}</option>
@@ -186,8 +186,8 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
           <div className={cn(step !== 1 && "hidden")}>
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-100">
-                  <Package className="h-5 w-5 text-purple-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-color/10">
+                  <Package className="h-5 w-5 text-accent-color" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Products</h3>
@@ -213,7 +213,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                       <select
                         value={item.catalogItemId}
                         onChange={(e) => updateItem(item.key, "catalogItemId", e.target.value)}
-                        className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-1 text-sm shadow-sm transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                       >
                         <option value="">Select a product</option>
                         {catalogItems.map((c) => (
@@ -231,7 +231,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                         min="0.01"
                         value={item.quantity}
                         onChange={(e) => updateItem(item.key, "quantity", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
@@ -242,7 +242,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                         min="0"
                         value={item.unitCost}
                         onChange={(e) => updateItem(item.key, "unitCost", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                       />
                     </div>
                     <div className="col-span-2 space-y-1">
@@ -253,7 +253,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                         min="0"
                         value={item.unitPrice}
                         onChange={(e) => updateItem(item.key, "unitPrice", parseFloat(e.target.value) || 0)}
-                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                        className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                       />
                     </div>
                     <div className="col-span-1 space-y-1">
@@ -283,8 +283,8 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
           <div className={cn(step !== 2 && "hidden")}>
             <div className="space-y-5">
               <div className="flex items-center gap-3 pb-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100">
-                  <CreditCard className="h-5 w-5 text-orange-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warning/20">
+                  <CreditCard className="h-5 w-5 text-warning" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground">Payment</h3>
@@ -303,7 +303,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                     step="0.01"
                     min="0"
                     defaultValue="0"
-                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="h-11 rounded-xl border-input bg-background transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                   />
                 </div>
                 <div className="space-y-2">
@@ -313,14 +313,14 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                   <textarea
                     id="notes"
                     name="notes"
-                    className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="flex min-h-[80px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm transition-all focus:border-ring focus:ring-2 focus:ring-ring/50"
                     placeholder="Additional notes..."
                   />
                 </div>
                 <div className="rounded-xl border border-border bg-muted/50 p-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-emerald-600">{subtotal.toFixed(2)}</span>
+                    <span className="text-success">{subtotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -328,7 +328,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
           </div>
 
           {state?.errors && (
-            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
+            <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive border border-destructive/20">
               <p className="font-medium">There was an error</p>
               <ul className="mt-2 list-inside list-disc text-xs">
                 {Object.entries(state.errors).map(([field, msgs]) => (
@@ -339,10 +339,10 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
           )}
 
           {state?.message && !state.errors && (
-            <div className={`rounded-xl p-4 text-sm ${
+            <div className={`rounded-xl p-4 text-sm border ${
               state.success
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : "bg-red-50 text-red-700 border border-red-200"
+                ? "bg-success/10 text-success border-success/20"
+                : "bg-destructive/10 text-destructive border-destructive/20"
             }`}>
               <p className="font-medium">{state.message}</p>
             </div>
@@ -364,7 +364,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
               <Button
                 type="button"
                 onClick={() => setStep((s) => s + 1)}
-                className="h-11 rounded-xl bg-blue-600 px-8 text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700"
+                className="h-11 rounded-xl bg-primary px-8 text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:bg-primary/90"
               >
                 Continue
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -374,7 +374,7 @@ export function PurchaseForm({ businessId, workspaceId, suppliers: _suppliers, c
                 type="button"
                 onClick={handleFinalSubmit}
                 disabled={pending}
-                className="h-11 rounded-xl bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700"
+                className="h-11 rounded-xl bg-success px-8 text-success-foreground shadow-lg shadow-success/25 transition-all hover:bg-success/90"
               >
                 {pending ? "Saving..." : "Save Purchase"}
               </Button>

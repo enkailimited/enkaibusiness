@@ -451,6 +451,7 @@ async function main() {
       username: "masanja",
       email: "123456789.masanja@gmail.com",
       phone: "0794322797",
+      gender: "male",
       isOnboarded: true,
     },
     create: {
@@ -460,6 +461,7 @@ async function main() {
       lastName: "joseph",
       username: "masanja",
       phone: "0794322797",
+      gender: "male",
       isOnboarded: true,
     },
   });

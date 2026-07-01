@@ -17,6 +17,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:assign-owner-roles": "tsx scripts/assign-owner-roles.ts",
     "db:reset": "prisma migrate reset",
+    "db:warm": "tsx -e \"const{prisma}=require('./src/server/db');prisma.$queryRaw\\`SELECT 1\\`.then(()=>{console.log('DB awake');process.exit(0)}).catch(e=>{console.error(e);process.exit(1)})\"",
     "auth:generate": "npx @better-auth/cli generate",
     "auth:migrate": "npx @better-auth/cli migrate",
     "test": "vitest run",

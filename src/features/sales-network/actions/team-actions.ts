@@ -59,7 +59,6 @@ async function ensureSalesProfile(userId: string) {
     include: {
       userRoles: {
         include: { role: true },
-        where: { businessId: null },
       },
     },
   });

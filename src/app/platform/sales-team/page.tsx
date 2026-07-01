@@ -17,24 +17,34 @@ const SALES_ROLES = [
   "freelancer",
 ];
 
-const salesActions = [
-  { title: "Register Customer", href: "/platform/sales-team/register", icon: UserPlus, color: "text-emerald-600", bg: "bg-emerald-100" },
-  { title: "My Sales", href: "/platform/sales-team/sales", icon: BarChart3, color: "text-blue-600", bg: "bg-blue-100" },
-  { title: "Targets", href: "/platform/sales-team/targets", icon: Target, color: "text-emerald-600", bg: "bg-emerald-100" },
-  { title: "Clients", href: "/platform/sales-team/clients", icon: Users, color: "text-indigo-600", bg: "bg-indigo-100" },
-  { title: "Commissions", href: "/platform/sales-team/commissions", icon: DollarSign, color: "text-amber-600", bg: "bg-amber-100" },
-  { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart, color: "text-purple-600", bg: "bg-purple-100" },
-  { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin, color: "text-orange-600", bg: "bg-orange-100" },
-  { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp, color: "text-rose-600", bg: "bg-rose-100" },
-  { title: "Leads", href: "/platform/sales-team/leads", icon: PhoneCall, color: "text-cyan-600", bg: "bg-cyan-100" },
-  { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag, color: "text-violet-600", bg: "bg-violet-100" },
-  { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award, color: "text-yellow-600", bg: "bg-yellow-100" },
+const MANAGER_ROLES = new Set([
+  "national-sales-manager",
+  "national-manager",
+  "regional-manager",
+  "team-leader",
+]);
+
+const baseActions = [
+  { title: "My Team", href: "/platform/sales-team/team", icon: Users, managerOnly: true },
+  { title: "Register Customer", href: "/platform/sales-team/register", icon: UserPlus },
+  { title: "My Sales", href: "/platform/sales-team/sales", icon: BarChart3 },
+  { title: "Targets", href: "/platform/sales-team/targets", icon: Target },
+  { title: "Clients", href: "/platform/sales-team/clients", icon: Users },
+  { title: "Commissions", href: "/platform/sales-team/commissions", icon: DollarSign },
+  { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart },
+  { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin },
+  { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
+  { title: "Leads", href: "/platform/sales-team/leads", icon: PhoneCall },
+  { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
+  { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award },
 ];
 
 export default function SalesTeamDashboard() {
   const { user } = useAuth();
 
   const isSalesTeam = user?.roles?.some((r) => SALES_ROLES.includes(r)) ?? false;
+  const isManager = user?.roles?.some((r) => MANAGER_ROLES.has(r)) ?? false;
+  const salesActions = baseActions.filter((a) => !a.managerOnly || isManager);
 
   if (!isSalesTeam) {
     return (
