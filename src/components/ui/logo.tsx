@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 interface LogoProps {
   variant?: "blue" | "white";
@@ -8,14 +12,23 @@ interface LogoProps {
   height?: number;
 }
 
-export function Logo({ variant = "blue", className, width = 140, height = 35 }: LogoProps) {
+export function Logo({ variant: variantProp, className, width = 140, height = 35 }: LogoProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const isDark = mounted && resolvedTheme === "dark";
   const isSquare = width === height;
-  let src = variant === "white" ? "/images/logo-white.svg" : "/images/logo-blue.svg";
-  
+
+  let src: string;
   if (isSquare) {
-    src = "/images/logo-icon.svg";
+    src = isDark ? "/images/logo-icon-white.svg" : "/images/logo-icon.svg";
+  } else {
+    const variant = variantProp ?? (isDark ? "white" : "blue");
+    src = variant === "white" ? "/images/logo-white.svg" : "/images/logo-blue.svg";
   }
-  
+
   return (
     <Image
       src={src}
