@@ -7,6 +7,10 @@ import type { CreateExpenseSchema, UpdateExpenseSchema, ExpenseFilterSchema } fr
 import type { ExpenseWithRelations } from "../types";
 import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
 
+function flattenStaff(staff: { id: string; user: { firstName: string; lastName: string | null } } | null) {
+  return staff ? { id: staff.id, firstName: staff.user.firstName, lastName: staff.user.lastName } : null;
+}
+
 export async function createExpense(
   data: CreateExpenseSchema,
   businessId: string,
@@ -91,13 +95,13 @@ export async function getExpense(id: string): Promise<ExpenseWithRelations | nul
     where: { id },
     include: {
       category: { select: { id: true, name: true } },
-      staff: { select: { id: true, firstName: true, lastName: true } },
+      staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       createdBy: { select: { id: true, firstName: true, lastName: true } },
       approvedBy: { select: { id: true, firstName: true, lastName: true } },
     },
   });
   if (!raw) return null;
-  return raw as unknown as ExpenseWithRelations;
+  return { ...raw, staff: flattenStaff(raw.staff) } as unknown as ExpenseWithRelations;
 }
 
 export async function listExpenses(
@@ -120,14 +124,17 @@ export async function listExpenses(
     },
     include: {
       category: { select: { id: true, name: true } },
-      staff: { select: { id: true, firstName: true, lastName: true } },
+      staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       createdBy: { select: { id: true, firstName: true, lastName: true } },
       approvedBy: { select: { id: true, firstName: true, lastName: true } },
     },
     orderBy: { expenseDate: "desc" },
   });
 
-  return result.items;
+  return result.items.map((item: Record<string, unknown>) => ({
+    ...item,
+    staff: item.staff ? { id: (item.staff as Record<string, unknown>).id, firstName: ((item.staff as Record<string, unknown>).user as Record<string, unknown>).firstName, lastName: ((item.staff as Record<string, unknown>).user as Record<string, unknown>).lastName } : null,
+  })) as unknown as ExpenseWithRelations[];
 }
 
 export async function approveExpense(id: string, approvedById: string): Promise<ActionResponse> {

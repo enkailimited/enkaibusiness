@@ -290,7 +290,7 @@ export async function getPurchase(id: string): Promise<PurchaseWithRelations | n
         },
       },
       supplier: { select: { id: true, name: true } },
-      staff: { select: { id: true, firstName: true, lastName: true } },
+      staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       createdBy: { select: { id: true, firstName: true, lastName: true } },
     },
   });
@@ -299,6 +299,9 @@ export async function getPurchase(id: string): Promise<PurchaseWithRelations | n
 
   return {
     ...raw,
+    staff: raw.staff
+      ? { id: raw.staff.id, firstName: raw.staff.user.firstName, lastName: raw.staff.user.lastName }
+      : null,
     purchaseDate: raw.purchaseDate.toISOString(),
     createdAt: raw.createdAt.toISOString(),
     updatedAt: raw.updatedAt.toISOString(),

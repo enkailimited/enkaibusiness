@@ -130,7 +130,7 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithRel
         },
       },
       supplier: { select: { id: true, name: true } },
-      staff: { select: { id: true, firstName: true, lastName: true } },
+      staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       createdBy: { select: { id: true, firstName: true, lastName: true } },
     },
   });
@@ -139,6 +139,9 @@ export async function getPurchaseOrder(id: string): Promise<PurchaseOrderWithRel
 
   return {
     ...raw,
+    staff: raw.staff
+      ? { id: raw.staff.id, firstName: raw.staff.user.firstName, lastName: raw.staff.user.lastName }
+      : null,
     orderDate: raw.orderDate.toISOString(),
     expectedDate: raw.expectedDate?.toISOString() ?? null,
     createdAt: raw.createdAt.toISOString(),

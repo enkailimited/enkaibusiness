@@ -336,7 +336,7 @@ export async function getSale(id: string): Promise<SaleWithRelations | null> {
         },
       },
       customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
-      staff: { select: { id: true, firstName: true, lastName: true } },
+      staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       createdBy: { select: { id: true, firstName: true, lastName: true } },
       _count: { select: { invoices: true, returns: true } },
     },
@@ -346,6 +346,9 @@ export async function getSale(id: string): Promise<SaleWithRelations | null> {
 
   return {
     ...raw,
+    staff: raw.staff
+      ? { id: raw.staff.id, firstName: raw.staff.user.firstName, lastName: raw.staff.user.lastName }
+      : null,
     saleDate: raw.saleDate.toISOString(),
     createdAt: raw.createdAt.toISOString(),
     updatedAt: raw.updatedAt.toISOString(),

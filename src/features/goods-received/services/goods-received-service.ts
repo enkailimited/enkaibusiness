@@ -8,9 +8,13 @@ import { generateReference } from "../constants";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 import { emitGoodsReceived } from "@/modules/ai/events/event-bus";
 
+function flattenStaff(staff: { id: string; user: { firstName: string; lastName: string | null } } | null) {
+  return staff ? { id: staff.id, firstName: staff.user.firstName, lastName: staff.user.lastName } : null;
+}
+
 const goodsReceivedInclude = {
   purchaseOrder: { select: { id: true, reference: true, status: true } },
-  staff: { select: { id: true, firstName: true, lastName: true } },
+  staff: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
   createdBy: { select: { id: true, firstName: true, lastName: true } },
   items: {
     include: {
@@ -195,7 +199,7 @@ export async function createGoodsReceived(
     return {
       success: true,
       message: "Goods received recorded",
-      data: result as unknown as GoodsReceivedWithRelations,
+      data: { ...result, staff: flattenStaff(result.staff) } as unknown as GoodsReceivedWithRelations,
     };
   } catch (error) {
     console.error("Create goods received error:", error);
@@ -243,7 +247,7 @@ export async function updateGoodsReceived(
     return {
       success: true,
       message: "Goods received updated",
-      data: result as unknown as GoodsReceivedWithRelations,
+      data: { ...result, staff: flattenStaff(result.staff) } as unknown as GoodsReceivedWithRelations,
     };
   } catch (error) {
     console.error("Update goods received error:", error);
@@ -258,7 +262,7 @@ export async function getGoodsReceived(id: string): Promise<GoodsReceivedWithRel
   });
 
   if (!raw) return null;
-  return raw as unknown as GoodsReceivedWithRelations;
+  return { ...raw, staff: flattenStaff(raw.staff) } as unknown as GoodsReceivedWithRelations;
 }
 
 export async function listGoodsReceived(
@@ -284,7 +288,7 @@ export async function listGoodsReceived(
     orderBy: { receivedDate: "desc" },
   });
 
-  return raw as unknown as GoodsReceivedWithRelations[];
+  return raw.map((r) => ({ ...r, staff: flattenStaff(r.staff) })) as unknown as GoodsReceivedWithRelations[];
 }
 
 export async function deleteGoodsReceived(id: string): Promise<ActionResponse> {
