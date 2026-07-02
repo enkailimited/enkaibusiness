@@ -764,161 +764,155 @@ export function POSTerminal({
         </div>
       </div>
 
-      <Drawer.Root open={cartDrawerOpen} onOpenChange={setCartDrawerOpen} repositionInputs fixed>
+      <Drawer.Root open={cartDrawerOpen} onOpenChange={setCartDrawerOpen} fixed>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50" />
-          <Drawer.Content
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background pb-[env(safe-area-inset-bottom,16px)]"
-            style={{ maxHeight: "calc(100dvh - 40px)" }}>
+          <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col rounded-t-2xl bg-background pb-[env(safe-area-inset-bottom,16px)]">
             <DialogTitle className="sr-only">Cart</DialogTitle>
             <DialogDescription className="sr-only">Shopping cart items and checkout</DialogDescription>
             <div className="mx-auto mb-2 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex-1 overflow-y-auto px-4" data-vaul-no-drag>
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-semibold text-card-foreground">Cart</span>
-                    {cart.length > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
-                        {cart.length}
-                      </span>
-                    )}
-                  </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-card-foreground">Cart</span>
                   {cart.length > 0 && (
-                    <button onClick={clearCart} className="text-xs text-red-500 hover:text-red-700">Clear</button>
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                      {cart.length}
+                    </span>
                   )}
                 </div>
-
-                {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-                    <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground/70">Cart is empty</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {cart.map((item) => (
-                      <div key={item.product.id} className="py-2.5">
-                        <div className="flex items-start justify-between">
-                          <div className="min-w-0 flex-1 pr-2">
-                            <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
-                            <p className="text-xs text-muted-foreground/70">{item.product.price.toLocaleString()} TZS</p>
-                          </div>
-                          <button onClick={() => removeFromCart(item.product.id)} className="text-muted-foreground/50 hover:text-red-500">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="mt-1.5 flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => updateQuantity(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
-                              <Minus className="h-3 w-3" />
-                            </button>
-                            <span className="flex h-7 w-10 items-center justify-center text-sm font-semibold">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <input
-                            type="number" min="0" placeholder="Disc"
-                            value={item.discount || ""}
-                            onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
-                            className="h-7 w-16 rounded-md border border-border px-1.5 text-right text-xs outline-none focus:border-primary/30"
-                          />
-                          <span className="w-20 text-right text-sm font-semibold text-foreground">
-                            {(item.product.price * item.quantity - item.discount).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                {cart.length > 0 && (
+                  <button onClick={clearCart} className="text-xs text-red-500 hover:text-red-700">Clear</button>
                 )}
               </div>
 
-              {cart.length > 0 && (
-                <div className="shrink-0 border-t bg-muted/50 px-4 pb-4 pt-3">
-                  <div className="mb-2 space-y-1 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Subtotal</span><span>{subtotal.toLocaleString()}</span>
-                    </div>
-                    {discountTotal > 0 && (
-                      <div className="flex justify-between text-red-500">
-                        <span>Discount</span><span>-{discountTotal.toLocaleString()}</span>
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                  <ShoppingCart className="h-10 w-10 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground/70">Cart is empty</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {cart.map((item) => (
+                    <div key={item.product.id} className="py-2.5">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <p className="truncate text-sm font-medium text-foreground">{item.product.name}</p>
+                          <p className="text-xs text-muted-foreground/70">{item.product.price.toLocaleString()} TZS</p>
+                        </div>
+                        <button onClick={() => removeFromCart(item.product.id)} className="text-muted-foreground/50 hover:text-red-500">
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
-                    )}
-                    <div className="flex justify-between border-t border-border pt-1 text-base font-bold text-foreground">
-                      <span>Total</span>
-                      <span className="text-emerald-600">{grandTotal.toLocaleString()} TZS</span>
-                    </div>
-                  </div>
-
-                  <div className="relative mb-2">
-                    {showCustomers ? (
-                      <div>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => updateQuantity(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="flex h-7 w-10 items-center justify-center text-sm font-semibold">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-md border text-muted-foreground hover:bg-muted/50">
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
                         <input
-                          type="text" placeholder="Search customer..."
-                          className="h-9 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
+                          type="number" min="0" placeholder="Disc"
+                          value={item.discount || ""}
+                          onChange={(e) => updateDiscount(item.product.id, parseFloat(e.target.value) || 0)}
+                          className="h-7 w-16 rounded-md border border-border px-1.5 text-right text-xs outline-none focus:border-primary/30"
+                        />
+                        <span className="w-20 text-right text-sm font-semibold text-foreground">
+                          {(item.product.price * item.quantity - item.discount).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="border-t bg-muted/50 px-0 pb-0 pt-3">
+                    <div className="mb-2 space-y-1 text-sm">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Subtotal</span><span>{subtotal.toLocaleString()}</span>
+                      </div>
+                      {discountTotal > 0 && (
+                        <div className="flex justify-between text-red-500">
+                          <span>Discount</span><span>-{discountTotal.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-border pt-1 text-base font-bold text-foreground">
+                        <span>Total</span>
+                        <span className="text-emerald-600">{grandTotal.toLocaleString()} TZS</span>
+                      </div>
+                    </div>
+
+                    <div className="relative mb-2">
+                      {showCustomers ? (
+                        <div>
+                          <input
+                            type="text" placeholder="Search customer..."
+                            className="h-9 w-full rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
+                            autoFocus
+                          />
+                          <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-background shadow-lg">
+                            <button onClick={() => { setSelectedCustomer(""); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
+                              <User className="h-3.5 w-3.5 text-muted-foreground/70" /> Walk-in Customer
+                            </button>
+                            {customers.map((c) => (
+                              <button key={c.id} onClick={() => { setSelectedCustomer(c.id); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
+                                <User className="h-3.5 w-3.5 text-muted-foreground/70" /> {c.firstName} {c.lastName}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setShowCustomers(true)} className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 text-left text-sm text-muted-foreground hover:border-accent">
+                          <User className="h-4 w-4 text-muted-foreground/70" />
+                          {selectedCustomerName ? `${selectedCustomerName.firstName} ${selectedCustomerName.lastName || ""}` : "Walk-in Customer"}
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-2 flex gap-1">
+                      {(["cash", "partial", "credit"] as const).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => { setPaymentType(type); if (type === "cash") setAmountReceived(String(grandTotal)); }}
+                          className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                            paymentType === type ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-accent"
+                          }`}
+                        >
+                          {type === "cash" ? "Cash" : type === "partial" ? "Partial" : "Credit"}
+                        </button>
+                      ))}
+                    </div>
+                    {paymentType === "partial" && (
+                      <div className="mb-2 flex items-center gap-2">
+                        <input
+                          type="number" min="0" max={grandTotal}
+                          value={amountReceived}
+                          onChange={(e) => setAmountReceived(e.target.value)}
+                          placeholder="Amount received"
+                          className="h-9 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
                           autoFocus
                         />
-                        <div className="absolute z-10 mt-1 max-h-32 w-full overflow-y-auto rounded-lg border bg-background shadow-lg">
-                          <button onClick={() => { setSelectedCustomer(""); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
-                            <User className="h-3.5 w-3.5 text-muted-foreground/70" /> Walk-in Customer
-                          </button>
-                          {customers.map((c) => (
-                            <button key={c.id} onClick={() => { setSelectedCustomer(c.id); setShowCustomers(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted/50">
-                              <User className="h-3.5 w-3.5 text-muted-foreground/70" /> {c.firstName} {c.lastName}
-                            </button>
-                          ))}
-                        </div>
+                        <span className="text-xs text-muted-foreground">Change: {Math.max(0, (parseFloat(amountReceived) || 0) - grandTotal).toLocaleString()}</span>
                       </div>
-                    ) : (
-                      <button onClick={() => setShowCustomers(true)} className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-background px-3 text-left text-sm text-muted-foreground hover:border-accent">
-                        <User className="h-4 w-4 text-muted-foreground/70" />
-                        {selectedCustomerName ? `${selectedCustomerName.firstName} ${selectedCustomerName.lastName || ""}` : "Walk-in Customer"}
-                      </button>
                     )}
-                  </div>
-
-                  <div className="mb-2 flex gap-1">
-                    {(["cash", "partial", "credit"] as const).map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => { setPaymentType(type); if (type === "cash") setAmountReceived(String(grandTotal)); }}
-                        className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
-                          paymentType === type ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {type === "cash" ? "Cash" : type === "partial" ? "Partial" : "Credit"}
-                      </button>
-                    ))}
-                  </div>
-                  {paymentType === "partial" && (
-                    <div className="mb-2 flex items-center gap-2">
-                      <input
-                        type="number" min="0" max={grandTotal}
-                        value={amountReceived}
-                        onChange={(e) => setAmountReceived(e.target.value)}
-                        placeholder="Amount received"
-                        className="h-9 flex-1 rounded-lg border border-border px-3 text-sm outline-none focus:border-primary/30"
-                        autoFocus
-                      />
-                      <span className="text-xs text-muted-foreground">Change: {Math.max(0, (parseFloat(amountReceived) || 0) - grandTotal).toLocaleString()}</span>
-                    </div>
-                  )}
-                  {paymentType === "credit" && (
-                    <p className="mb-2 text-center text-xs text-amber-600">Credit sale — invoice will be marked unpaid</p>
-                  )}
-
-                  <Button
-                    onClick={() => { handleCheckout(); setCartDrawerOpen(false); }}
-                    disabled={cart.length === 0 || isProcessing || (paymentType === "partial" && (!amountReceived || parseFloat(amountReceived) <= 0))}
-                    className="h-11 w-full rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    {isProcessing ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-                    ) : (
-                      <><Receipt className="mr-2 h-4 w-4" /> {paymentType === "credit" ? "Credit Sale" : `Checkout — ${grandTotal.toLocaleString()} TZS`}</>
+                    {paymentType === "credit" && (
+                      <p className="mb-2 text-center text-xs text-amber-600">Credit sale — invoice will be marked unpaid</p>
                     )}
-                  </Button>
+
+                    <Button
+                      onClick={() => { handleCheckout(); setCartDrawerOpen(false); }}
+                      disabled={cart.length === 0 || isProcessing || (paymentType === "partial" && (!amountReceived || parseFloat(amountReceived) <= 0))}
+                      className="h-11 w-full rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {isProcessing ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                      ) : (
+                        <><Receipt className="mr-2 h-4 w-4" /> {paymentType === "credit" ? "Credit Sale" : `Checkout — ${grandTotal.toLocaleString()} TZS`}</>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

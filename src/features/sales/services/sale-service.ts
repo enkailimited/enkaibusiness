@@ -210,7 +210,7 @@ export async function createSale(
               data: {
                 workspaceId,
                 businessId,
-                name: "Walk-In Customer",
+                firstName: "Walk-In Customer",
                 email: "walkin@internal",
                 phone: "",
                 isActive: true,
