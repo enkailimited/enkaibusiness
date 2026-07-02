@@ -18,6 +18,9 @@ import {
   ShoppingBag,
   Award,
   UserPlus,
+  Wrench,
+  QrCode,
+  Globe,
 } from "lucide-react";
 
 export default function SalesTeamLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +43,9 @@ export default function SalesTeamLayout({ children }: { children: React.ReactNod
     { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
     { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
     { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award },
+    { title: "Installations", href: "/platform/sales-team/installations", icon: Wrench },
+    { title: "QR Experiences", href: "/platform/sales-team/qr", icon: QrCode },
+    { title: "Storefronts", href: "/platform/sales-team/storefront", icon: Globe },
   ], [canManageTeam]);
 
   return (

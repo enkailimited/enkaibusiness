@@ -4403,3 +4403,28 @@ model CRMDealActivity {
   @@index([performedById])
   @@map("crm_deal_activities")
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESERVATION DOMAIN (NEW)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Reservation ──────────────────────────────────────────────────────────────
+
+model Reservation {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @map("business_id") @db.Uuid
+  branchId      String?  @map("branch_id") @db.Uuid
+  customerId    String   @map("customer_id") @db.Uuid
+  catalogItemId String?  @map("catalog_item_id") @db.Uuid
+  bookingId     String?  @map("booking_id") @db.Uuid
+  startTime     DateTime @map("start_time")
+  endTime       DateTime? @map("end_time")
+  guests        Int?
+  status        String   @default("pending") // pending, confirmed, checked_in, cancelled, completed
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([businessId, startTime])
+  @@index([customerId])
+  @@map("reservations")
+}
