@@ -126,7 +126,6 @@ export function POSTerminal({
   const [paymentType, setPaymentType] = useState<"cash" | "credit" | "partial">("cash");
   const [amountReceived, setAmountReceived] = useState("");
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
-  const [cartDrawerMaxHeight, setCartDrawerMaxHeight] = useState("calc(100dvh - 32px)");
   const [cartBounce, setCartBounce] = useState(false);
   const [measurementProduct, setMeasurementProduct] = useState<Product | null>(null);
   const [measurementInput, setMeasurementInput] = useState("1");
@@ -143,18 +142,6 @@ export function POSTerminal({
     }
     prevCartLength.current = cart.length;
   }, [cart.length]);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const available = vv.height - (vv.offsetTop || 0) - 16;
-      setCartDrawerMaxHeight(`${Math.max(available, 250)}px`);
-    };
-    vv.addEventListener("resize", update);
-    update();
-    return () => vv.removeEventListener("resize", update);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -781,8 +768,8 @@ export function POSTerminal({
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50" />
           <Drawer.Content
-            style={{ maxHeight: cartDrawerMaxHeight }}
-            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background pb-[env(safe-area-inset-bottom,16px)]">
+            className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background pb-[env(safe-area-inset-bottom,16px)]"
+            style={{ maxHeight: "calc(100dvh - 40px)" }}>
             <DialogTitle className="sr-only">Cart</DialogTitle>
             <DialogDescription className="sr-only">Shopping cart items and checkout</DialogDescription>
             <div className="mx-auto mb-2 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
