@@ -133,6 +133,25 @@ export function POSTerminal({
   const { activeBranch } = useActiveBranch();
   const prevCartLength = useRef(0);
   const searchRef = useRef<HTMLInputElement>(null);
+  const drawerBodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = drawerBodyRef.current;
+    if (!el) return;
+
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (!el.contains(target)) return;
+      if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && target.tagName !== "SELECT") return;
+
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    };
+
+    document.addEventListener("focusin", handleFocus);
+    return () => document.removeEventListener("focusin", handleFocus);
+  }, []);
 
   useEffect(() => {
     if (cart.length > prevCartLength.current && prevCartLength.current > 0) {
@@ -771,7 +790,7 @@ export function POSTerminal({
             <DialogTitle className="sr-only">Cart</DialogTitle>
             <DialogDescription className="sr-only">Shopping cart items and checkout</DialogDescription>
             <div className="mx-auto mb-2 mt-3 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
-            <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <div ref={drawerBodyRef} className="flex-1 overflow-y-auto px-4 pb-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5 text-muted-foreground" />

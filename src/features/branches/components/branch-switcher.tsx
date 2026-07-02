@@ -83,7 +83,7 @@ export function BranchSwitcher({ branches }: BranchSwitcherProps) {
   if (branches.length <= 1) return null;
 
   return (
-    <Drawer.Root open={open} onOpenChange={setOpen} repositionInputs>
+    <Drawer.Root open={open} onOpenChange={setOpen}>
       <Drawer.Trigger asChild>
         <button
           className="flex items-center gap-1.5 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted transition-colors"

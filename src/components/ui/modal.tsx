@@ -17,7 +17,6 @@ export function Modal({ children, ...props }: React.ComponentPropsWithoutRef<typ
 
   return (
     <Drawer.Root
-      repositionInputs
       fixed
       {...props}
       onOpenChange={handleOpenChange}
@@ -41,42 +40,6 @@ export function ModalContent({
   className?: string;
 }) {
   const bodyRef = React.useRef<HTMLDivElement>(null);
-  const rafRef = React.useRef<number>(0);
-  const [maxHeight, setMaxHeight] = React.useState("calc(100dvh - 32px)");
-  const [, forceUpdate] = React.useState(0);
-
-  React.useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const update = () => {
-      const gap = 32;
-      const available = vv.height - (vv.offsetTop || 0) - gap;
-      setMaxHeight(`${Math.max(available, 200)}px`);
-    };
-
-    vv.addEventListener("resize", update);
-    update();
-    return () => vv.removeEventListener("resize", update);
-  }, []);
-
-  React.useEffect(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-
-    const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        forceUpdate((n) => n + 1);
-      });
-    });
-
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
 
   React.useEffect(() => {
     const el = bodyRef.current;
@@ -84,13 +47,12 @@ export function ModalContent({
 
     const handleFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (!el.contains(target)) return;
-      const tag = target.tagName;
-      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") return;
+      if (!el || !el.contains(target)) return;
+      if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && target.tagName !== "SELECT") return;
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 350);
+      });
     };
 
     document.addEventListener("focusin", handleFocus);
@@ -101,11 +63,11 @@ export function ModalContent({
     <Drawer.Portal>
       <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
       <Drawer.Content
-        style={{ maxHeight }}
         className={cn(
           "fixed z-50 bg-background shadow-xl",
           "inset-x-0 bottom-0 rounded-t-2xl border-t",
           "flex flex-col overflow-hidden",
+          "max-h-[calc(100dvh-40px)]",
           "sm:inset-auto sm:left-[50%] sm:top-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:max-w-lg sm:rounded-2xl sm:border sm:max-h-[85dvh] sm:overflow-y-auto sm:block",
           className,
         )}

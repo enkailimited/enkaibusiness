@@ -13,7 +13,6 @@ const DialogRoot = ({ children, ...props }: React.ComponentProps<typeof DialogPr
     <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
   ) : (
     <Drawer.Root
-      repositionInputs
       fixed
       {...(props as React.ComponentProps<typeof Drawer.Root>)}
     >
@@ -53,10 +52,6 @@ const DialogContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const bodyRef = React.useRef<HTMLDivElement>(null);
-  const rafRef = React.useRef<number>(0);
-
-  const [maxHeight, setMaxHeight] = React.useState("calc(100dvh - 32px)");
-  const [, forceUpdate] = React.useState(0);
 
   let headerEl: React.ReactNode = null;
   let footerEl: React.ReactNode = null;
@@ -80,51 +75,17 @@ const DialogContent = React.forwardRef<
   const hasLayout = headerEl !== null || footerEl !== null;
 
   React.useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const update = () => {
-      const gap = 32;
-      const available = vv.height - (vv.offsetTop || 0) - gap;
-      setMaxHeight(`${Math.max(available, 200)}px`);
-    };
-
-    vv.addEventListener("resize", update);
-    update();
-    return () => vv.removeEventListener("resize", update);
-  }, []);
-
-  React.useEffect(() => {
-    const el = bodyRef.current;
-    if (!el || isDesktop) return;
-
-    const ro = new ResizeObserver(() => {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        forceUpdate((n) => n + 1);
-      });
-    });
-
-    ro.observe(el);
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, [isDesktop]);
-
-  React.useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
 
     const handleFocus = (e: FocusEvent) => {
       const target = e.target as HTMLElement;
-      if (!el.contains(target)) return;
-      const tag = target.tagName;
-      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") return;
+      if (!el || !el.contains(target)) return;
+      if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && target.tagName !== "SELECT") return;
 
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 350);
+      });
     };
 
     document.addEventListener("focusin", handleFocus);
@@ -159,11 +120,11 @@ const DialogContent = React.forwardRef<
       <Drawer.Overlay className="fixed inset-0 z-50 bg-black/80" />
       <Drawer.Content
         ref={ref as React.Ref<HTMLDivElement>}
-        style={{ maxHeight }}
         className={cn(
           "fixed z-50 bg-background shadow-lg",
           "inset-x-0 bottom-0 rounded-t-2xl border-t",
           "flex flex-col overflow-hidden",
+          "max-h-[calc(100dvh-40px)]",
           className,
         )}
         {...(props as React.ComponentPropsWithoutRef<typeof Drawer.Content>)}
