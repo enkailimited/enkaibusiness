@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { updateStatusAction, approveInstallationAction } from "../actions";
-import { getValidNextStatuses } from "../services/installation-service";
+import { getValidNextStatuses } from "../constants";
 
 export function TicketActions({
   ticketId, currentStatus, ownerApproved,

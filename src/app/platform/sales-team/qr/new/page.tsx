@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/layout/page-header";
 import { Loader2 } from "lucide-react";
 import { createQRExperienceAction } from "@/features/qr/actions";
-import { QR_MODES_BY_INDUSTRY } from "@/features/qr/services/qr-service";
+import { QR_MODES_BY_INDUSTRY } from "@/features/qr/constants";
 
 export default function NewQRExperiencePage() {
   const router = useRouter();

@@ -1,38 +1,11 @@
 import "server-only";
 import { prisma } from "@/server/db";
+import { getValidNextStatuses, INSTALLATION_STEPS } from "../constants";
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ["DISTRIBUTOR_ASSIGNED", "DECLINED"],
-  DISTRIBUTOR_ASSIGNED: ["SITE_VISIT_SCHEDULED", "DECLINED"],
-  SITE_VISIT_SCHEDULED: ["SITE_VISIT_COMPLETED", "DECLINED"],
-  SITE_VISIT_COMPLETED: ["CONFIGURATION_IN_PROGRESS", "DECLINED"],
-  CONFIGURATION_IN_PROGRESS: ["CATALOG_PUBLISHED", "DECLINED"],
-  CATALOG_PUBLISHED: ["PAYMENT_CONFIGURED", "DECLINED"],
-  PAYMENT_CONFIGURED: ["DELIVERY_CONFIGURED", "DECLINED"],
-  DELIVERY_CONFIGURED: ["QR_GENERATED", "DECLINED"],
-  QR_GENERATED: ["QR_PRINTED", "DECLINED"],
-  QR_PRINTED: ["QR_INSTALLED", "DECLINED"],
-  QR_INSTALLED: ["STAFF_TRAINED", "DECLINED"],
-  STAFF_TRAINED: ["TESTING_IN_PROGRESS", "DECLINED"],
-  TESTING_IN_PROGRESS: ["CUSTOMER_TEST_COMPLETED", "DECLINED"],
-  CUSTOMER_TEST_COMPLETED: ["AWAITING_APPROVAL", "DECLINED"],
-  AWAITING_APPROVAL: ["ACTIVATED", "DECLINED"],
-  ACTIVATED: [],
-  DECLINED: [],
-};
-
-export function getValidNextStatuses(current: string): string[] {
-  return VALID_TRANSITIONS[current] || [];
-}
+export { getValidNextStatuses };
 
 export function getInstallationProgress(current: string): { label: string; complete: boolean; active: boolean }[] {
-  const steps = [
-    "PENDING", "DISTRIBUTOR_ASSIGNED", "SITE_VISIT_SCHEDULED", "SITE_VISIT_COMPLETED",
-    "CONFIGURATION_IN_PROGRESS", "CATALOG_PUBLISHED", "PAYMENT_CONFIGURED",
-    "DELIVERY_CONFIGURED", "QR_GENERATED", "QR_PRINTED", "QR_INSTALLED",
-    "STAFF_TRAINED", "TESTING_IN_PROGRESS", "CUSTOMER_TEST_COMPLETED",
-    "AWAITING_APPROVAL", "ACTIVATED",
-  ];
+  const steps = INSTALLATION_STEPS;
   const currentIdx = steps.indexOf(current);
   return steps.map((s, i) => ({
     label: s.replace(/_/g, " "),
