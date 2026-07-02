@@ -208,7 +208,6 @@ export async function createSale(
           } else {
             const c = await tx.customer.create({
               data: {
-                workspaceId,
                 businessId,
                 firstName: "Walk-In Customer",
                 email: "walkin@internal",
