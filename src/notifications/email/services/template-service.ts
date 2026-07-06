@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { wrapEmailHtml } from "./email-wrapper";
 
 interface TemplateVariables {
   [key: string]: string | number | boolean | undefined;
@@ -12,70 +13,70 @@ const SYSTEM_TEMPLATES = [
     slug: "welcome",
     subject: "Welcome to {{businessName}}!",
     htmlContent: `<h1>Welcome, {{customerName}}!</h1><p>Thank you for joining {{businessName}}. We're excited to have you on board.</p>`,
-    variables: ["customerName", "businessName"],
+    variables: ["customerName", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Password Reset",
     slug: "password-reset",
     subject: "Reset your password",
     htmlContent: `<h1>Password Reset</h1><p>Click <a href="{{resetUrl}}">here</a> to reset your password. This link expires in 1 hour.</p>`,
-    variables: ["resetUrl"],
+    variables: ["resetUrl", "unsubscribeUrl"],
   },
   {
     name: "Invoice",
     slug: "invoice",
     subject: "Invoice #{{invoiceNumber}} from {{businessName}}",
     htmlContent: `<h1>Invoice #{{invoiceNumber}}</h1><p>Dear {{customerName}}, your invoice of {{amount}} {{currency}} is attached.</p>`,
-    variables: ["invoiceNumber", "customerName", "amount", "currency", "businessName"],
+    variables: ["invoiceNumber", "customerName", "amount", "currency", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Quotation",
     slug: "quotation",
     subject: "Quotation #{{quotationNumber}} from {{businessName}}",
     htmlContent: `<h1>Quotation #{{quotationNumber}}</h1><p>Dear {{customerName}}, please find your quotation of {{amount}} {{currency}} attached.</p>`,
-    variables: ["quotationNumber", "customerName", "amount", "currency", "businessName"],
+    variables: ["quotationNumber", "customerName", "amount", "currency", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Purchase Order",
     slug: "purchase-order",
     subject: "Purchase Order #{{poNumber}}",
     htmlContent: `<h1>Purchase Order #{{poNumber}}</h1><p>Please process the attached purchase order.</p>`,
-    variables: ["poNumber", "businessName"],
+    variables: ["poNumber", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Payment Receipt",
     slug: "payment-receipt",
     subject: "Payment Receipt - {{businessName}}",
     htmlContent: `<h1>Payment Received</h1><p>Thank you for your payment of {{amount}} {{currency}}.</p>`,
-    variables: ["amount", "currency", "businessName", "customerName"],
+    variables: ["amount", "currency", "businessName", "customerName", "unsubscribeUrl"],
   },
   {
     name: "Sale Receipt",
     slug: "sale-receipt",
     subject: "Sale Receipt #{{receiptNumber}}",
     htmlContent: `<h1>Sale Receipt</h1><p>Thank you for your purchase of {{amount}} {{currency}}.</p>`,
-    variables: ["receiptNumber", "amount", "currency", "businessName"],
+    variables: ["receiptNumber", "amount", "currency", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Subscription Renewal",
     slug: "subscription-renewal",
     subject: "Subscription Renewal - {{businessName}}",
     htmlContent: `<h1>Subscription Renewal</h1><p>Your {{planName}} subscription will renew on {{renewalDate}}.</p>`,
-    variables: ["planName", "renewalDate", "businessName"],
+    variables: ["planName", "renewalDate", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Subscription Expiry",
     slug: "subscription-expiry",
     subject: "Subscription Expiry Notice",
     htmlContent: `<h1>Subscription Expiring</h1><p>Your {{planName}} subscription expires on {{expiryDate}}. Please renew to continue.</p>`,
-    variables: ["planName", "expiryDate", "businessName"],
+    variables: ["planName", "expiryDate", "businessName", "unsubscribeUrl"],
   },
   {
     name: "Low Stock Alert",
     slug: "low-stock-alert",
     subject: "Low Stock Alert - {{businessName}}",
     htmlContent: `<h1>Low Stock Alert</h1><p>The following items are low in stock:</p><ul>{{items}}</ul>`,
-    variables: ["businessName", "items"],
+    variables: ["businessName", "items", "unsubscribeUrl"],
   },
   {
     name: "Staff Invitation",
@@ -190,14 +191,14 @@ const SYSTEM_TEMPLATES = [
   </table>
 </body>
 </html>`,
-    variables: ["businessName", "inviteUrl", "invitedBy", "email", "username", "temporaryPassword", "loginUrl", "changePasswordUrl"],
+    variables: ["businessName", "inviteUrl", "invitedBy", "email", "username", "temporaryPassword", "loginUrl", "changePasswordUrl", "unsubscribeUrl"],
   },
   {
     name: "Customer Invitation",
     slug: "customer-invitation",
     subject: "Join {{businessName}} on Enkai",
     htmlContent: `<h1>Customer Invitation</h1><p>You've been invited to join {{businessName}} on Enkai Business.</p>`,
-    variables: ["businessName", "inviteUrl"],
+    variables: ["businessName", "inviteUrl", "unsubscribeUrl"],
   },
 ];
 
@@ -206,16 +207,24 @@ export async function renderTemplate(
   variables: TemplateVariables,
 ): Promise<{ subject: string; html: string; text: string }> {
   let subject = template.subject;
-  let html = template.htmlContent;
+  let bodyHtml = template.htmlContent;
 
   for (const [key, value] of Object.entries(variables)) {
     const placeholder = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "gi");
     const replacement = value !== undefined ? String(value) : "";
     subject = subject.replace(placeholder, replacement);
-    html = html.replace(placeholder, replacement);
+    bodyHtml = bodyHtml.replace(placeholder, replacement);
   }
 
-  const text = template.plainTextContent || html.replace(/<[^>]*>/g, "");
+  // If template already has full HTML document, use as-is; otherwise wrap it
+  const html = /<!DOCTYPE html/i.test(bodyHtml)
+    ? bodyHtml
+    : wrapEmailHtml(bodyHtml, {
+        unsubscribeUrl: variables.unsubscribeUrl as string | undefined,
+        title: subject,
+      });
+
+  const text = template.plainTextContent || bodyHtml.replace(/<[^>]*>/g, "");
 
   return { subject, html, text };
 }

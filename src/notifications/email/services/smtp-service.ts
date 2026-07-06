@@ -11,6 +11,9 @@ export interface SmtpConfig {
   encryption: "tls" | "ssl" | "none";
   fromEmail: string;
   fromName?: string;
+  dkimDomain?: string;
+  dkimSelector?: string;
+  dkimPrivateKey?: string;
 }
 
 export interface SendEmailOptions {
@@ -21,6 +24,8 @@ export interface SendEmailOptions {
   cc?: string | string[];
   bcc?: string | string[];
   replyTo?: string;
+  unsubscribeUrl?: string;
+  isBulk?: boolean;
   attachments?: Array<{
     filename: string;
     content: Buffer | string;
@@ -138,6 +143,9 @@ function createTransport(config: SmtpConfig) {
   const secure = config.encryption === "ssl";
   const tls = config.encryption === "tls" ? { rejectUnauthorized: false } : undefined;
   const port = config.port || (secure ? 465 : 587);
+  const dkim = config.dkimDomain && config.dkimSelector && config.dkimPrivateKey
+    ? { domainName: config.dkimDomain, keySelector: config.dkimSelector, privateKey: config.dkimPrivateKey }
+    : undefined;
 
   const transporter = nodemailer.createTransport({
     host: config.host,
@@ -148,6 +156,7 @@ function createTransport(config: SmtpConfig) {
       user: config.username,
       pass: config.password,
     },
+    dkim,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
@@ -199,6 +208,16 @@ export async function sendEmail(
     }
 
     console.log("[SMTP] Sending mail to", recipients, "subject:", options.subject);
+    const headers: Record<string, string> = {};
+    if (options.isBulk) {
+      headers["Precedence"] = "bulk";
+      headers["X-Auto-Response-Suppress"] = "OOF, AutoReply";
+    }
+    if (options.unsubscribeUrl) {
+      headers["List-Unsubscribe"] = `<${options.unsubscribeUrl}>`;
+      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    }
+
     const info = await transporter.sendMail({
       from: `"${config.fromName || config.fromEmail}" <${config.fromEmail}>`,
       to: recipients,
@@ -207,7 +226,8 @@ export async function sendEmail(
       subject: options.subject,
       html: options.html,
       text: options.text || options.html?.replace(/<[^>]*>/g, ""),
-      replyTo: options.replyTo,
+      replyTo: options.replyTo || config.fromEmail,
+      headers,
       attachments: options.attachments,
     });
 
@@ -299,6 +319,9 @@ export async function sendEmailWithDefaultConfig(
     encryption: (process.env.SMTP_ENCRYPTION as "tls" | "ssl" | "none") || "tls",
     fromEmail,
     fromName: fromName || "Enkai Business",
+    dkimDomain: process.env.DKIM_DOMAIN,
+    dkimSelector: process.env.DKIM_SELECTOR,
+    dkimPrivateKey: process.env.DKIM_PRIVATE_KEY,
   };
 
   console.log("[SMTP] Using default config:", { host, port, encryption: config.encryption, fromEmail, fromName: config.fromName });
