@@ -5,6 +5,26 @@ export type {
   CommissionFilters,
   CommissionMetrics,
   PendingPayout,
+  CalculationContext,
+  CommissionBreakdownItem,
+  CommissionCalculationResult,
+  TierConfig,
+  HybridConfig,
+  HybridSubRule,
+  CreateRuleV2Data,
+  UpdateRuleV2Data,
+  CreateDistributionData,
+  UpdateDistributionData,
+  DistributionResult,
+  DistributionAllocation,
+  CreateRecurringConfigData,
+  RecurringCommissionMetrics,
+  CreateEntryData,
+  AdjustmentData,
+  CreateRetentionBonusConfigData,
+  UpdateRetentionBonusConfigData,
+  CLVData,
+  CLVAggregateMetrics,
 } from "./types";
 
 export {
@@ -23,6 +43,15 @@ export {
   approveCommissionSchema,
   createPayoutSchema,
   commissionFilterSchema,
+  createRuleV2Schema,
+  updateRuleV2Schema,
+  createDistributionSchema,
+  updateDistributionSchema,
+  createRecurringConfigSchema,
+  createEntrySchema,
+  adjustmentSchema,
+  createRetentionBonusConfigSchema,
+  updateRetentionBonusConfigSchema,
 } from "./schemas";
 export type {
   CreateCommissionRuleSchema,
@@ -30,8 +59,18 @@ export type {
   ApproveCommissionSchema,
   CreatePayoutSchema,
   CommissionFilterSchema,
+  CreateRuleV2Schema,
+  UpdateRuleV2Schema,
+  CreateDistributionSchema,
+  UpdateDistributionSchema,
+  CreateRecurringConfigSchema,
+  CreateEntrySchema,
+  AdjustmentSchema,
+  CreateRetentionBonusConfigSchema,
+  UpdateRetentionBonusConfigSchema,
 } from "./schemas";
 
+// ─── V1 Rules ──────────────────────────────────────────────────────────────────
 export {
   getRules,
   getRule,
@@ -40,22 +79,89 @@ export {
   deleteRule,
 } from "./services/rule-service";
 
+// ─── V2 Rules ──────────────────────────────────────────────────────────────────
+export {
+  getRulesV2,
+  getRuleV2,
+  createRuleV2,
+  updateRuleV2,
+  deleteRuleV2,
+  toggleRuleV2,
+  getRulesForEvent,
+  calculateCommissionV2,
+  getRuleBreakdown,
+} from "./services/rule-service";
+
+// ─── Ledger / Entries ──────────────────────────────────────────────────────────
 export {
   createEntry,
   getEntries,
   getEntriesByProfile,
   approveEntry,
+  rejectEntry,
+  partialPayEntry,
+  adjustEntry,
+  manualEntry,
   calculateCommission,
   getPendingPayouts,
+  cancelEntry,
+  clawbackEntry,
   getCommissionMetrics,
 } from "./services/ledger-service";
 
+// ─── Payouts (V1) ───────────────────────────────────────────────────────────────
 export {
   createPayout,
   getPayouts,
   getPayout,
 } from "./services/payout-service";
 
+// ─── Payouts (V2) ───────────────────────────────────────────────────────────────
+export {
+  getPendingPayoutsV2,
+  createBatchPayout,
+  processPayoutApproval,
+  processPayoutPaid,
+} from "./services/payout-service-v2";
+
+// ─── Distribution ───────────────────────────────────────────────────────────────
+export {
+  getDistributionRules,
+  createDistributionRule,
+  updateDistributionRule,
+  deleteDistributionRule,
+  distributePayment,
+  getDistributionForAmount,
+} from "./services/distribution-service";
+
+// ─── Recurring Commissions ──────────────────────────────────────────────────────
+export {
+  calculateRecurringCommission,
+  createRecurringConfig,
+  processRecurringCommission,
+  deactivateRecurringCommission,
+  getActiveRecurringCommissions,
+  getRecurringCommissionMetrics,
+} from "./services/recurring-commission-service";
+
+// ─── CLV ────────────────────────────────────────────────────────────────────────
+export {
+  updateCLV,
+  getCLV,
+  getCLVRankings,
+  aggregateCLVMetrics,
+} from "./services/clv-service";
+
+// ─── Retention Bonuses ──────────────────────────────────────────────────────────
+export {
+  getRetentionBonusConfigs,
+  createRetentionBonusConfig,
+  updateRetentionBonusConfig,
+  checkAndAwardBonuses,
+  processRetentionMilestones,
+} from "./services/retention-service";
+
+// ─── Actions ────────────────────────────────────────────────────────────────────
 export {
   getCommissionRulesAction,
   getCommissionRuleAction,

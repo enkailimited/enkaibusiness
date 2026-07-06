@@ -34,7 +34,42 @@ export type FirdausEventType =
   | "SubscriptionActivated"
   | "SubscriptionCancelled"
   | "WalletFunded"
-  | "WalletWithdrawn";
+  | "WalletWithdrawn"
+  | "LeadCreated"
+  | "LeadAssigned"
+  | "LeadTransferred"
+  | "LeadConverted"
+  | "LeadLost"
+  | "DemoCompleted"
+  | "BusinessRegistered"
+  | "SubscriptionRenewed"
+  | "SubscriptionExpiring"
+  | "DistributorAssigned"
+  | "InstallationStarted"
+  | "InstallationStepCompleted"
+  | "InstallationCompleted"
+  | "TrainingCompleted"
+  | "QRActivated"
+  | "CustomerSuccessAssigned"
+  | "ReferralCreated"
+  | "CommissionEarned"
+  | "CommissionApproved"
+  | "CommissionPaid"
+  | "CommissionClawedBack"
+  | "RenewalStarted"
+  | "RenewalCompleted"
+  | "RenewalFailed"
+  | "BusinessExpanded"
+  | "BranchCreated"
+  | "AddonPurchased"
+  | "UpsellCompleted"
+  | "CrossSellCompleted"
+  | "CustomerRetentionMet"
+  | "CampaignBonusEvent"
+  | "SeasonalBonusEvent"
+  | "ReferralChainEvent"
+  | "AnnualRenewalEvent"
+  | "CustomerSuccessEvent";
 
 export interface FirdausEvent {
   type: FirdausEventType;
@@ -379,5 +414,301 @@ export function emitWalletFunded(
 ): void {
   firdausEventBus.emit({
     type: "WalletFunded", businessId, userId, entityId: walletId, data, timestamp: new Date(),
+  });
+}
+
+export function emitLeadCreated(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "LeadCreated", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitLeadAssigned(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "LeadAssigned", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitLeadTransferred(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "LeadTransferred", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitLeadConverted(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "LeadConverted", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitLeadLost(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "LeadLost", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitDemoCompleted(
+  businessId: string, userId: string, leadId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "DemoCompleted", businessId, userId, entityId: leadId, data, timestamp: new Date(),
+  });
+}
+
+export function emitBusinessRegistered(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "BusinessRegistered", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitSubscriptionRenewed(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "SubscriptionRenewed", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitSubscriptionExpiring(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "SubscriptionExpiring", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitDistributorAssigned(
+  businessId: string, userId: string, ticketId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "DistributorAssigned", businessId, userId, entityId: ticketId, data, timestamp: new Date(),
+  });
+}
+
+export function emitInstallationStarted(
+  businessId: string, userId: string, ticketId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "InstallationStarted", businessId, userId, entityId: ticketId, data, timestamp: new Date(),
+  });
+}
+
+export function emitInstallationStepCompleted(
+  businessId: string, userId: string, ticketId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "InstallationStepCompleted", businessId, userId, entityId: ticketId, data, timestamp: new Date(),
+  });
+}
+
+export function emitInstallationCompleted(
+  businessId: string, userId: string, ticketId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "InstallationCompleted", businessId, userId, entityId: ticketId, data, timestamp: new Date(),
+  });
+}
+
+export function emitTrainingCompleted(
+  businessId: string, userId: string, trainingId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "TrainingCompleted", businessId, userId, entityId: trainingId, data, timestamp: new Date(),
+  });
+}
+
+export function emitQRActivated(
+  businessId: string, userId: string, qrId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "QRActivated", businessId, userId, entityId: qrId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCustomerSuccessAssigned(
+  businessId: string, userId: string, profileId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CustomerSuccessAssigned", businessId, userId, entityId: profileId, data, timestamp: new Date(),
+  });
+}
+
+export function emitReferralCreated(
+  businessId: string, userId: string, referralId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "ReferralCreated", businessId, userId, entityId: referralId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCommissionEarned(
+  businessId: string, userId: string, entryId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CommissionEarned", businessId, userId, entityId: entryId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCommissionApproved(
+  businessId: string, userId: string, entryId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CommissionApproved", businessId, userId, entityId: entryId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCommissionPaid(
+  businessId: string, userId: string, payoutId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CommissionPaid", businessId, userId, entityId: payoutId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCommissionClawedBack(
+  businessId: string, userId: string, entryId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CommissionClawedBack", businessId, userId, entityId: entryId, data, timestamp: new Date(),
+  });
+}
+
+export function emitRenewalStarted(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "RenewalStarted", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitRenewalCompleted(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "RenewalCompleted", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitRenewalFailed(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "RenewalFailed", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitSubscriptionActivatedEvent(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "SubscriptionActivated", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitSubscriptionCancelledEvent(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "SubscriptionCancelled", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitBusinessExpanded(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "BusinessExpanded", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitBranchCreated(
+  businessId: string, userId: string, branchId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "BranchCreated", businessId, userId, entityId: branchId, data, timestamp: new Date(),
+  });
+}
+
+export function emitAddonPurchased(
+  businessId: string, userId: string, addonId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "AddonPurchased", businessId, userId, entityId: addonId, data, timestamp: new Date(),
+  });
+}
+
+export function emitUpsellCompleted(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "UpsellCompleted", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCrossSellCompleted(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CrossSellCompleted", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCustomerRetentionMet(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CustomerRetentionMet", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCampaignBonusEvent(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CampaignBonusEvent", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitSeasonalBonusEvent(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "SeasonalBonusEvent", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitReferralChainEvent(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "ReferralChainEvent", businessId, userId, entityId, data, timestamp: new Date(),
+  });
+}
+
+export function emitAnnualRenewalEvent(
+  businessId: string, userId: string, subscriptionId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "AnnualRenewalEvent", businessId, userId, entityId: subscriptionId, data, timestamp: new Date(),
+  });
+}
+
+export function emitCustomerSuccessEvent(
+  businessId: string, userId: string, entityId: string, data: Record<string, unknown>,
+): void {
+  firdausEventBus.emit({
+    type: "CustomerSuccessEvent", businessId, userId, entityId, data, timestamp: new Date(),
   });
 }

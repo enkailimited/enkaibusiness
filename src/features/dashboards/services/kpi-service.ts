@@ -6,7 +6,6 @@ import type { PlatformKPIs, BusinessKPIs } from "../types";
 
 export async function getPlatformKPIs(period: "current" | "prev" = "current"): Promise<PlatformKPIs> {
   const now = new Date();
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
@@ -37,6 +36,99 @@ export async function getPlatformKPIs(period: "current" | "prev" = "current"): P
     totalRevenue: Number(revenueData._sum.amount) || 0,
     activeSubscriptions,
     pendingTickets,
+  };
+}
+
+export async function getExtendedPlatformKPIs() {
+  const [kpis, mrr, clvMetrics] = await Promise.all([
+    getPlatformKPIs(),
+    getMRR(),
+    aggregateCLVMetrics(),
+  ]);
+
+  return {
+    ...kpis,
+    mrr: mrr,
+    arr: mrr * 12,
+    averageCLV: clvMetrics.averageCLV,
+    medianCLV: clvMetrics.medianCLV,
+    totalBusinessesTracked: clvMetrics.totalBusinessesTracked,
+  };
+}
+
+async function getMRR() {
+  const activeSubscriptions = await prisma.subscription.findMany({
+    where: { status: "ACTIVE" },
+    include: { plan: { select: { amount: true, interval: true } } },
+  });
+
+  let mrr = 0;
+  for (const sub of activeSubscriptions) {
+    const amount = Number(sub.plan.amount);
+    switch (sub.plan.interval) {
+      case "MONTHLY":
+        mrr += amount;
+        break;
+      case "YEARLY":
+        mrr += amount / 12;
+        break;
+      case "DAILY":
+        mrr += amount * 30;
+        break;
+      case "WEEKLY":
+        mrr += amount * 4.33;
+        break;
+    }
+  }
+
+  return Math.round(mrr * 100) / 100;
+}
+
+async function aggregateCLVMetrics() {
+  const businesses = await prisma.business.findMany({
+    where: { isActive: true },
+    select: { id: true },
+  });
+
+  if (businesses.length === 0) {
+    return { averageCLV: 0, medianCLV: 0, totalBusinessesTracked: 0 };
+  }
+
+  const clvValues: number[] = [];
+
+  for (const business of businesses) {
+    const [subscriptionPayments, salesTotal] = await Promise.all([
+      prisma.subscriptionPayment.aggregate({
+        _sum: { amount: true },
+        where: { subscription: { businessId: business.id } },
+      }),
+      prisma.sale.aggregate({
+        _sum: { grandTotal: true },
+        where: { businessId: business.id, status: { not: "VOIDED" } },
+      }),
+    ]);
+
+    const lifetimeValue =
+      (Number(subscriptionPayments._sum?.amount) || 0) +
+      (Number(salesTotal._sum?.grandTotal) || 0);
+
+    clvValues.push(lifetimeValue);
+  }
+
+  const sorted = [...clvValues].sort((a, b) => a - b);
+  const sum = sorted.reduce((a, b) => a + b, 0);
+  const totalBusinesses = sorted.length;
+  const mid = Math.floor(totalBusinesses / 2);
+  const median = totalBusinesses > 0
+    ? totalBusinesses % 2 === 0
+      ? ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2
+      : (sorted[mid] ?? 0)
+    : 0;
+
+  return {
+    averageCLV: totalBusinesses > 0 ? Math.round(sum / totalBusinesses) : 0,
+    medianCLV: Math.round(median),
+    totalBusinessesTracked: totalBusinesses,
   };
 }
 

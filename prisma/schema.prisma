@@ -106,11 +106,103 @@ enum CommissionType {
   PERCENTAGE
 }
 
+enum RuleCalculationType {
+  FLAT
+  PERCENTAGE
+  FORMULA
+  TIERED
+  HYBRID
+}
+
+enum RuleType {
+  COMMISSION
+  BONUS
+  INCENTIVE
+  DISCOUNT
+  PROMOTION
+}
+
+enum CommissionTriggerEvent {
+  BUSINESS_REGISTRATION
+  SUBSCRIPTION_ACTIVATION
+  FIRST_PAYMENT
+  SUBSCRIPTION_RENEWAL
+  ANNUAL_RENEWAL
+  INSTALLATION
+  TRAINING
+  VERIFICATION
+  REFERRAL
+  UPSELL
+  CROSS_SELL
+  ADDON_PURCHASE
+  CUSTOMER_RETENTION
+  CUSTOMER_SUCCESS
+  BUSINESS_EXPANSION
+  BRANCH_EXPANSION
+  QR_ACTIVATION
+  CAMPAIGN_BONUS
+  SEASONAL_BONUS
+  REFERRAL_CHAIN
+  HIERARCHY_OVERRIDE
+}
+
 enum CommissionLedgerStatus {
   PENDING
   APPROVED
+  REJECTED
   PAID
   CANCELLED
+  CLAWBACK
+  ADJUSTMENT
+  PARTIAL
+}
+
+enum PayoutMethodType {
+  BANK
+  MOBILE_MONEY
+  WALLET
+  CASH
+}
+
+enum KpiPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum TargetPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum InstallerStatus {
+  AVAILABLE
+  BUSY
+  TRAVELING
+  OFFLINE
+  INACTIVE
+}
+
+enum InstallationServiceType {
+  QR_EXPERIENCE
+  STOREFRONT
+  CUSTOMER_APP
+  DIGITAL_MENU
+  HEALTHCARE_QUEUE
+  SCHOOL_PARENT_PORTAL
+  RESTAURANT_QR_ORDERING
+  RETAIL_QR_ORDERING
+  APPOINTMENT_QR
+  BOOKING_QR
+  SELF_CHECKIN
+  KIOSK
+  DIGITAL_CATALOG
+  OTHER
 }
 
 enum CampaignStatus {
@@ -472,6 +564,7 @@ model User {
   customerActivitiesCreated        CustomerActivity[]     @relation("CustomerActivityCreatedBy")
   journalEntriesCreated            JournalEntry[]         @relation("JournalEntryCreatedBy")
   distributors                     Distributor[]
+  installers                       Installer[]
 
   @@map("users")
 }
@@ -692,6 +785,7 @@ model Business {
   deliveryZones           DeliveryZone[]
   crmPipelines            CRMPipeline[]
   crmDeals                CRMDeal[]
+  customerLifetimeValues  CustomerLifetimeValue[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -2102,6 +2196,8 @@ model SubscriptionPlan {
   updatedAt   DateTime             @updatedAt @map("updated_at")
 
   subscriptions Subscription[]
+  commissionRulesV2 CommissionRuleV2[]
+  installationPackages InstallationPackage[] @relation("PackageSubscriptionPlans")
 
   @@index([isActive])
   @@map("subscription_plans")
@@ -2125,6 +2221,7 @@ model Subscription {
   plan     SubscriptionPlan      @relation(fields: [planId], references: [id])
   business Business              @relation(fields: [businessId], references: [id])
   payments SubscriptionPayment[]
+  recurringCommissionConfigs RecurringCommissionConfig[]
 
   @@index([businessId])
   @@index([status])
@@ -2258,6 +2355,9 @@ model SalesProfile {
   leads             Lead[]             @relation("LeadAssignedTo")
   leadAssignments   LeadAssignment[]   @relation("LeadAssignmentSalesProfile")
   commissionEntries CommissionLedger[] @relation("SalesProfileCommissions")
+  recurringCommissionConfigs RecurringCommissionConfig[]
+  salesTargets SalesTarget[]
+  payoutMethods PayoutMethod[]
 
   @@index([hierarchyId])
   @@index([managerId])
@@ -2366,11 +2466,16 @@ model CommissionLedger {
   description    String?
   status         CommissionLedgerStatus @default(PENDING)
   paidAt         DateTime?              @map("paid_at")
+  payoutMethodId  String?               @map("payout_method_id") @db.Uuid
+  paymentReference String?              @map("payment_reference")
+  adjustedById    String?               @map("adjusted_by") @db.Uuid
+  adjustmentReason String?              @map("adjustment_reason")
   createdAt      DateTime               @default(now()) @map("created_at")
   updatedAt      DateTime               @updatedAt @map("updated_at")
 
   salesProfile SalesProfile      @relation("SalesProfileCommissions", fields: [salesProfileId], references: [id])
   payout       CommissionPayout? @relation("PayoutEntries", fields: [payoutId], references: [id])
+  payoutMethod PayoutMethod?     @relation(fields: [payoutMethodId], references: [id])
 
   @@index([salesProfileId])
   @@index([status])
@@ -4024,6 +4129,11 @@ model InstallationTicket {
   ownerApproved     Boolean            @default(false) @map("owner_approved")
   ownerApprovedAt   DateTime?          @map("owner_approved_at")
   activatedAt       DateTime?          @map("activated_at")
+  packageId         String?            @map("package_id") @db.Uuid
+  installerId       String?            @map("installer_id") @db.Uuid
+  customerSigned    Boolean            @default(false) @map("customer_signed")
+  customerSignedAt  DateTime?          @map("customer_signed_at")
+  goLiveAt         DateTime?          @map("go_live_at")
   metadata          Json?              @default("{}")
   notes             String?
   createdAt         DateTime           @default(now()) @map("created_at")
@@ -4032,6 +4142,12 @@ model InstallationTicket {
   business        Business              @relation(fields: [businessId], references: [id])
   branch          Branch?               @relation(fields: [branchId], references: [id])
   distributor     Distributor?          @relation(fields: [distributorId], references: [id])
+  installationPackage  InstallationPackage?      @relation(fields: [packageId], references: [id])
+  installer            Installer?               @relation(fields: [installerId], references: [id])
+  package              InstallationTicketPackage? @relation("TicketPackage")
+  services            InstallationService[]
+  checklists          InstallerChecklistItem[]
+  clv                 CustomerLifetimeValue?
   tasks           InstallationTask[]
   photos          InstallationPhoto[]
   trainingRecords InstallationTraining[]
@@ -4427,4 +4543,445 @@ model Reservation {
   @@index([businessId, startTime])
   @@index([customerId])
   @@map("reservations")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENTERPRISE SALES COMMISSION DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CommissionRuleV2 ─────────────────────────────────────────────────────────
+
+model CommissionRuleV2 {
+  id               String                @id @default(uuid()) @db.Uuid
+  name             String
+  description      String?
+  triggerEvent     CommissionTriggerEvent @map("trigger_event")
+  ruleType         RuleType               @map("rule_type")
+
+  industry         Industry?
+  businessModeId   String?                 @map("business_mode_id") @db.Uuid
+  subscriptionPlanId   String?                @map("subscription_plan_id") @db.Uuid
+  installationPackageId String?           @map("installation_package_id") @db.Uuid
+
+  minRevenue       Decimal?    @map("min_revenue") @db.Decimal(15, 2)
+  maxRevenue      Decimal?    @map("max_revenue") @db.Decimal(15, 2)
+  minBranches        Int?      @map("min_branches")
+  maxBranches        Int?      @map("max_branches")
+  minCustomers       Int?      @map("min_customers")
+  maxCustomers       Int?      @map("max_customers")
+  minCatalogItems    Int?      @map("min_catalog_items")
+  maxCatalogItems    Int?      @map("max_catalog_items")
+
+  tiers           Json?       @default("[]")
+  formula         String?
+  hybridConfig    Json?       @default("{}")
+
+  priority        Int         @default(0)
+  effectiveDate   DateTime?   @map("effective_date")
+  expiryDate      DateTime?   @map("expiry_date")
+  isActive        Boolean     @default(true) @map("is_active")
+  metadata        Json?       @default("{}")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  subscriptionPlan  SubscriptionPlan?  @relation(fields: [subscriptionPlanId], references: [id])
+  installationPackage InstallationPackage? @relation(fields: [installationPackageId], references: [id])
+  recurringConfigs RecurringCommissionConfig[]
+
+  @@index([triggerEvent, isActive])
+  @@index([industry])
+  @@map("commission_rules_v2")
+}
+
+// ─── CommissionDistribution ────────────────────────────────────────────────────
+
+model CommissionDistribution {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?
+  participantType String   @map("participant_type")
+  percentage      Decimal  @db.Decimal(5, 2)
+  fixedAmount     Decimal? @db.Decimal(15, 2)
+  priority        Int      @default(0)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("commission_distribution_rules")
+}
+
+// ─── RecurringCommissionConfig ──────────────────────────────────────────────────
+
+model RecurringCommissionConfig {
+  id              String   @id @default(uuid()) @db.Uuid
+  salesProfileId  String   @map("sales_profile_id") @db.Uuid
+  subscriptionId  String   @map("subscription_id") @db.Uuid
+  ruleId          String   @map("rule_id") @db.Uuid
+  percentage      Decimal  @db.Decimal(5, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  lastPaidDate    DateTime? @map("last_paid_date")
+  nextDueDate     DateTime? @map("next_due_date")
+  totalPaid       Decimal  @default(0) @db.Decimal(15, 2) @map("total_paid")
+  paidCount       Int      @default(0) @map("paid_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  salesProfile SalesProfile     @relation(fields: [salesProfileId], references: [id])
+  subscription Subscription     @relation(fields: [subscriptionId], references: [id])
+  rule         CommissionRuleV2 @relation(fields: [ruleId], references: [id])
+
+  @@unique([salesProfileId, subscriptionId, ruleId])
+  @@index([salesProfileId])
+  @@index([subscriptionId])
+  @@map("recurring_commission_configs")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INSTALLATION PACKAGE DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── InstallationPackage ───────────────────────────────────────────────────────
+
+model InstallationPackage {
+  id                  String   @id @default(uuid()) @db.Uuid
+  name                String
+  description         String?
+  industries          Json     @default("[]")
+  supportedModes      Json?    @map("supported_modes") @default("[]")
+  minBranches          Int?     @map("min_branches")
+  maxBranches          Int?     @map("max_branches")
+  minQRCodes           Int?     @map("min_qr_codes")
+  maxQRCodes           Int?     @map("max_qr_codes")
+  trainingHours        Int?     @map("training_hours")
+  installationHours    Int?     @map("installation_hours")
+  brandingIncluded     Boolean  @default(false) @map("branding_included")
+  printerIncluded      Boolean  @default(false) @map("printer_included")
+  marketingKitIncluded Boolean  @default(false) @map("marketing_kit_included")
+  verificationIncluded Boolean  @default(false) @map("verification_included")
+  supportPeriodDays    Int?     @map("support_period_days")
+  baseFee              Decimal? @map("base_fee") @db.Decimal(15, 2)
+  pricePerBranch       Decimal? @map("price_per_branch") @db.Decimal(15, 2)
+  pricePerQRCode       Decimal? @map("price_per_qr_code") @db.Decimal(15, 2)
+  pricePerTrainingHour Decimal? @map("price_per_training_hour") @db.Decimal(15, 2)
+  brandingFee          Decimal? @map("branding_fee") @db.Decimal(15, 2)
+  printerFee           Decimal? @map("printer_fee") @db.Decimal(15, 2)
+  pricingFormula      String?  @map("pricing_formula")
+  price               Decimal? @db.Decimal(15, 2)
+  currency             String   @default("TZS")
+  status               String   @default("ACTIVE")
+  metadata             Json?    @default("{}")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  subscriptionPlans SubscriptionPlan[] @relation("PackageSubscriptionPlans")
+  commissionRules   CommissionRuleV2[]
+  installationTickets InstallationTicket[]
+  ticketPackages    InstallationTicketPackage[]
+
+  @@index([status])
+  @@map("installation_packages")
+}
+
+// ─── InstallationTicketPackage ────────────────────────────────────────────────
+
+model InstallationTicketPackage {
+  id                    String    @id @default(uuid()) @db.Uuid
+  ticketId              String    @unique @map("ticket_id") @db.Uuid
+  packageId             String    @map("package_id") @db.Uuid
+  calculatedPrice       Decimal   @map("calculated_price") @db.Decimal(15, 2)
+  pricingBreakdown       Json      @default("{}") @map("pricing_breakdown")
+  customerApproved      Boolean   @default(false) @map("customer_approved")
+  qrExperienceEnabled  Boolean  @default(false) @map("qr_experience_enabled")
+  qrActivatedAt        DateTime? @map("qr_activated_at")
+  metadata              Json?     @default("{}")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  ticket  InstallationTicket @relation("TicketPackage", fields: [ticketId], references: [id], onDelete: Cascade)
+  package InstallationPackage @relation(fields: [packageId], references: [id])
+
+  @@index([ticketId])
+  @@map("installation_ticket_packages")
+}
+
+// ─── InstallationService ────────────────────────────────────────────────────
+
+model InstallationService {
+  id        String   @id @default(uuid()) @db.Uuid
+  ticketId  String   @map("ticket_id") @db.Uuid
+  type      InstallationServiceType
+  completed  Boolean  @default(false)
+  completedAt DateTime? @map("completed_at")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("installation_services")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INSTALLER DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Installer ────────────────────────────────────────────────────────────────
+
+model Installer {
+  id                String          @id @default(uuid()) @db.Uuid
+  userId            String          @unique @map("user_id") @db.Uuid
+  employeeCode      String?         @unique @map("employee_code")
+  firstName         String          @map("first_name")
+  lastName          String          @map("last_name")
+  email             String?
+  phone             String?
+  photo             String?
+  region            String?
+  city              String?
+  specialization     String?         @map("specialization")
+  status            InstallerStatus @default(AVAILABLE)
+  maxAssignments    Int             @default(5) @map("max_assignments")
+  currentLoad       Int             @default(0) @map("current_load")
+  rating            Float           @default(0)
+  totalInstallations  Int          @default(0) @map("total_installations")
+  gpsLat            Decimal?        @map("gps_lat") @db.Decimal(10, 7)
+  gpsLng            Decimal?        @map("gps_lng") @db.Decimal(10, 7)
+  lastGpsUpdate     DateTime?       @map("last_gps_update")
+  travelStatus      String?         @map("travel_status")
+  metadata          Json?           @default("{}")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  user        User                    @relation(fields: [userId], references: [id])
+  tickets     InstallationTicket[]
+  travelLogs  InstallerTravelLog[]
+
+  @@index([region])
+  @@index([city])
+  @@index([status])
+  @@index([userId])
+  @@map("installers")
+}
+
+// ─── InstallerTravelLog ───────────────────────────────────────────────────────
+
+model InstallerTravelLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  installerId    String    @map("installer_id") @db.Uuid
+  ticketId       String?   @map("ticket_id") @db.Uuid
+  status        String    @default("en_route")
+  gpsLat        Decimal?  @map("gps_lat") @db.Decimal(10, 7)
+  gpsLng        Decimal?  @map("gps_lng") @db.Decimal(10, 7)
+  address       String?
+  notes         String?
+  startedAt     DateTime  @map("started_at") @default(now())
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  installer Installer @relation(fields: [installerId], references: [id])
+
+  @@index([installerId])
+  @@index([ticketId])
+  @@map("installer_travel_logs")
+}
+
+// ─── InstallerChecklistItem ─────────────────────────────────────────────────
+
+model InstallerChecklistItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  ticketId   String   @map("ticket_id") @db.Uuid
+  name       String
+  isRequired Boolean  @default(true) @map("is_required")
+  isCompleted Boolean @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  photoUrl   String?  @map("photo_url")
+  notes     String?
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  ticket InstallationTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("installer_checklists")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SALES TARGETS DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── SalesTarget ───────────────────────────────────────────────────────────────
+
+model SalesTarget {
+  id              String       @id @default(uuid()) @db.Uuid
+  salesProfileId  String       @map("sales_profile_id") @db.Uuid
+  period          TargetPeriod
+  year            Int
+  month           Int?
+  week            Int?
+  leadsTarget     Int?         @map("leads_target")
+  conversionsTarget Int?       @map("conversions_target")
+  revenueTarget   Decimal?      @map("revenue_target") @db.Decimal(15, 2)
+  recurringRevenueTarget Decimal? @map("recurring_revenue_target") @db.Decimal(15, 2)
+  renewalsTarget   Int?           @map("renewals_target")
+  retentionTarget Int?           @map("retention_target")
+  installationsTarget Int?     @map("installations_target")
+  trainingTarget  Int?         @map("training_target")
+  collectionsTarget Decimal?  @map("collections_target") @db.Decimal(15, 2)
+  achivedLeads   Int?         @default(0) @map("achieved_leads")
+  achievedConversions Int?     @default(0) @map("achieved_conversions")
+  achievedRevenue Decimal?    @default(0) @map("achieved_revenue") @db.Decimal(15, 2)
+  metadata       Json?        @default("{}")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  salesProfile SalesProfile @relation(fields: [salesProfileId], references: [id])
+
+  @@unique([salesProfileId, period, year, month, week])
+  @@index([salesProfileId])
+  @@map("sales_targets")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// KPI SNAPSHOTS DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── KpiSnapshot ──────────────────────────────────────────────────────────────
+
+model KpiSnapshot {
+  id                    String    @id @default(uuid()) @db.Uuid
+  period                KpiPeriod
+  dateFrom              DateTime  @map("date_from")
+  dateTo                DateTime  @map("date_to")
+  totalRevenue          Decimal?  @map("total_revenue") @db.Decimal(15, 2)
+  recurringRevenue      Decimal?  @map("recurring_revenue") @db.Decimal(15, 2)
+  installationRevenue   Decimal?  @map("installation_revenue") @db.Decimal(15, 2)
+  activeSubscriptions    Int?     @map("active_subscriptions")
+  newSubscriptions       Int?     @map("new_subscriptions")
+  expiredSubscriptions   Int?     @map("expired_subscriptions")
+  totalCommissionEarned Decimal? @map("total_commission_earned") @db.Decimal(15, 2)
+  totalCommissionPaid   Decimal?  @map("total_commission_paid") @db.Decimal(15, 2)
+  totalCommissionPending Decimal? @map("total_commission_pending") @db.Decimal(15, 2)
+  totalLeads             Int?     @map("total_leads")
+  newLeads               Int?     @map("new_leads")
+  convertedLeads         Int?     @map("converted_leads")
+  lostLeads              Int?     @map("lost_leads")
+  activeCustomers        Int?     @map("active_customers")
+  churnedCustomers       Int?     @map("churned_customers")
+  retainedCustomers      Int?     @map("retained_customers")
+  installationsCompleted Int?     @map("installations_completed")
+  installationsPending     Int?     @map("installations_pending")
+  renewalsSuccessful     Int?     @map("renewals_successful")
+  renewalsFailed         Int?     @map("renewals_failed")
+  mrr                   Decimal?  @db.Decimal(15, 2)
+  arr                   Decimal?  @db.Decimal(15, 2)
+  churnRate             Decimal?  @map("churn_rate") @db.Decimal(5, 2)
+  retentionRate         Decimal?  @map("retention_rate") @db.Decimal(5, 2)
+  conversionRate        Decimal?  @map("conversion_rate") @db.Decimal(5, 2)
+  metadata             Json?      @default("{}")
+  computedAt          DateTime   @default(now()) @map("computed_at")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  @@unique([period, dateFrom, dateTo])
+  @@index([period, computedAt])
+  @@map("kpi_snapshots")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUSTOMER LIFETIME VALUE DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── CustomerLifetimeValue ─────────────────────────────────────────────────
+
+model CustomerLifetimeValue {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @unique @map("business_id") @db.Uuid
+  installationTicketId  String?  @unique @map("installation_ticket_id") @db.Uuid
+  lifetimeRevenue        Decimal  @default(0) @map("lifetime_revenue") @db.Decimal(15, 2)
+  recurringRevenue        Decimal  @default(0) @map("recurring_revenue") @db.Decimal(15, 2)
+  totalCommissionPaid    Decimal  @default(0) @map("total_commission_paid") @db.Decimal(15, 2)
+  netProfit              Decimal  @default(0) @map("net_profit") @db.Decimal(15, 2)
+  monthsActive            Int      @default(0) @map("months_active")
+  retentionCount         Int      @default(0) @map("retention_count")
+  renewalCount            Int      @default(0) @map("renewal_count")
+  upgradeCount            Int      @default(0) @map("upgrade_count")
+  downgradeCount          Int      @default(0) @map("downgrade_count")
+  branchGrowth            Int      @default(0) @map("branch_growth")
+  catalogGrowth            Int      @default(0) @map("catalog_growth")
+  userGrowth               Int      @default(0) @map("user_growth")
+  lastActivityDate        DateTime? @map("last_activity_date")
+  metadata              Json?    @default("{}")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+  installationTicket InstallationTicket? @relation(fields: [installationTicketId], references: [id])
+
+  @@index([businessId])
+  @@map("customer_lifetime_values")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RETENTION BONUS DOMAIN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── RetentionBonusConfig ──────────────────────────────────────────────────────
+
+model RetentionBonusConfig {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  description       String?
+  triggerType       String   @map("trigger_type")
+  triggerValue       Int?     @map("trigger_value")
+  bonusType         String   @map("bonus_type")
+  bonusValue        Decimal  @map("bonus_value") @db.Decimal(15, 2)
+  formula           String?
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  bonusesEarned RetentionBonusEarned[]
+
+  @@map("retention_bonus_configs")
+}
+
+// ─── RetentionBonusEarned ─────────────────────────────────────────────────────
+
+model RetentionBonusEarned {
+  id          String   @id @default(uuid()) @db.Uuid
+  configId    String   @map("config_id") @db.Uuid
+  salesProfileId String @map("sales_profile_id") @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  amount      Decimal  @db.Decimal(15, 2)
+  description String?
+  status     String   @default("PENDING")
+  paidAt     DateTime? @map("paid_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  config RetentionBonusConfig @relation(fields: [configId], references: [id])
+
+  @@index([salesProfileId, status])
+  @@map("retention_bonus_earned")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAYOUT METHODS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model PayoutMethod {
+  id         String   @id @default(uuid()) @db.Uuid
+  salesProfileId String @map("sales_profile_id") @db.Uuid
+  type       PayoutMethodType
+  label       String?
+  details     Json    @default("{}")
+  isDefault  Boolean  @default(false) @map("is_default")
+  isVerified Boolean  @default(false) @map("is_verified")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  salesProfile SalesProfile @relation(fields: [salesProfileId], references: [id], onDelete: Cascade)
+  ledgerEntries CommissionLedger[]
+
+  @@index([salesProfileId])
+  @@map("payout_methods")
 }

@@ -2,7 +2,7 @@ export type * from "./types";
 
 export { WIDGET_TYPES, PLATFORM_LAYOUT, BUSINESS_LAYOUT } from "./constants";
 
-export { getPlatformKPIs, getBusinessKPIs } from "./services/kpi-service";
+export { getPlatformKPIs, getBusinessKPIs, getExtendedPlatformKPIs } from "./services/kpi-service";
 export { getDashboard } from "./services/dashboard-service";
 
 export { KPICard } from "./components/kpi-card";

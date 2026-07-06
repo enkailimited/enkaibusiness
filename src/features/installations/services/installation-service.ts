@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/server/db";
-import { getValidNextStatuses, INSTALLATION_STEPS } from "../constants";
+import { getValidNextStatuses, INSTALLATION_STEPS, VALID_TRANSITIONS } from "../constants";
 
 export { getValidNextStatuses };
 
@@ -35,6 +35,13 @@ export async function createInstallationTicket(data: {
       business: { select: { name: true, slug: true } },
       branch: { select: { name: true } },
     },
+  });
+
+  const { emitInstallationStarted } = await import("@/modules/ai/events/event-bus");
+  emitInstallationStarted(data.businessId, data.requestedById, ticket.id, {
+    ticketNumber,
+    type: data.type ?? "NEW_BUSINESS",
+    businessName: (ticket as any).business?.name ?? "",
   });
 
   return ticket;
@@ -97,6 +104,28 @@ export async function updateInstallationStatus(ticketId: string, newStatus: stri
   if (newStatus === "AWAITING_APPROVAL") updateData.ownerApproved = false;
 
   await prisma.installationTicket.update({ where: { id: ticketId }, data: updateData });
+
+  const fullTicket = await prisma.installationTicket.findUnique({
+    where: { id: ticketId },
+    select: { businessId: true, distributor: { select: { id: true, userId: true } } },
+  });
+
+  const { emitInstallationStepCompleted, emitInstallationCompleted } = await import("@/modules/ai/events/event-bus");
+
+  if (newStatus === "ACTIVATED") {
+    emitInstallationCompleted(fullTicket?.businessId ?? "", userId, ticketId, {
+      distributorId: fullTicket?.distributor?.id ?? "",
+      distributorUserId: fullTicket?.distributor?.userId ?? "",
+      finalStatus: "ACTIVATED",
+    });
+  } else if (newStatus !== "DECLINED") {
+    emitInstallationStepCompleted(fullTicket?.businessId ?? "", userId, ticketId, {
+      step: newStatus,
+      previousStatus: ticket.status,
+      distributorUserId: fullTicket?.distributor?.userId ?? "",
+    });
+  }
+
   return { success: true, message: `Status updated to ${newStatus.replace(/_/g, " ")}` };
 }
 
@@ -119,6 +148,18 @@ export async function assignDistributor(ticketId: string, distributorId: string,
       where: { id: distributorId },
       data: { currentLoad: { increment: 1 } },
     });
+  });
+
+  const updatedTicket = await prisma.installationTicket.findUnique({
+    where: { id: ticketId },
+    select: { businessId: true, ticketNumber: true, business: { select: { name: true } }, distributor: { select: { userId: true } } },
+  });
+  const { emitDistributorAssigned } = await import("@/modules/ai/events/event-bus");
+  emitDistributorAssigned(updatedTicket?.businessId ?? "", assignedById, ticketId, {
+    distributorId,
+    distributorUserId: updatedTicket?.distributor?.userId ?? "",
+    ticketNumber: updatedTicket?.ticketNumber ?? "",
+    businessName: updatedTicket?.business?.name ?? "",
   });
 
   return { success: true, message: "Distributor assigned" };

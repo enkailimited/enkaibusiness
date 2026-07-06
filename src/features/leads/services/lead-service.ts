@@ -7,6 +7,7 @@ import type { CreateLeadSchema, UpdateLeadSchema } from "../schemas";
 import type { LeadWithAssignments, LeadWithActivities, LeadFilters, LeadMetrics } from "../types";
 import { createAuthUser } from "@/server/registrations/shared/user-creation";
 import { generateTempPassword, setUserPassword, sendInviteEmail } from "@/features/users/services/invite-service";
+import { checkLeadDuplicates } from "./lead-dedup-service";
 
 const assignedToInclude = {
   include: {
@@ -19,6 +20,16 @@ export async function createLead(
   createdById?: string,
 ): Promise<ActionResponse & { data?: { id: string } }> {
   try {
+    const dupCheck = await checkLeadDuplicates(data.email, data.phone, data.firstName, data.lastName);
+    if (dupCheck.isDuplicate && dupCheck.matches[0]) {
+      const existing = dupCheck.matches[0];
+      return {
+        success: false,
+        message: `Duplicate lead: "${existing.firstName} ${existing.lastName}" already exists (Status: ${existing.status}). Use the existing lead instead.`,
+        data: { id: existing.id },
+      };
+    }
+
     let assignedToId: string | undefined;
     if (createdById) {
       const profile = await prisma.salesProfile.findUnique({ where: { userId: createdById } });
@@ -46,6 +57,17 @@ export async function createLead(
         detail: "Lead was created",
         createdById: createdById || null,
       },
+    });
+
+    const { emitLeadCreated } = await import("@/modules/ai/events/event-bus");
+    emitLeadCreated("", createdById ?? "", lead.id, {
+      email: data.email ?? "",
+      phone: data.phone ?? "",
+      firstName: data.firstName,
+      lastName: data.lastName,
+      businessName: data.businessName ?? "",
+      createdById: createdById ?? "",
+      duplicateCount: dupCheck.matches.length,
     });
 
     return {
@@ -227,6 +249,29 @@ export async function updateLeadStatus(
       },
     });
 
+    const { emitLeadConverted, emitLeadLost, emitDemoCompleted } = await import("@/modules/ai/events/event-bus");
+
+    if (status === "CONVERTED" && oldStatus !== "CONVERTED") {
+      emitLeadConverted("", userId ?? "", id, {
+        assignedToUserId: lead.assignedToId ?? "",
+        leadName: `${lead.firstName} ${lead.lastName}`,
+      });
+    }
+
+    if (status === "LOST" && oldStatus !== "LOST") {
+      emitLeadLost("", userId ?? "", id, {
+        assignedToUserId: lead.assignedToId ?? "",
+        leadName: `${lead.firstName} ${lead.lastName}`,
+        lostReason: lead.notes ?? "",
+      });
+    }
+
+    if (status === "DEMO" && oldStatus !== "DEMO" && oldStatus !== "NEGOTIATION") {
+      emitDemoCompleted("", userId ?? "", id, {
+        leadName: `${lead.firstName} ${lead.lastName}`,
+      });
+    }
+
     return { success: true, message: `Lead status updated to ${status}` };
   } catch (error) {
     console.error("Update lead status error:", error);
@@ -268,6 +313,14 @@ export async function assignLead(
       }),
     ]);
 
+    const { emitLeadAssigned } = await import("@/modules/ai/events/event-bus");
+    emitLeadAssigned("", assignedById, leadId, {
+      assignedToUserId: profile.userId,
+      assignedByUserId: assignedById,
+      assignedToProfileId: assignedToId,
+      leadName: `${lead.firstName} ${lead.lastName}`,
+    });
+
     return { success: true, message: "Lead assigned successfully" };
   } catch (error) {
     console.error("Assign lead error:", error);
@@ -297,6 +350,14 @@ export async function transferLead(
         },
       }),
     ]);
+
+    const { emitLeadTransferred } = await import("@/modules/ai/events/event-bus");
+    const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { firstName: true, lastName: true } });
+    emitLeadTransferred("", fromUserId, leadId, {
+      fromUserId,
+      toUserId,
+      leadName: lead ? `${lead.firstName} ${lead.lastName}` : "",
+    });
 
     return { success: true, message: "Lead transferred successfully" };
   } catch (error) {

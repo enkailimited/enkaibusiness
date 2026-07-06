@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Drawer } from "vaul";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useActiveBranch } from "../context/active-branch-context";
 import { GitBranch, ChevronDown, Check, Search, Building2 } from "lucide-react";
 
@@ -102,6 +103,9 @@ export function BranchSwitcher({ branches }: BranchSwitcherProps) {
           className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[85dvh] flex-col rounded-t-2xl border bg-background outline-none md:left-auto md:right-4 md:top-1/2 md:bottom-auto md:w-80 md:-translate-y-1/2 md:rounded-2xl md:shadow-xl"
           onKeyDown={handleKeyDown}
         >
+          <VisuallyHidden>
+            <Drawer.Title>Switch Branch</Drawer.Title>
+          </VisuallyHidden>
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />

@@ -3,7 +3,8 @@ import "server-only";
 import { prisma } from "@/server/db";
 import { Prisma } from "@prisma/client";
 import type { ActionResponse } from "@/types/relationships";
-import type { EntryWithProfile, CommissionFilters, PendingPayout } from "../types";
+import type { CreateEntryData, AdjustmentData, CommissionFilters, EntryWithProfile, PendingPayout, CommissionMetrics } from "../types";
+import { emitCommissionEarned } from "@/modules/ai/events/event-bus";
 
 const entryInclude = {
   include: {
@@ -13,16 +14,14 @@ const entryInclude = {
       },
     },
     payout: { select: { id: true, amount: true, paidAt: true } },
+    payoutMethod: { select: { id: true, type: true, label: true } },
   },
 } as const;
 
-export async function createEntry(data: {
-  salesProfileId: string;
-  amount: number;
-  type: "FLAT" | "PERCENTAGE";
-  description?: string;
-  subscriptionId?: string;
-}): Promise<ActionResponse & { data?: { id: string } }> {
+export async function createEntry(
+  data: CreateEntryData,
+  businessId?: string,
+): Promise<ActionResponse & { data?: { id: string } }> {
   try {
     const entry = await prisma.commissionLedger.create({
       data: {
@@ -31,8 +30,27 @@ export async function createEntry(data: {
         amount: new Prisma.Decimal(data.amount),
         type: data.type,
         description: data.description || null,
+        payoutMethodId: data.payoutMethodId || null,
+        paymentReference: data.paymentReference || null,
+        adjustedById: data.adjustedById || null,
+        adjustmentReason: data.adjustmentReason || null,
       },
     });
+
+    if (businessId) {
+      const profile = await prisma.salesProfile.findUnique({
+        where: { id: data.salesProfileId },
+        select: { userId: true },
+      });
+      if (profile) {
+        emitCommissionEarned(businessId, profile.userId, entry.id, {
+          amount: data.amount,
+          subscriptionId: data.subscriptionId,
+          description: data.description,
+          type: data.type,
+        });
+      }
+    }
 
     return {
       success: true,
@@ -107,6 +125,165 @@ export async function approveEntry(ledgerId: string): Promise<ActionResponse> {
     console.error("Approve entry error:", error);
     return { success: false, message: "Failed to approve commission" };
   }
+}
+
+export async function rejectEntry(
+  ledgerId: string,
+  reason: string,
+): Promise<ActionResponse> {
+  try {
+    const entry = await prisma.commissionLedger.findUnique({ where: { id: ledgerId } });
+
+    if (!entry) {
+      return { success: false, message: "Commission entry not found" };
+    }
+
+    if (entry.status !== "PENDING") {
+      return { success: false, message: "Only pending entries can be rejected" };
+    }
+
+    await prisma.commissionLedger.update({
+      where: { id: ledgerId },
+      data: {
+        status: "REJECTED",
+        description: entry.description
+          ? `${entry.description} | Rejected: ${reason}`
+          : `Rejected: ${reason}`,
+      },
+    });
+
+    return { success: true, message: "Commission entry rejected" };
+  } catch (error) {
+    console.error("Reject entry error:", error);
+    return { success: false, message: "Failed to reject commission entry" };
+  }
+}
+
+export async function partialPayEntry(
+  ledgerId: string,
+  amount: number,
+  businessId?: string,
+): Promise<ActionResponse & { data?: { originalId: string; partialId: string } }> {
+  try {
+    const entry = await prisma.commissionLedger.findUnique({ where: { id: ledgerId } });
+
+    if (!entry) {
+      return { success: false, message: "Commission entry not found" };
+    }
+
+    if (entry.status !== "APPROVED") {
+      return { success: false, message: "Only approved entries can be partially paid" };
+    }
+
+    const originalAmount = Number(entry.amount);
+    if (amount >= originalAmount) {
+      return { success: false, message: "Partial amount must be less than total. Use full payout instead." };
+    }
+
+    const remaining = originalAmount - amount;
+
+    const [partialEntry] = await Promise.all([
+      prisma.commissionLedger.create({
+        data: {
+          salesProfileId: entry.salesProfileId,
+          subscriptionId: entry.subscriptionId,
+          amount: new Prisma.Decimal(remaining),
+          type: entry.type,
+          description: `Remaining balance from entry ${ledgerId}`,
+          status: "PARTIAL",
+        },
+      }),
+      prisma.commissionLedger.update({
+        where: { id: ledgerId },
+        data: {
+          status: "PAID",
+          paidAt: new Date(),
+        },
+      }),
+    ]);
+
+    if (businessId) {
+      const profile = await prisma.salesProfile.findUnique({
+        where: { id: entry.salesProfileId },
+        select: { userId: true },
+      });
+      if (profile) {
+        emitCommissionEarned(businessId, profile.userId, partialEntry.id, {
+          amount: remaining,
+          originalEntryId: ledgerId,
+          description: "Partial payment remaining",
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: "Partial payment processed successfully",
+      data: { originalId: ledgerId, partialId: partialEntry.id },
+    };
+  } catch (error) {
+    console.error("Partial pay entry error:", error);
+    return { success: false, message: "Failed to process partial payment" };
+  }
+}
+
+export async function adjustEntry(
+  ledgerId: string,
+  adjustment: AdjustmentData,
+  businessId?: string,
+): Promise<ActionResponse & { data?: { id: string } }> {
+  try {
+    const original = await prisma.commissionLedger.findUnique({ where: { id: ledgerId } });
+    if (!original) {
+      return { success: false, message: "Original commission entry not found" };
+    }
+
+    const entry = await prisma.commissionLedger.create({
+      data: {
+        salesProfileId: original.salesProfileId,
+        subscriptionId: original.subscriptionId,
+        amount: new Prisma.Decimal(adjustment.amount),
+        type: original.type,
+        description: `Adjustment: ${adjustment.reason} (original: ${ledgerId})`,
+        status: "ADJUSTMENT",
+        adjustedById: adjustment.adjustedById,
+        adjustmentReason: adjustment.reason,
+      },
+    });
+
+    if (businessId) {
+      const profile = await prisma.salesProfile.findUnique({
+        where: { id: original.salesProfileId },
+        select: { userId: true },
+      });
+      if (profile) {
+        emitCommissionEarned(businessId, profile.userId, entry.id, {
+          amount: adjustment.amount,
+          adjustment: true,
+          originalEntryId: ledgerId,
+          reason: adjustment.reason,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      message: "Adjustment entry created successfully",
+      data: { id: entry.id },
+    };
+  } catch (error) {
+    console.error("Adjust entry error:", error);
+    return { success: false, message: "Failed to create adjustment entry" };
+  }
+}
+
+export async function manualEntry(
+  data: CreateEntryData,
+): Promise<ActionResponse & { data?: { id: string } }> {
+  return createEntry({
+    ...data,
+    description: data.description ? `Manual: ${data.description}` : "Manual entry",
+  });
 }
 
 export async function calculateCommission(
@@ -200,18 +377,62 @@ export async function getPendingPayouts(): Promise<PendingPayout[]> {
   return Array.from(grouped.values());
 }
 
-export async function getCommissionMetrics(salesProfileId?: string): Promise<{
-  totalEarned: number;
-  totalApproved: number;
-  totalPaid: number;
-  totalPending: number;
-}> {
+export async function cancelEntry(ledgerId: string, reason?: string): Promise<ActionResponse> {
+  try {
+    const entry = await prisma.commissionLedger.findUnique({ where: { id: ledgerId } });
+    if (!entry) return { success: false, message: "Commission entry not found" };
+    if (entry.status === "PAID") return { success: false, message: "Cannot cancel a paid entry; create a clawback instead" };
+    if (entry.status === "CANCELLED") return { success: false, message: "Entry is already cancelled" };
+
+    await prisma.commissionLedger.update({
+      where: { id: ledgerId },
+      data: { status: "CANCELLED", description: reason ? `${entry.description || ""} | Cancelled: ${reason}` : entry.description },
+    });
+
+    return { success: true, message: "Commission entry cancelled" };
+  } catch (error) {
+    console.error("Cancel entry error:", error);
+    return { success: false, message: "Failed to cancel commission entry" };
+  }
+}
+
+export async function clawbackEntry(
+  originalEntryId: string,
+  salesProfileId: string,
+  amount: number,
+  reason: string,
+): Promise<ActionResponse & { data?: { id: string } }> {
+  try {
+    const negativeAmount = -Math.abs(amount);
+    const entry = await prisma.commissionLedger.create({
+      data: {
+        salesProfileId,
+        amount: new Prisma.Decimal(negativeAmount),
+        type: "FLAT",
+        description: `Clawback: ${reason} (original entry: ${originalEntryId})`,
+        status: "CLAWBACK",
+      },
+    });
+
+    await prisma.commissionLedger.update({
+      where: { id: originalEntryId },
+      data: { description: `${reason} | Clawed back` },
+    });
+
+    return { success: true, message: "Clawback entry created", data: { id: entry.id } };
+  } catch (error) {
+    console.error("Clawback error:", error);
+    return { success: false, message: "Failed to create clawback" };
+  }
+}
+
+export async function getCommissionMetrics(salesProfileId?: string): Promise<CommissionMetrics> {
   const where = salesProfileId ? { salesProfileId } : {};
 
   const [totalEarned, totalApproved, totalPaid, totalPending] = await Promise.all([
     prisma.commissionLedger.aggregate({
       _sum: { amount: true },
-      where: { ...where, status: { not: "CANCELLED" } },
+      where: { ...where, status: { notIn: ["CANCELLED", "REJECTED"] } },
     }),
     prisma.commissionLedger.aggregate({
       _sum: { amount: true },

@@ -135,6 +135,11 @@ export async function cancelSubscription(id: string): Promise<ActionResponse> {
       return { success: false, message: "Subscription is already cancelled" };
     }
 
+    const sub = await prisma.subscription.findUnique({
+      where: { id },
+      select: { businessId: true, planId: true },
+    });
+
     await prisma.subscription.update({
       where: { id },
       data: {
@@ -143,6 +148,11 @@ export async function cancelSubscription(id: string): Promise<ActionResponse> {
         endDate: new Date(),
       },
     });
+
+    const { emitSubscriptionCancelledEvent } = await import("@/modules/ai/events/event-bus");
+    if (sub) {
+      emitSubscriptionCancelledEvent(sub.businessId, "", id, { businessId: sub.businessId, planId: sub.planId });
+    }
 
     return { success: true, message: "Subscription cancelled successfully" };
   } catch (error) {
@@ -195,6 +205,18 @@ export async function renewSubscription(id: string): Promise<ActionResponse & { 
         suspendedAt: null,
         cancelledAt: null,
       },
+    });
+
+    const { emitRenewalCompleted, emitRenewalStarted } = await import("@/modules/ai/events/event-bus");
+    emitRenewalStarted(existing.businessId, "", id, {
+      planName: existing.plan.name,
+      planAmount: Number(existing.plan.amount),
+      planInterval: existing.plan.interval,
+    });
+    emitRenewalCompleted(existing.businessId, "", id, {
+      planName: existing.plan.name,
+      planAmount: Number(existing.plan.amount),
+      planInterval: existing.plan.interval,
     });
 
     return {
@@ -270,6 +292,8 @@ export async function processSubscriptionRenewals(): Promise<ActionResponse> {
   let renewed = 0;
   let gracePeriod = 0;
 
+  const { emitSubscriptionRenewed, emitRenewalFailed, emitSubscriptionExpiring } = await import("@/modules/ai/events/event-bus");
+
   for (const sub of expiringSubs) {
     const businessId = sub.businessId;
 
@@ -332,8 +356,19 @@ export async function processSubscriptionRenewals(): Promise<ActionResponse> {
           });
         });
         renewed++;
+        emitSubscriptionRenewed(sub.businessId, "", sub.id, {
+          planName: sub.plan.name,
+          planAmount: Number(sub.plan.amount),
+          planInterval: sub.plan.interval,
+          dailyPrice,
+        });
       } catch (error) {
         console.error(`Renewal failed for ${sub.id}:`, error);
+        emitRenewalFailed(sub.businessId, "", sub.id, {
+          planName: sub.plan.name,
+          error: String(error),
+          dailyPrice,
+        });
       }
     } else {
       await prisma.subscription.update({
@@ -341,6 +376,12 @@ export async function processSubscriptionRenewals(): Promise<ActionResponse> {
         data: { status: SubscriptionStatus.GRACE_PERIOD },
       });
       gracePeriod++;
+      emitSubscriptionExpiring(sub.businessId, "", sub.id, {
+        planName: sub.plan.name,
+        planAmount: Number(sub.plan.amount),
+        balance,
+        dailyPrice,
+      });
     }
   }
 

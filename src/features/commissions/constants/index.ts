@@ -9,8 +9,12 @@ export const COMMISSION_TYPE_LABELS: Record<string, string> = {
 export const LEDGER_STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
   APPROVED: "Approved",
+  REJECTED: "Rejected",
   PAID: "Paid",
   CANCELLED: "Cancelled",
+  CLAWBACK: "Clawback",
+  ADJUSTMENT: "Adjustment",
+  PARTIAL: "Partial",
 };
 
 export const COMMISSION_TYPE_OPTIONS = [
@@ -21,6 +25,10 @@ export const COMMISSION_TYPE_OPTIONS = [
 export const LEDGER_STATUS_OPTIONS = [
   { value: "PENDING", label: "Pending" },
   { value: "APPROVED", label: "Approved" },
+  { value: "REJECTED", label: "Rejected" },
   { value: "PAID", label: "Paid" },
   { value: "CANCELLED", label: "Cancelled" },
+  { value: "CLAWBACK", label: "Clawback" },
+  { value: "ADJUSTMENT", label: "Adjustment" },
+  { value: "PARTIAL", label: "Partial" },
 ] as const;

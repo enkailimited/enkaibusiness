@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ActiveBranchProvider } from "@/features/branches/context/active-branch-context";
 import { BranchSwitcher } from "@/features/branches/components/branch-switcher";
-import { useNavbarSlots } from "@/components/layout/navbar-slots";
 
 interface BranchInfo {
   id: string;
@@ -19,14 +19,15 @@ interface BusinessLayoutClientProps {
 }
 
 function BranchSwitcherSlot({ branches }: { branches: BranchInfo[] }) {
-  const { setBranchSwitcher } = useNavbarSlots();
+  const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    setBranchSwitcher(<BranchSwitcher branches={branches} />);
-    return () => setBranchSwitcher(null);
-  }, [branches, setBranchSwitcher]);
+    setTarget(document.getElementById("branch-switcher-portal"));
+  }, []);
 
-  return null;
+  if (!target) return null;
+
+  return createPortal(<BranchSwitcher branches={branches} />, target);
 }
 
 export function BusinessLayoutClient({

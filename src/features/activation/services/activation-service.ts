@@ -6,7 +6,7 @@ import { getBusinessSetting } from "@/features/businesses/services/setting-servi
 import { createNotification, createBulkNotifications } from "@/features/notifications/services/notification-service";
 import type { ActionResponse } from "@/types/relationships";
 import { SubscriptionStatus } from "@prisma/client";
-import { emitBusinessActivated, emitWalletFunded } from "@/modules/ai/events/event-bus";
+import { emitBusinessActivated, emitWalletFunded, emitSubscriptionActivatedEvent } from "@/modules/ai/events/event-bus";
 
 export interface ActivationInfo {
   businessId: string;
@@ -323,6 +323,21 @@ export async function approveTopUp(
     });
 
     if (result.activated) {
+      const subscription = await prisma.subscription.findFirst({
+        where: { businessId: request.businessId, status: SubscriptionStatus.ACTIVE },
+        orderBy: { updatedAt: "desc" },
+        include: { plan: { select: { id: true, name: true, amount: true } } },
+      });
+
+      if (subscription) {
+        emitSubscriptionActivatedEvent(request.businessId, adminId, subscription.id, {
+          planName: subscription.plan.name,
+          planAmount: Number(subscription.plan.amount),
+          setupFee: result.setupFee,
+          businessName: request.business.name,
+        });
+      }
+
       emitBusinessActivated(request.businessId, adminId, request.businessId, {
         setupFee: result.setupFee,
         planName: request.business.name,

@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Drawer } from "vaul";
 import { useSound } from "@/hooks/use-sound";
 import { cn } from "@/lib/utils";
+import { VaulDialogContext } from "@/components/ui/dialog";
 
 const ENTRY_SOUND = "/audio/screen-laucher-sound/Glass%20Button%20Tap%20(1).mp3";
 
@@ -104,7 +105,9 @@ const DialogContent = React.forwardRef<
 
         {headerEl && (
           <div className="shrink-0 px-6 pb-3 bg-background z-10">
-            {headerEl}
+            <VaulDialogContext.Provider value={true}>
+              {headerEl}
+            </VaulDialogContext.Provider>
           </div>
         )}
 
@@ -146,25 +149,49 @@ DialogFooter.displayName = "DialogFooter";
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isVaul = React.useContext(VaulDialogContext);
+  if (isVaul) {
+    return (
+      <h2
+        ref={ref as React.Ref<HTMLHeadingElement>}
+        className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+        {...(props as React.HTMLAttributes<HTMLHeadingElement>)}
+      />
+    );
+  }
+  return (
+    <DialogPrimitive.Title
+      ref={ref}
+      className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+      {...props}
+    />
+  );
+});
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-));
+>(({ className, ...props }, ref) => {
+  const isVaul = React.useContext(VaulDialogContext);
+  if (isVaul) {
+    return (
+      <p
+        ref={ref as React.Ref<HTMLParagraphElement>}
+        className={cn("text-sm text-muted-foreground", className)}
+        {...(props as React.HTMLAttributes<HTMLParagraphElement>)}
+      />
+    );
+  }
+  return (
+    <DialogPrimitive.Description
+      ref={ref}
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
+});
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 const DialogClose = React.forwardRef<

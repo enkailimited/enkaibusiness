@@ -208,6 +208,20 @@ export class BusinessRegistrationEngine {
         txResult.subscriptionId,
       );
 
+      const { emitBusinessRegistered } = await import("@/modules/ai/events/event-bus");
+      const salesProfile = await prisma.salesProfile
+        .findUnique({ where: { userId: input.createdById } })
+        .catch(() => null);
+      emitBusinessRegistered(input.createdById, input.createdById, txResult.business.id, {
+        businessName: txResult.business.name,
+        industry: industry as string,
+        modes,
+        planName: plan.name,
+        planAmount: plan.amount,
+        subscriptionId: txResult.subscriptionId ?? "",
+        salesProfileId: salesProfile?.id ?? "",
+      });
+
       await createAuditLog(input.createdById, "BUSINESS_REGISTERED", "Business", txResult.business.id, {
         after: {
           status: "PENDING_SETUP",

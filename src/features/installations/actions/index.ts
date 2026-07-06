@@ -101,3 +101,51 @@ export async function approveInstallationAction(ticketId: string, approved: bool
     return { success: false, message: error instanceof Error ? error.message : "Failed to process approval" };
   }
 }
+
+export async function assignPackageToTicketAction(ticketId: string, packageId: string) {
+  try {
+    const { assignPackageToTicket } = await import("@/server/enterprise/installation-packages/services/package-service");
+    const result = await assignPackageToTicket(ticketId, packageId, {
+      ticketId,
+      packageId,
+      branches: 0,
+      qrCodes: 0,
+      trainingHours: 0,
+      includeBranding: false,
+      includePrinter: false,
+      includeMarketingKit: false,
+      includeVerification: false,
+      optionalServices: [],
+    });
+    return result;
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Failed to assign package" };
+  }
+}
+
+export async function addServiceToTicketAction(ticketId: string, type: string, notes?: string) {
+  try {
+    const { addServiceToTicket } = await import("@/server/enterprise/installation-packages/services/package-service");
+    return await addServiceToTicket(ticketId, type, notes);
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Failed to add service" };
+  }
+}
+
+export async function goLiveAction(ticketId: string) {
+  try {
+    const { goLive } = await import("@/server/enterprise/installation-packages/services/workflow-service");
+    return await goLive(ticketId);
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Failed to go live" };
+  }
+}
+
+export async function customerSignoffAction(ticketId: string, signedBy: string) {
+  try {
+    const { customerSignoff } = await import("@/server/enterprise/installation-packages/services/workflow-service");
+    return await customerSignoff(ticketId, signedBy);
+  } catch (error) {
+    return { success: false, message: error instanceof Error ? error.message : "Failed to record signoff" };
+  }
+}

@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { RoleDashboard, DashboardWidget, KPIData } from "../types";
+import type { RoleDashboard, DashboardWidget } from "../types";
 import { PLATFORM_LAYOUT, BUSINESS_LAYOUT } from "../constants";
 import { getPlatformKPIs, getBusinessKPIs } from "./kpi-service";
 import { prisma } from "@/server/db";

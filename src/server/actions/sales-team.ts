@@ -1,9 +1,9 @@
 "use server";
-
-import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
 import { prisma } from "@/server/db";
 import { serialize } from "@/lib/utils";
+import { getCurrentTargets, getProgress } from "@/server/enterprise/sales-targets/services/target-service";
+import { getRevenueChart, getLatestSnapshot } from "@/server/enterprise/sales-targets/services/kpi-snapshot-service";
 
 export async function getMySalesProfile() {
   const user = await requireAuth();
@@ -273,11 +273,79 @@ export async function getMyMonthlySalesHistory() {
 }
 
 export async function getMyTargetsAction() {
-  await requireAuth();
+  const user = await requireAuth();
+  const profile = await prisma.salesProfile.findUnique({
+    where: { userId: user.id },
+  });
+  if (!profile) {
+    return {
+      monthlyLeads: 10,
+      conversionRate: 30,
+      monthlyCommission: 500000,
+      yearlyCommission: 5000000,
+    };
+  }
+
+  const targets = await getCurrentTargets(profile.id);
+  if (targets.length === 0) {
+    return {
+      monthlyLeads: 10,
+      conversionRate: 30,
+      monthlyCommission: 500000,
+      yearlyCommission: 5000000,
+    };
+  }
+
+  let monthlyLeads = 0;
+  let monthlyCommission = 0;
+  let yearlyCommission = 0;
+  let conversionRate = 30;
+
+  for (const t of targets) {
+    if (t.leadsTarget) monthlyLeads += t.leadsTarget;
+    if (t.revenueTarget) {
+      if (t.period === "YEARLY") yearlyCommission += Number(t.revenueTarget);
+      else monthlyCommission += Number(t.revenueTarget);
+    }
+  }
+
+  if (monthlyCommission > 0 && yearlyCommission === 0) {
+    yearlyCommission = monthlyCommission * 12;
+  }
+
+  const totalLeads = await prisma.lead.count({ where: { assignedToId: profile.id } });
+  const convertedLeads = await prisma.lead.count({ where: { assignedToId: profile.id, status: "CONVERTED" } });
+  if (totalLeads > 0) {
+    conversionRate = Math.round((convertedLeads / totalLeads) * 100);
+  }
+
   return {
-    monthlyLeads: 10,
-    conversionRate: 30,
-    monthlyCommission: 500000,
-    yearlyCommission: 5000000,
+    monthlyLeads,
+    conversionRate,
+    monthlyCommission,
+    yearlyCommission,
   };
+}
+
+export async function getMyKpiSnapshotsAction() {
+  await requireAuth();
+  const [monthly, yearly] = await Promise.all([
+    getLatestSnapshot("MONTHLY"),
+    getLatestSnapshot("YEARLY"),
+  ]);
+  return serialize({ monthly, yearly });
+}
+
+export async function getMyRevenueTrendAction(period?: "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY", limit?: number) {
+  await requireAuth();
+  return serialize(await getRevenueChart(period ?? ("MONTHLY" as const), limit ?? 12));
+}
+
+export async function getMyTargetProgressAction() {
+  const user = await requireAuth();
+  const profile = await prisma.salesProfile.findUnique({
+    where: { userId: user.id },
+  });
+  if (!profile) return [];
+  return serialize(await getProgress(profile.id));
 }
