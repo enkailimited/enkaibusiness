@@ -143,6 +143,22 @@ export const salesTeamAdapter: ContextAdapter = {
       where: { userId },
     });
     if (existing) return {};
+
+    let roleId: string | null = null;
+    if (hierarchyId) {
+      const hierarchy = await (tx as typeof prisma).salesHierarchy.findUnique({
+        where: { id: hierarchyId },
+        select: { slug: true },
+      });
+      if (hierarchy) {
+        const role = await (tx as typeof prisma).role.findUnique({
+          where: { slug: hierarchy.slug },
+          select: { id: true },
+        });
+        roleId = role?.id ?? null;
+      }
+    }
+
     const profile = await (tx as typeof prisma).salesProfile.create({
       data: {
         userId,
@@ -151,6 +167,18 @@ export const salesTeamAdapter: ContextAdapter = {
         status: "ACTIVE",
       },
     });
+
+    if (roleId) {
+      const existingRole = await (tx as typeof prisma).userRole.findFirst({
+        where: { userId, roleId },
+      });
+      if (!existingRole) {
+        await (tx as typeof prisma).userRole.create({
+          data: { userId, roleId },
+        });
+      }
+    }
+
     return { membershipId: profile.id };
   },
 };

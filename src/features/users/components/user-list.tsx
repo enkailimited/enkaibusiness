@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Search, ShieldCheck, ShieldX, Trash2, RefreshCw, Pencil, Mail } from "lucide-react";
+import { Loader2, Search, ShieldCheck, ShieldX, Trash2, RefreshCw, Pencil, Mail, Shield, Check, X } from "lucide-react";
 import type { UserProfile } from "@/features/users/types";
 import {
   listUsersAction,
@@ -11,6 +11,9 @@ import {
   deleteUserAction,
   reinviteUserAction,
   updateUserAction,
+  assignRoleAction,
+  removeRoleAction,
+  listRolesAction,
 } from "@/features/users/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +36,8 @@ export function UserList() {
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
   const [toggleTarget, setToggleTarget] = useState<UserProfile | null>(null);
+  const [roleTarget, setRoleTarget] = useState<UserProfile | null>(null);
+  const [allRoles, setAllRoles] = useState<{ id: string; name: string; slug: string; scope: string }[]>([]);
   const [reinviteTarget, setReinviteTarget] = useState<UserProfile | null>(null);
   const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
@@ -199,6 +204,19 @@ export function UserList() {
                   <div className="flex items-center gap-1">
                     {user.isActive && (
                       <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          title="Manage roles"
+                          onClick={async () => {
+                            setRoleTarget(user);
+                            const res = await listRolesAction();
+                            if (res.roles) setAllRoles(res.roles);
+                          }}
+                        >
+                          <Shield className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -403,6 +421,56 @@ export function UserList() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role management dialog */}
+      <Dialog open={!!roleTarget} onOpenChange={(open) => { if (!open) setRoleTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Roles</DialogTitle>
+            <DialogDescription>
+              {roleTarget ? `Assign or remove roles for ${roleTarget.firstName} ${roleTarget.lastName}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {allRoles.map((role) => {
+              const hasRole = roleTarget?.roles?.some((r) => r.id === role.id) ?? false;
+              return (
+                <div key={role.id} className="flex items-center justify-between rounded border p-2">
+                  <div>
+                    <p className="text-sm font-medium">{role.name}</p>
+                    <p className="text-xs text-muted-foreground">{role.slug}</p>
+                  </div>
+                  <Button
+                    variant={hasRole ? "destructive" : "default"}
+                    size="sm"
+                    onClick={async () => {
+                      if (!roleTarget) return;
+                      if (hasRole) {
+                        await removeRoleAction(roleTarget.id, role.id);
+                      } else {
+                        await assignRoleAction(roleTarget.id, role.id);
+                      }
+                      queryClient.invalidateQueries({ queryKey: ["users"] });
+                      const res = await listRolesAction();
+                      if (res.roles) setAllRoles(res.roles);
+                      const userRes = await listUsersAction({ search: roleTarget.email });
+                      if (userRes.users?.[0]) {
+                        setRoleTarget({ ...roleTarget, roles: userRes.users[0].roles });
+                      }
+                    }}
+                  >
+                    {hasRole ? (
+                      <><X className="mr-1 h-3 w-3" /> Remove</>
+                    ) : (
+                      <><Check className="mr-1 h-3 w-3" /> Assign</>
+                    )}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         </DialogContent>
       </Dialog>
 

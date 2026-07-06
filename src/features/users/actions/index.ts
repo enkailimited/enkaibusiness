@@ -273,3 +273,71 @@ export async function deleteUserAction(userId: string): Promise<ActionResponse> 
     };
   }
 }
+
+export async function assignRoleAction(
+  userId: string,
+  roleId: string,
+): Promise<ActionResponse> {
+  try {
+    const sessionUser = await requireAuth();
+    const canAssign = await hasPermission(sessionUser.id, "roles.assign");
+    if (!canAssign) {
+      return { success: false, message: "You do not have permission to assign roles" };
+    }
+
+    const existing = await prisma.userRole.findFirst({
+      where: { userId, roleId },
+    });
+    if (existing) {
+      return { success: false, message: "User already has this role" };
+    }
+
+    await prisma.userRole.create({ data: { userId, roleId } });
+    return { success: true, message: "Role assigned successfully" };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to assign role",
+    };
+  }
+}
+
+export async function removeRoleAction(
+  userId: string,
+  roleId: string,
+): Promise<ActionResponse> {
+  try {
+    const sessionUser = await requireAuth();
+    const canRemove = await hasPermission(sessionUser.id, "roles.assign");
+    if (!canRemove) {
+      return { success: false, message: "You do not have permission to remove roles" };
+    }
+
+    await prisma.userRole.deleteMany({
+      where: { userId, roleId },
+    });
+    return { success: true, message: "Role removed successfully" };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to remove role",
+    };
+  }
+}
+
+export async function listRolesAction(): Promise<
+  ActionResponse & { roles?: { id: string; name: string; slug: string; scope: string }[] }
+> {
+  try {
+    const roles = await prisma.role.findMany({
+      select: { id: true, name: true, slug: true, scope: true },
+      orderBy: { name: "asc" },
+    });
+    return { success: true, message: "Roles fetched", roles };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to list roles",
+    };
+  }
+}

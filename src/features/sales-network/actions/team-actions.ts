@@ -52,7 +52,24 @@ async function ensureSalesProfile(userId: string) {
     where: { userId },
     include: { hierarchy: true },
   });
-  if (existing) return existing;
+  if (existing) {
+    // Fixup: ensure UserRole exists if SalesProfile has hierarchy
+    if (existing.hierarchy) {
+      const role = await prisma.role.findUnique({
+        where: { slug: existing.hierarchy.slug },
+        select: { id: true },
+      });
+      if (role) {
+        const existingRole = await prisma.userRole.findFirst({
+          where: { userId, roleId: role.id },
+        });
+        if (!existingRole) {
+          await prisma.userRole.create({ data: { userId, roleId: role.id } });
+        }
+      }
+    }
+    return existing;
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -304,6 +321,22 @@ export async function addTeamMemberAction(
         status: "ACTIVE",
       },
     });
+
+    const role = await prisma.role.findUnique({
+      where: { slug: targetHierarchy.slug },
+      select: { id: true },
+    });
+
+    if (role) {
+      const existingRole = await prisma.userRole.findFirst({
+        where: { userId: targetUserId, roleId: role.id },
+      });
+      if (!existingRole) {
+        await prisma.userRole.create({
+          data: { userId: targetUserId, roleId: role.id },
+        });
+      }
+    }
 
     revalidatePath("/platform/sales-team/team");
     return { success: true, message: "Team member added successfully" };
