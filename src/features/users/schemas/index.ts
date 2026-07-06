@@ -33,6 +33,24 @@ export const updateProfileSchema = z.object({
     .url("Invalid URL")
     .optional()
     .or(z.literal("")),
+  nida: z
+    .string()
+    .max(30, "NIDA number too long")
+    .optional()
+    .or(z.literal("")),
+  address: z
+    .string()
+    .min(1, "Physical address is required")
+    .max(200, "Address is too long")
+    .optional(),
+  guarantor: z
+    .object({
+      fullName: z.string().min(1, "Guarantor name is required").max(100),
+      phone: z.string().min(1, "Guarantor phone is required"),
+      relationship: z.string().min(1, "Relationship is required").max(50),
+      address: z.string().min(1, "Guarantor address is required").max(200),
+    })
+    .optional(),
 });
 
 export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>;

@@ -10,6 +10,7 @@ import {
   createUserInvite,
 } from "@/features/users/services/invite-service";
 import { UserRegistrationEngine, RegistrationContext } from "@/server/registrations";
+import type { DocumentInput } from "@/server/registrations/context";
 
 const ROLE_TO_HIERARCHY: Record<string, string> = {
   "national-sales-manager": "national-sales-manager",
@@ -96,6 +97,16 @@ export async function inviteSalesTeamMemberAction(
     const username = (formData.get("username") || "").toString().trim();
     const gender = (formData.get("gender") || "").toString().trim();
     const hierarchyId = (formData.get("hierarchyId") || "").toString().trim();
+    const address = (formData.get("address") || "").toString().trim();
+    const nida = (formData.get("nida") || "").toString().trim();
+    const guarantorFullName = (formData.get("guarantorFullName") || "").toString().trim();
+    const guarantorPhone = (formData.get("guarantorPhone") || "").toString().trim();
+    const guarantorRelationship = (formData.get("guarantorRelationship") || "").toString().trim();
+    const guarantorAddress = (formData.get("guarantorAddress") || "").toString().trim();
+    const documentType = (formData.get("documentType") || "").toString().trim();
+    const documentFileUrl = (formData.get("documentFileUrl") || "").toString().trim();
+    const documentFileName = (formData.get("documentFileName") || "").toString().trim();
+    const documentFileId = (formData.get("documentFileId") || "").toString().trim();
 
     if (!firstName || !lastName || !email || !phone || !username || !gender) {
       return { success: false, message: "All personal fields are required" };
@@ -104,6 +115,11 @@ export async function inviteSalesTeamMemberAction(
     if (!hierarchyId) {
       return { success: false, message: "Sales role is required" };
     }
+
+    const documents: DocumentInput[] =
+      documentFileUrl && documentFileName && documentFileId
+        ? [{ type: documentType || "national_id", fileUrl: documentFileUrl, fileName: documentFileName, fileId: documentFileId }]
+        : [];
 
     const managerProfile = await ensureManagerProfile(authUser.id);
     if (!managerProfile) {
@@ -160,6 +176,12 @@ export async function inviteSalesTeamMemberAction(
           gender: gender || null,
           hierarchyId,
           managerId: managerProfile.id,
+          address: address || null,
+          nida: nida || null,
+          guarantor: (guarantorFullName && guarantorPhone && guarantorRelationship && guarantorAddress)
+            ? { fullName: guarantorFullName, phone: guarantorPhone, relationship: guarantorRelationship, address: guarantorAddress }
+            : null,
+          documents,
         },
       );
 
@@ -186,6 +208,12 @@ export async function inviteSalesTeamMemberAction(
         gender: gender || null,
         hierarchyId,
         managerId: managerProfile.id,
+        address: address || null,
+        nida: nida || null,
+        guarantor: (guarantorFullName && guarantorPhone && guarantorRelationship && guarantorAddress)
+          ? { fullName: guarantorFullName, phone: guarantorPhone, relationship: guarantorRelationship, address: guarantorAddress }
+          : null,
+        documents,
       },
     );
 

@@ -511,6 +511,8 @@ model User {
   image          String?
   gender         String?
   avatarUrl      String?  @map("avatar_url")
+  nida           String?  @map("nida")
+  address        String   @default("") @map("address")
   isActive       Boolean  @default(true) @map("is_active")
   isOnboarded         Boolean  @default(false) @map("is_onboarded")
   mustChangePassword  Boolean  @default(true) @map("must_change_password")
@@ -518,6 +520,8 @@ model User {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   workspaceMemberships              WorkspaceMember[]
+  guarantor                         Guarantor?
+  documents                         UserDocument[]
   userRoles                         UserRole[]
   createdBusinesses                 Business[]                  @relation("BusinessCreatedBy")
   updatedBusinesses                 Business[]                  @relation("BusinessUpdatedBy")
@@ -572,6 +576,39 @@ model User {
   installers                       Installer[]
 
   @@map("users")
+}
+
+// ─── Guarantor ──────────────────────────────────────────────────────────────
+
+model Guarantor {
+  id           String   @id @default(uuid()) @db.Uuid
+  fullName     String   @map("full_name")
+  phone        String
+  relationship String
+  address      String
+  userId       String   @unique @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("guarantors")
+}
+
+// ─── UserDocument ──────────────────────────────────────────────────────────
+
+model UserDocument {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String   // e.g. "national_id", "passport", "drivers_license"
+  fileUrl   String   @map("file_url")
+  fileName  String   @map("file_name")
+  fileId    String   @map("file_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_documents")
 }
 
 // ─── UserInvite ─────────────────────────────────────────────────────────────

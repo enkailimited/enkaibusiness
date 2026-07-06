@@ -6,7 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Loader2, User, Phone, AtSign, Camera, Key, Lock,
-  ShieldCheck, CheckCircle,
+  ShieldCheck, CheckCircle, MapPin, Fingerprint, UserPlus,
 } from "lucide-react";
 import type { UserProfile, UpdateProfileInput } from "@/features/users/types";
 import { updateProfileSchema, type UpdateProfileSchema } from "@/features/users/schemas";
@@ -49,6 +49,14 @@ export function UserProfile({ user, avatarBusinessId, roles = [] }: UserProfileP
       phone: user.phone ?? "",
       username: user.username ?? "",
       avatarUrl: user.avatarUrl ?? "",
+      nida: user.nida ?? "",
+      address: user.address ?? "",
+      guarantor: user.guarantor ? {
+        fullName: user.guarantor.fullName,
+        phone: user.guarantor.phone,
+        relationship: user.guarantor.relationship,
+        address: user.guarantor.address,
+      } : undefined,
     },
   });
 
@@ -250,6 +258,63 @@ export function UserProfile({ user, avatarBusinessId, roles = [] }: UserProfileP
                           <Input {...register("username")} className="pl-9" />
                         </div>
                       </FormField>
+
+                      <FormField label="NIDA Number" error={errors.nida}>
+                        <div className="relative">
+                          <Fingerprint className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input {...register("nida")} placeholder="Optional" className="pl-9" />
+                        </div>
+                      </FormField>
+
+                      <FormField label="Physical Address" error={errors.address} required>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                          <Input {...register("address")} placeholder="e.g. Mtaa wa Azikiwe, Dar es Salaam" className="pl-9" />
+                        </div>
+                      </FormField>
+
+                      <Separator />
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <UserPlus className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Guarantor</h3>
+                          <p className="text-xs text-muted-foreground">
+                            Provide one guarantor for your registration
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <FormField label="Full Name" error={errors.guarantor?.fullName} required>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input {...register("guarantor.fullName")} className="pl-9" />
+                          </div>
+                        </FormField>
+                        <FormField label="Phone" error={errors.guarantor?.phone} required>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input type="tel" {...register("guarantor.phone")} className="pl-9" />
+                          </div>
+                        </FormField>
+                      </div>
+
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <FormField label="Relationship" error={errors.guarantor?.relationship} required>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input {...register("guarantor.relationship")} placeholder="e.g. Parent, Sibling" className="pl-9" />
+                          </div>
+                        </FormField>
+                        <FormField label="Address" error={errors.guarantor?.address} required>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input {...register("guarantor.address")} className="pl-9" />
+                          </div>
+                        </FormField>
+                      </div>
 
                       <input type="hidden" {...register("avatarUrl")} />
 

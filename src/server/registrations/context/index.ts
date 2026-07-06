@@ -9,6 +9,20 @@ export enum RegistrationContext {
   SALES_TEAM = "sales_team",
 }
 
+export interface GuarantorInput {
+  fullName: string;
+  phone: string;
+  relationship: string;
+  address: string;
+}
+
+export interface DocumentInput {
+  type: string;
+  fileUrl: string;
+  fileName: string;
+  fileId: string;
+}
+
 export interface ContextAdapterParams {
   userId: string;
   businessId?: string | null;
@@ -23,6 +37,10 @@ export interface ContextAdapterParams {
   position?: string | null;
   employeeCode?: string | null;
   hireDate?: string | null;
+  address?: string | null;
+  nida?: string | null;
+  guarantor?: GuarantorInput | null;
+  documents?: DocumentInput[];
 }
 
 export interface ContextAdapter {
@@ -138,7 +156,7 @@ export const businessAdapter: ContextAdapter = {
 
 export const salesTeamAdapter: ContextAdapter = {
   context: RegistrationContext.SALES_TEAM,
-  async assign(tx, { userId, hierarchyId, managerId }) {
+  async assign(tx, { userId, hierarchyId, managerId, address, nida, guarantor, documents }) {
     const existing = await (tx as typeof prisma).salesProfile.findUnique({
       where: { userId },
     });
@@ -156,6 +174,52 @@ export const salesTeamAdapter: ContextAdapter = {
           select: { id: true },
         });
         roleId = role?.id ?? null;
+      }
+    }
+
+    // Update user with address and nida
+    if (address || nida) {
+      await (tx as typeof prisma).user.update({
+        where: { id: userId },
+        data: {
+          ...(address ? { address } : {}),
+          ...(nida ? { nida } : {}),
+        },
+      });
+    }
+
+    // Create guarantor
+    if (guarantor) {
+      await (tx as typeof prisma).guarantor.upsert({
+        where: { userId },
+        create: {
+          userId,
+          fullName: guarantor.fullName,
+          phone: guarantor.phone,
+          relationship: guarantor.relationship,
+          address: guarantor.address,
+        },
+        update: {
+          fullName: guarantor.fullName,
+          phone: guarantor.phone,
+          relationship: guarantor.relationship,
+          address: guarantor.address,
+        },
+      });
+    }
+
+    // Create identity documents
+    if (documents && documents.length > 0) {
+      for (const doc of documents) {
+        await (tx as typeof prisma).userDocument.create({
+          data: {
+            userId,
+            type: doc.type,
+            fileUrl: doc.fileUrl,
+            fileName: doc.fileName,
+            fileId: doc.fileId,
+          },
+        });
       }
     }
 

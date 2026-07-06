@@ -12,7 +12,7 @@ import {
   success,
   failure,
 } from "../shared";
-import { RegistrationContext, adapters, type ContextAdapterParams } from "../context";
+import { RegistrationContext, adapters, type ContextAdapterParams, type GuarantorInput, type DocumentInput } from "../context";
 import { emitUserRegistered, emitUserAssignedToContext } from "../events";
 
 export interface RegisterUserInput {
@@ -35,6 +35,10 @@ export interface RegisterUserInput {
   workspaceId?: string | null;
   workspaceRole?: string;
   invite?: boolean;
+  address?: string | null;
+  nida?: string | null;
+  guarantor?: GuarantorInput | null;
+  documents?: DocumentInput[];
 }
 
 export class UserRegistrationEngine {
@@ -91,6 +95,8 @@ export class UserRegistrationEngine {
             username: input.username ?? null,
             gender: input.gender ?? null,
             isOnboarded: false,
+            ...(input.address ? { address: input.address } : {}),
+            ...(input.nida ? { nida: input.nida } : {}),
           },
         });
 
@@ -107,6 +113,10 @@ export class UserRegistrationEngine {
           managerId: input.managerId,
           workspaceId: input.workspaceId,
           workspaceRole: input.workspaceRole,
+          address: input.address ?? null,
+          nida: input.nida ?? null,
+          guarantor: input.guarantor ?? null,
+          documents: input.documents ?? [],
         };
 
         await adapter.assign(tx as any, params);
@@ -181,6 +191,8 @@ export class UserRegistrationEngine {
             phone: input.phone ?? null,
             username: input.username ?? null,
             gender: input.gender ?? null,
+            ...(input.address ? { address: input.address } : {}),
+            ...(input.nida ? { nida: input.nida } : {}),
           },
         });
 
@@ -197,6 +209,10 @@ export class UserRegistrationEngine {
           managerId: input.managerId,
           workspaceId: input.workspaceId,
           workspaceRole: input.workspaceRole,
+          address: input.address ?? null,
+          nida: input.nida ?? null,
+          guarantor: input.guarantor ?? null,
+          documents: input.documents ?? [],
         };
 
         await adapter.assign(tx as any, params);

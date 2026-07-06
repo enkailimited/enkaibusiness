@@ -8,6 +8,8 @@ import { StepIndicator } from "./step-indicator";
 import { PersonalInfoStep } from "./personal-info-step";
 import { GenderSelectStep } from "./gender-select-step";
 import { RoleAssignStep, type RoleOption } from "./role-assign-step";
+import { SalesInfoStep } from "./sales-info-step";
+import { IdentityUploadStep } from "./identity-upload-step";
 import type { ActionResponse } from "@/types/relationships";
 
 export type InviteContext = "platform" | "workspace" | "business" | "sales_team";
@@ -63,6 +65,7 @@ export function InviteForm({
   const [selectedGender, setSelectedGender] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedHierarchy, setSelectedHierarchy] = useState("");
+  const [uploadedDoc, setUploadedDoc] = useState<{ fileUrl: string; fileName: string; fileId: string } | null>(null);
   const [allowSubmit, setAllowSubmit] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -75,6 +78,7 @@ export function InviteForm({
         setSelectedGender("");
         setSelectedRole("");
         setSelectedHierarchy("");
+        setUploadedDoc(null);
         setAllowSubmit(false);
         if (formRef.current) formRef.current.reset();
         onSuccess?.();
@@ -83,15 +87,19 @@ export function InviteForm({
     }
   }, [state?.success, onSuccess]);
 
-  const totalSteps = context === "business" ? 3 : 3;
+  const totalSteps = context === "business" ? 3 : context === "sales_team" ? 5 : 3;
 
   function canProceed(): boolean {
     if (step === 1) return !!selectedGender;
+    if (step === 2 && context === "sales_team") return !!selectedHierarchy;
+    if (step === 3 && context === "sales_team") return true;
+    if (step === 4 && context === "sales_team") return !!uploadedDoc;
     return true;
   }
 
   function handleNext() {
-    if (step < 2) setStep((s) => Math.min(s + 1, 2));
+    const maxStep = totalSteps - 1;
+    if (step < maxStep) setStep((s) => Math.min(s + 1, maxStep));
   }
 
   function handleFinalSubmit() {
@@ -101,8 +109,10 @@ export function InviteForm({
     }, 0);
   }
 
+  const lastStep = totalSteps - 1;
+
   function handleSubmit(e: React.FormEvent) {
-    if (step < 2 || !allowSubmit) {
+    if (step < lastStep || !allowSubmit) {
       e.preventDefault();
       return;
     }
@@ -185,10 +195,26 @@ export function InviteForm({
             {renderRoleStep()}
           </div>
 
-          {step === 2 && state?.success === false && (
+          {context === "sales_team" && (
+            <div className={step !== 3 ? "hidden" : ""}>
+              <SalesInfoStep />
+            </div>
+          )}
+
+          {context === "sales_team" && (
+            <div className={step !== 4 ? "hidden" : ""}>
+              <IdentityUploadStep
+                uploadedDoc={uploadedDoc}
+                onUploadComplete={(doc) => setUploadedDoc(doc)}
+                onRemove={() => setUploadedDoc(null)}
+              />
+            </div>
+          )}
+
+          {step === lastStep && state?.success === false && (
             <p className="text-sm text-destructive">{state.message}</p>
           )}
-          {step === 2 && state?.success && (
+          {step === lastStep && state?.success && (
             <p className="text-sm text-emerald-600">{state.message}</p>
           )}
 
@@ -202,7 +228,7 @@ export function InviteForm({
               )}
             </div>
             <div>
-              {step < 2 ? (
+              {step < lastStep ? (
                 <Button type="button" size="sm" onClick={handleNext} disabled={!canProceed()}>
                   Next
                   <ArrowRight className="ml-2 h-4 w-4" />

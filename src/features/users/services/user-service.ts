@@ -13,12 +13,21 @@ function toProfile(user: {
   phone: string | null;
   username: string | null;
   avatarUrl: string | null;
+  nida: string | null;
+  address: string;
   isActive: boolean;
   isOnboarded: boolean;
   createdAt: Date;
   updatedAt: Date;
   userRoles?: { role: { id: string; name: string; slug: string; scope: string } }[];
   invites?: { status: string; createdAt: Date }[];
+  guarantor?: {
+    id: string;
+    fullName: string;
+    phone: string;
+    relationship: string;
+    address: string;
+  } | null;
 }): UserProfile {
   const latestInvite = user.invites?.length ? user.invites[0] : null;
   return {
@@ -29,6 +38,8 @@ function toProfile(user: {
     phone: user.phone,
     username: user.username,
     avatarUrl: user.avatarUrl,
+    nida: user.nida,
+    address: user.address,
     isActive: user.isActive,
     isOnboarded: user.isOnboarded,
     createdAt: user.createdAt,
@@ -36,6 +47,7 @@ function toProfile(user: {
     roles: user.userRoles?.map((ur) => ur.role),
     inviteStatus: latestInvite?.status ?? null,
     inviteSentAt: latestInvite?.createdAt ?? null,
+    guarantor: user.guarantor ?? null,
   };
 }
 
@@ -48,6 +60,7 @@ export async function getProfile(userId: string): Promise<UserProfile | null> {
           role: { select: { id: true, name: true, slug: true, scope: true } },
         },
       },
+      guarantor: true,
     },
   });
   return user ? toProfile(user) : null;
@@ -64,13 +77,41 @@ export async function updateProfile(
   if (input.phone !== undefined) data.phone = input.phone || null;
   if (input.username !== undefined) data.username = input.username || null;
   if (input.avatarUrl !== undefined) data.avatarUrl = input.avatarUrl || null;
+  if (input.nida !== undefined) data.nida = input.nida || null;
+  if (input.address !== undefined) data.address = input.address;
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data,
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: userId },
+      data,
+    });
+
+    if (input.guarantor) {
+      await tx.guarantor.upsert({
+        where: { userId },
+        create: {
+          userId,
+          fullName: input.guarantor.fullName,
+          phone: input.guarantor.phone,
+          relationship: input.guarantor.relationship,
+          address: input.guarantor.address,
+        },
+        update: {
+          fullName: input.guarantor.fullName,
+          phone: input.guarantor.phone,
+          relationship: input.guarantor.relationship,
+          address: input.guarantor.address,
+        },
+      });
+    }
   });
 
-  return toProfile(user);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { guarantor: true },
+  });
+
+  return toProfile(user!);
 }
 
 export async function getUserById(userId: string): Promise<UserProfile | null> {
@@ -98,6 +139,7 @@ export async function listUsers(params?: {
         take: 1,
         select: { status: true, createdAt: true },
       },
+      guarantor: true,
     },
     orderBy: { createdAt: "desc" },
     offset: (page - 1) * limit,
@@ -111,6 +153,7 @@ export async function activateUser(userId: string): Promise<UserProfile> {
   const user = await prisma.user.update({
     where: { id: userId },
     data: { isActive: true },
+    include: { guarantor: true },
   });
   return toProfile(user);
 }
@@ -119,6 +162,7 @@ export async function deactivateUser(userId: string): Promise<UserProfile> {
   const user = await prisma.user.update({
     where: { id: userId },
     data: { isActive: false },
+    include: { guarantor: true },
   });
   return toProfile(user);
 }
