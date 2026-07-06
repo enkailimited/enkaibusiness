@@ -6,6 +6,7 @@ import { useHasAnyPermission } from "@/hooks/use-permission";
 import {
   BarChart3, Users, UserPlus, Megaphone, Headphones,
   CreditCard, DollarSign, QrCode, Wallet, ShieldCheck, AreaChart,
+  MapPin,
 } from "lucide-react";
 
 const actionGroups = [
@@ -21,6 +22,8 @@ const actionGroups = [
       { title: "Sales", href: "/platform/sales", icon: BarChart3, color: "text-blue-600", bg: "bg-blue-100", permission: "sales.read" },
       { title: "Commissions", href: "/platform/commissions", icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-100", permission: "sales.read" },
       { title: "Distribution", href: "/platform/distribution", icon: QrCode, color: "text-orange-600", bg: "bg-orange-100", permission: "purchases.read" },
+      { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin, color: "text-cyan-600", bg: "bg-cyan-100", permission: "sales.read" },
+      { title: "Manage Territories", href: "/platform/sales-team/territories/manage", icon: MapPin, color: "text-teal-600", bg: "bg-teal-100", permission: "sales.read" },
     ],
   },
   {
