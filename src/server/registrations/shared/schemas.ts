@@ -36,6 +36,7 @@ export interface CreateBusinessInput {
   businessTypeId?: string | null;
   branchId?: string | null;
   storeId?: string | null;
+  branchingMode?: "SHARED" | "ISOLATED";
 }
 
 export interface StaffRegistrationResult {

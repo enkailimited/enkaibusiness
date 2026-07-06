@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Drawer } from "vaul";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useActiveBranch } from "../context/active-branch-context";
-import { GitBranch, ChevronDown, Check, Search, Building2 } from "lucide-react";
+import { GitBranch, ChevronDown, Check, Search, Building2, Layers } from "lucide-react";
 
 interface BranchInfo {
   id: string;
@@ -17,7 +17,7 @@ interface BranchSwitcherProps {
 }
 
 export function BranchSwitcher({ branches }: BranchSwitcherProps) {
-  const { activeBranch, setActiveBranch } = useActiveBranch();
+  const { activeBranch, setActiveBranch, setViewMode, allBranchesSelected } = useActiveBranch();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -45,11 +45,18 @@ export function BranchSwitcher({ branches }: BranchSwitcherProps) {
   const selectBranch = useCallback(
     (branch: BranchInfo) => {
       setActiveBranch(branch);
+      setViewMode("single");
       setOpen(false);
       setQuery("");
     },
-    [setActiveBranch],
+    [setActiveBranch, setViewMode],
   );
+
+  const selectAllBranches = useCallback(() => {
+    setViewMode("all");
+    setOpen(false);
+    setQuery("");
+  }, [setViewMode]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     switch (e.key) {
@@ -91,7 +98,7 @@ export function BranchSwitcher({ branches }: BranchSwitcherProps) {
         >
           <GitBranch className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
           <span className="max-w-[100px] truncate">
-            {activeBranch?.name || "Select Branch"}
+            {allBranchesSelected ? "All Branches" : activeBranch?.name || "Select Branch"}
           </span>
           <ChevronDown className="h-3 w-3 text-muted-foreground/70 shrink-0" />
         </button>
@@ -134,6 +141,35 @@ export function BranchSwitcher({ branches }: BranchSwitcherProps) {
             ref={listRef}
             className="flex-1 overflow-y-auto overscroll-contain py-1"
           >
+            <button
+              onClick={selectAllBranches}
+              onMouseEnter={() => setHighlightedIndex(-1)}
+              className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                allBranchesSelected
+                  ? "bg-primary/5 font-medium"
+                  : "hover:bg-muted/50"
+              }`}
+            >
+              <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
+                  allBranchesSelected
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <Layers className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="truncate block">All Branches</span>
+              </div>
+              <span className="shrink-0 rounded bg-muted-foreground/10 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {branches.length}
+              </span>
+              {allBranchesSelected && (
+                <Check className="h-4 w-4 shrink-0 text-primary" />
+              )}
+            </button>
+            <div className="mx-4 border-t" />
             {sorted.length === 0 ? (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 No branches found

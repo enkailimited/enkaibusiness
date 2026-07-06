@@ -259,6 +259,11 @@ enum PricingTier {
   CUSTOMER_GROUP
 }
 
+enum BranchingMode {
+  SHARED
+  ISOLATED
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUSINESS TYPE LAYER
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -704,10 +709,11 @@ model Business {
   timezone       String   @default("Africa/Dar_es_Salaam")
   isActive       Boolean  @default(true) @map("is_active")
   status         String   @default("ACTIVE") // PENDING_SETUP, ACTIVE, SUSPENDED, INACTIVE
-  createdById    String?  @map("created_by") @db.Uuid
-  updatedById    String?  @map("updated_by") @db.Uuid
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  branchingMode  BranchingMode @default(ISOLATED) @map("branching_mode")
+  createdById    String?       @map("created_by") @db.Uuid
+  updatedById    String?       @map("updated_by") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
   workspace               Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   businessType            BusinessType?            @relation(fields: [businessTypeId], references: [id])

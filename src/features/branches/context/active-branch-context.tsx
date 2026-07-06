@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 
+export type BranchViewMode = "single" | "all";
+
 interface BranchInfo {
   id: string;
   name: string;
@@ -12,12 +14,20 @@ interface ActiveBranchContextType {
   activeBranch: BranchInfo | null;
   setActiveBranch: (branch: BranchInfo) => void;
   clearActiveBranch: () => void;
+  viewMode: BranchViewMode;
+  setViewMode: (mode: BranchViewMode) => void;
+  allBranchesSelected: boolean;
+  branches: BranchInfo[];
 }
 
 const ActiveBranchContext = createContext<ActiveBranchContextType>({
   activeBranch: null,
   setActiveBranch: () => {},
   clearActiveBranch: () => {},
+  viewMode: "single",
+  setViewMode: () => {},
+  allBranchesSelected: false,
+  branches: [],
 });
 
 export function useActiveBranch() {
@@ -36,12 +46,17 @@ export function ActiveBranchProvider({
   defaultBranchId?: string;
 }) {
   const [activeBranch, setActiveBranchState] = useState<BranchInfo | null>(null);
+  const [viewMode, setViewModeState] = useState<BranchViewMode>("single");
 
   useEffect(() => {
     const stored = localStorage.getItem(`activeBranch_${businessId}`);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
+        if (parsed.id === "__all__") {
+          setViewModeState("all");
+          return;
+        }
         const found = branches.find((b) => b.id === parsed.id);
         if (found) {
           setActiveBranchState(found);
@@ -68,6 +83,7 @@ export function ActiveBranchProvider({
   const setActiveBranch = useCallback(
     (branch: BranchInfo) => {
       setActiveBranchState(branch);
+      setViewModeState("single");
       localStorage.setItem(`activeBranch_${businessId}`, JSON.stringify(branch));
     },
     [businessId],
@@ -75,11 +91,32 @@ export function ActiveBranchProvider({
 
   const clearActiveBranch = useCallback(() => {
     setActiveBranchState(null);
+    setViewModeState("single");
     localStorage.removeItem(`activeBranch_${businessId}`);
   }, [businessId]);
 
+  const setViewMode = useCallback(
+    (mode: BranchViewMode) => {
+      setViewModeState(mode);
+      if (mode === "all") {
+        localStorage.setItem(`activeBranch_${businessId}`, JSON.stringify({ id: "__all__", name: "All Branches", isHeadOffice: false }));
+      }
+    },
+    [businessId],
+  );
+
   return (
-    <ActiveBranchContext.Provider value={{ activeBranch, setActiveBranch, clearActiveBranch }}>
+    <ActiveBranchContext.Provider
+      value={{
+        activeBranch,
+        setActiveBranch,
+        clearActiveBranch,
+        viewMode,
+        setViewMode,
+        allBranchesSelected: viewMode === "all",
+        branches,
+      }}
+    >
       {children}
     </ActiveBranchContext.Provider>
   );

@@ -41,7 +41,7 @@ export class BusinessRegistrationEngine {
       const config = await effectiveResolver.getConfig();
       const effectivePricing = pricing || await effectiveResolver.getDefaultPricing();
 
-      const { industry, modes, planId, businessSize, businessTypeId, branchId, storeId, ...businessData } = input;
+      const { industry, modes, planId, businessSize, businessTypeId, branchId, storeId, branchingMode, ...businessData } = input;
 
       const subscriptionRequired = await effectiveResolver.requiresSubscription();
 
@@ -50,6 +50,7 @@ export class BusinessRegistrationEngine {
           data: {
             ...businessData,
             businessTypeId: businessTypeId ?? null,
+            branchingMode: branchingMode ?? "ISOLATED",
             status: "PENDING_SETUP",
             isActive: false,
             modes: {
