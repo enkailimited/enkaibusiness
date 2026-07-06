@@ -93,7 +93,7 @@ export function InviteForm({
     if (step === 1) return !!selectedGender;
     if (step === 2 && context === "sales_team") return !!selectedHierarchy;
     if (step === 3 && context === "sales_team") return true;
-    if (step === 4 && context === "sales_team") return !!uploadedDoc;
+    if (step === 4 && context === "sales_team") return true;
     return true;
   }
 

@@ -33,7 +33,7 @@ export function IdentityUploadStep({
       </div>
 
       <div className="space-y-3">
-        <label className="text-sm font-medium">Document Type <span className="text-destructive">*</span></label>
+        <label className="text-sm font-medium">Document Type <span className="text-muted-foreground text-xs">(optional)</span></label>
         <div className="grid grid-cols-3 gap-2">
           {DOCUMENT_TYPES.map((dt) => {
             const isSelected = docType === dt.value;
@@ -59,10 +59,10 @@ export function IdentityUploadStep({
 
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Upload ID Document <span className="text-destructive">*</span>
+          Upload ID Document <span className="text-muted-foreground text-xs">(optional)</span>
         </label>
         <p className="text-xs text-muted-foreground">
-          Upload a clear photo or scan of your identity document (JPEG, PNG, PDF — max 10MB)
+          Optionally upload a photo or scan of your identity document (JPEG, PNG, PDF — max 10MB)
         </p>
 
         {uploadedDoc ? (
