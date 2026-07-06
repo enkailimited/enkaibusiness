@@ -36,6 +36,18 @@ export async function createLead(
       if (profile) assignedToId = profile.id;
     }
 
+    let territoryId: string | undefined;
+    if (data.location) {
+      const territory = await prisma.territory.findFirst({
+        where: {
+          name: { contains: data.location, mode: "insensitive" },
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      territoryId = territory?.id;
+    }
+
     const lead = await prisma.lead.create({
       data: {
         firstName: data.firstName,
@@ -43,6 +55,8 @@ export async function createLead(
         email: data.email || null,
         phone: data.phone || null,
         businessName: data.businessName || null,
+        location: data.location || null,
+        territoryId: territoryId ?? null,
         notes: data.notes || null,
         source: "MANUAL",
         status: "NEW",

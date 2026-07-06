@@ -15,6 +15,7 @@ interface LeadFormProps {
     email?: string;
     phone?: string;
     businessName?: string;
+    location?: string;
     notes?: string;
   };
 }
@@ -56,6 +57,11 @@ export function LeadForm({ leadId, initialData }: LeadFormProps) {
           <div className="space-y-2">
             <Label htmlFor="businessName">Business Name</Label>
             <Input id="businessName" name="businessName" defaultValue={initialData?.businessName ?? ""} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input id="location" name="location" defaultValue={initialData?.location ?? ""} placeholder="e.g. Dar es Salaam, Arusha" />
           </div>
 
           <div className="space-y-2">

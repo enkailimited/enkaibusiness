@@ -37,6 +37,7 @@ export async function createLeadAction(
     email: formData.get("email") || undefined,
     phone: formData.get("phone") || undefined,
     businessName: formData.get("businessName") || undefined,
+    location: formData.get("location") || undefined,
     notes: formData.get("notes") || undefined,
   });
 
@@ -80,6 +81,7 @@ export async function updateLeadAction(
     email: formData.get("email") || undefined,
     phone: formData.get("phone") || undefined,
     businessName: formData.get("businessName") || undefined,
+    location: formData.get("location") || undefined,
     notes: formData.get("notes") || undefined,
   });
 

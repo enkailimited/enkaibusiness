@@ -2339,6 +2339,44 @@ model SalesHierarchy {
   @@map("sales_hierarchy")
 }
 
+// ─── Territory ───────────────────────────────────────────────────────────────
+
+model Territory {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  description    String?
+  targetRevenue  Decimal? @map("target_revenue") @db.Decimal(15, 2)
+  marketSize     Int?     @map("market_size")
+  color          String?  @default("#3b82f6")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  members    TerritoryAssignment[]
+  leads      Lead[]                @relation("LeadTerritory")
+
+  @@index([name])
+  @@index([isActive])
+  @@map("territories")
+}
+
+model TerritoryAssignment {
+  id             String   @id @default(uuid()) @db.Uuid
+  territoryId    String   @map("territory_id") @db.Uuid
+  salesProfileId String   @map("sales_profile_id") @db.Uuid
+  isPrimary      Boolean  @default(false) @map("is_primary")
+  assignedAt     DateTime @default(now()) @map("assigned_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  territory    Territory    @relation(fields: [territoryId], references: [id], onDelete: Cascade)
+  salesProfile SalesProfile @relation(fields: [salesProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([territoryId, salesProfileId])
+  @@index([territoryId])
+  @@index([salesProfileId])
+  @@map("territory_assignments")
+}
+
 // ─── SalesProfile ────────────────────────────────────────────────────────────
 
 model SalesProfile {
@@ -2358,8 +2396,9 @@ model SalesProfile {
   manager      SalesProfile?   @relation("SalesManager", fields: [managerId], references: [id])
   subordinates SalesProfile[]  @relation("SalesManager")
 
-  leads             Lead[]             @relation("LeadAssignedTo")
-  leadAssignments   LeadAssignment[]   @relation("LeadAssignmentSalesProfile")
+  leads             Lead[]                @relation("LeadAssignedTo")
+  leadAssignments   LeadAssignment[]      @relation("LeadAssignmentSalesProfile")
+  territoryAssignments TerritoryAssignment[]
   commissionEntries CommissionLedger[] @relation("SalesProfileCommissions")
   recurringCommissionConfigs RecurringCommissionConfig[]
   salesTargets SalesTarget[]
@@ -2379,20 +2418,24 @@ model Lead {
   email             String?
   phone             String?
   businessName      String?    @map("business_name")
+  location          String?    @map("location")
   source            LeadSource @default(MANUAL)
   status            LeadStatus @default(NEW)
   notes             String?
   assignedToId      String?    @map("assigned_to") @db.Uuid
+  territoryId       String?    @map("territory_id") @db.Uuid
   convertedAt       DateTime?  @map("converted_at")
   convertedToUserId String?    @map("converted_to_user_id") @db.Uuid
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
 
   assignedTo  SalesProfile?    @relation("LeadAssignedTo", fields: [assignedToId], references: [id])
+  territory   Territory?       @relation("LeadTerritory", fields: [territoryId], references: [id])
   activities  LeadActivity[]
   assignments LeadAssignment[]
 
   @@index([assignedToId])
+  @@index([territoryId])
   @@index([status])
   @@index([createdAt])
   @@map("leads")

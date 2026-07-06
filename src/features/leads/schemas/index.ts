@@ -14,6 +14,7 @@ export const createLeadSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   businessName: z.string().optional().or(z.literal("")),
+  location: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
 });
 
