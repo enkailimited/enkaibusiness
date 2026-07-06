@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/layout/page-header";
 import { UserProfile } from "@/features/users/components/user-profile";
 import { getCurrentUser } from "@/server/auth";
 import { redirect } from "next/navigation";
@@ -10,9 +9,13 @@ export default async function ProfilePage() {
     redirect("/login?redirect=/profile");
   }
 
-  const [dbUser, staff] = await Promise.all([
+  const [dbUser, staff, userRoles] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id } }),
     prisma.staff.findFirst({ where: { userId: user.id }, select: { businessId: true } }),
+    prisma.userRole.findMany({
+      where: { userId: user.id },
+      select: { role: { select: { id: true, name: true, slug: true, scope: true } } },
+    }),
   ]);
 
   if (!dbUser) {
@@ -34,14 +37,11 @@ export default async function ProfilePage() {
   };
 
   const avatarBusinessId = staff?.businessId ?? undefined;
+  const roles = userRoles.map((ur) => ur.role);
 
   return (
     <div className="space-y-6 pb-10">
-      <PageHeader
-        title="My Profile"
-        description="Update your personal information and account settings"
-      />
-      <UserProfile user={profile} avatarBusinessId={avatarBusinessId} />
+      <UserProfile user={profile} avatarBusinessId={avatarBusinessId} roles={roles} />
     </div>
   );
 }

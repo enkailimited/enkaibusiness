@@ -5,29 +5,26 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormError } from "@/components/ui/form";
 import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
-import { Loader2, Lock, ArrowLeft, CheckCircle } from "lucide-react";
+import { Loader2, Lock, ArrowLeft, CheckCircle, Mail, KeyRound } from "lucide-react";
+import { verifyOTPAndResetPasswordAction } from "@/features/auth/actions/password-reset-actions";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
+
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [reset, setReset] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleTokenReset(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
     setError(null);
-
-    if (!token) {
-      setError("Invalid or missing reset token");
-      setPending(false);
-      return;
-    }
 
     const formData = new FormData(e.currentTarget);
     const password = formData.get("password") as string;
@@ -62,6 +59,52 @@ function ResetPasswordForm() {
     } finally {
       setPending(false);
     }
+  }
+
+  async function handleOTPReset(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const otpEmail = formData.get("email") as string;
+    const otp = formData.get("otp") as string;
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    if (!otp || otp.length !== 6) {
+      setError("Please enter the 6-digit OTP code");
+      setPending(false);
+      return;
+    }
+
+    if (!otpEmail?.includes("@")) {
+      setError("Please enter your email address");
+      setPending(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setPending(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setPending(false);
+      return;
+    }
+
+    const res = await verifyOTPAndResetPasswordAction(otpEmail, otp, password);
+    if (!res.success) {
+      setError(res.message);
+      setPending(false);
+      return;
+    }
+
+    setReset(true);
+    setPending(false);
   }
 
   if (reset) {
@@ -99,6 +142,75 @@ function ResetPasswordForm() {
     );
   }
 
+  if (token) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className="border-0 shadow-xl sm:border">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Reset password</CardTitle>
+            <CardDescription>Enter your new password</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleTokenReset} className="space-y-4">
+              <FormError message={error || undefined} />
+
+              <FormField label="New password" required>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+                  <PasswordInput
+                    name="password"
+                    placeholder="Min. 8 characters"
+                    autoComplete="new-password"
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </FormField>
+
+              <FormField label="Confirm password" required>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10" />
+                  <PasswordInput
+                    name="confirmPassword"
+                    placeholder="Repeat your password"
+                    autoComplete="new-password"
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </FormField>
+
+              <Button type="submit" className="w-full" disabled={pending} size="lg">
+                {pending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  "Reset password"
+                )}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -108,11 +220,41 @@ function ResetPasswordForm() {
       <Card className="border-0 shadow-xl sm:border">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Reset password</CardTitle>
-          <CardDescription>Enter your new password</CardDescription>
+          <CardDescription>Enter the OTP code sent to your email</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleOTPReset} className="space-y-4">
             <FormError message={error || undefined} />
+
+            <FormField label="Email" required>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className="pl-9"
+                  required
+                />
+              </div>
+            </FormField>
+
+            <FormField label="OTP code" required>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  name="otp"
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="pl-9 text-center text-xl tracking-[8px]"
+                  required
+                />
+              </div>
+            </FormField>
 
             <FormField label="New password" required>
               <div className="relative">
@@ -140,7 +282,7 @@ function ResetPasswordForm() {
               </div>
             </FormField>
 
-            <Button type="submit" className="w-full" disabled={pending || !token} size="lg">
+            <Button type="submit" className="w-full gap-2" disabled={pending} size="lg">
               {pending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -154,11 +296,11 @@ function ResetPasswordForm() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             <Link
-              href="/login"
+              href="/forgot-password"
               className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to sign in
+              Get a new OTP code
             </Link>
           </p>
         </CardContent>
