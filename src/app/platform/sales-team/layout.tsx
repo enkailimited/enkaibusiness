@@ -40,6 +40,7 @@ export default function SalesTeamLayout({ children }: { children: React.ReactNod
     { title: "Clients", href: "/platform/sales-team/clients", icon: Users },
     { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart },
     { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin },
+    ...(canManageTeam ? [{ title: "Manage Territories", href: "/platform/sales-team/territories/manage", icon: MapPin }] : []),
     { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
     { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
     { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award },

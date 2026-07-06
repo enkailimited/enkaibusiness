@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,7 +22,7 @@ import {
   removeSalesProfileFromTerritoryAction,
   listAvailableSalesProfilesAction,
 } from "@/features/sales-network/actions/territory-actions";
-import { Plus, MapPin, Users, Target, Trash2, Edit3, X, DollarSign } from "lucide-react";
+import { Plus, MapPin, Users, Target, Trash2, Edit3, X, DollarSign, Loader2 } from "lucide-react";
 
 interface TerritoryMember {
   id: string;
@@ -46,6 +46,22 @@ interface Territory {
   _count: { leads: number };
 }
 
+interface TerritoryFormState {
+  name: string;
+  description: string;
+  targetRevenue: string;
+  marketSize: string;
+  color: string;
+}
+
+const defaultForm: TerritoryFormState = {
+  name: "",
+  description: "",
+  targetRevenue: "",
+  marketSize: "",
+  color: "#3b82f6",
+};
+
 export default function ManageTerritoriesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -53,6 +69,9 @@ export default function ManageTerritoriesPage() {
   const [editTarget, setEditTarget] = useState<Territory | null>(null);
   const [assignTarget, setAssignTarget] = useState<Territory | null>(null);
   const [selectedProfile, setSelectedProfile] = useState("");
+  const [form, setForm] = useState<TerritoryFormState>(defaultForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["territories", "manage"],
@@ -73,39 +92,87 @@ export default function ManageTerritoriesPage() {
     enabled: !!assignTarget,
   });
 
-  async function handleCreate(form: FormData) {
-    const res = await createTerritoryAction(null, form);
-    if (res.success) {
-      setCreateOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["territories"] });
-    }
-    toast({ title: res.success ? "Created" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["territories"] });
+  }, [queryClient]);
+
+  function openCreate() {
+    setForm(defaultForm);
+    setCreateOpen(true);
   }
 
-  async function handleUpdate(form: FormData) {
-    if (!editTarget) return;
-    form.set("id", editTarget.id);
-    const res = await updateTerritoryAction(null, form);
-    if (res.success) {
-      setEditTarget(null);
-      queryClient.invalidateQueries({ queryKey: ["territories"] });
+  function openEdit(t: Territory) {
+    setForm({
+      name: t.name,
+      description: t.description ?? "",
+      targetRevenue: t.targetRevenue ?? "",
+      marketSize: t.marketSize?.toString() ?? "",
+      color: t.color ?? "#3b82f6",
+    });
+    setEditTarget(t);
+  }
+
+  function setField<K extends keyof TerritoryFormState>(key: K, value: TerritoryFormState[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("name", form.name);
+      if (form.description) fd.set("description", form.description);
+      if (form.targetRevenue) fd.set("targetRevenue", form.targetRevenue);
+      if (form.marketSize) fd.set("marketSize", form.marketSize);
+      fd.set("color", form.color);
+      const res = await createTerritoryAction(null, fd);
+      toast({ title: res.success ? "Created" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
+      if (res.success) {
+        setCreateOpen(false);
+        invalidate();
+      }
+    } finally {
+      setSubmitting(false);
     }
-    toast({ title: res.success ? "Updated" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
+  }
+
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTarget) return;
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("id", editTarget.id);
+      fd.set("name", form.name);
+      if (form.description) fd.set("description", form.description);
+      if (form.targetRevenue) fd.set("targetRevenue", form.targetRevenue);
+      if (form.marketSize) fd.set("marketSize", form.marketSize);
+      fd.set("color", form.color);
+      const res = await updateTerritoryAction(null, fd);
+      toast({ title: res.success ? "Updated" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
+      if (res.success) {
+        setEditTarget(null);
+        invalidate();
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handleDelete(id: string) {
+    setDeleteId(id);
     const res = await deleteTerritoryAction(id);
-    if (res.success) {
-      queryClient.invalidateQueries({ queryKey: ["territories"] });
-    }
+    if (res.success) invalidate();
     toast({ title: res.success ? "Deleted" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
+    setDeleteId(null);
   }
 
   async function handleAssign() {
     if (!assignTarget || !selectedProfile) return;
     const res = await assignSalesProfileToTerritoryAction(assignTarget.id, selectedProfile, false);
     if (res.success) {
-      queryClient.invalidateQueries({ queryKey: ["territories"] });
+      invalidate();
       setSelectedProfile("");
     }
     toast({ title: res.success ? "Assigned" : "Error", description: res.message, variant: res.success ? "default" : "destructive" });
@@ -114,7 +181,7 @@ export default function ManageTerritoriesPage() {
   return (
     <div className="space-y-6 pb-10">
       <PageHeader title="Manage Territories" description="Create and manage sales territories">
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" /> New Territory
         </Button>
       </PageHeader>
@@ -155,11 +222,11 @@ export default function ManageTerritoriesPage() {
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setAssignTarget(territory)}>
                       <Users className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditTarget(territory)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(territory)}>
                       <Edit3 className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(territory.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {deleteId === territory.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
                 </div>
@@ -203,32 +270,34 @@ export default function ManageTerritoriesPage() {
             <DialogTitle>Create Territory</DialogTitle>
             <DialogDescription>Define a new sales territory</DialogDescription>
           </DialogHeader>
-          <form action={handleCreate} className="space-y-4">
+          <form onSubmit={handleCreate} className="space-y-4">
             <div>
               <label className="text-sm font-medium">Name *</label>
-              <Input name="name" required />
+              <Input value={form.name} onChange={(e) => setField("name", e.target.value)} required />
             </div>
             <div>
               <label className="text-sm font-medium">Description</label>
-              <Textarea name="description" />
+              <Textarea value={form.description} onChange={(e) => setField("description", e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Revenue</label>
-                <Input name="targetRevenue" type="number" step="0.01" />
+                <Input type="number" step="0.01" value={form.targetRevenue} onChange={(e) => setField("targetRevenue", e.target.value)} />
               </div>
               <div>
                 <label className="text-sm font-medium">Market Size (businesses)</label>
-                <Input name="marketSize" type="number" />
+                <Input type="number" value={form.marketSize} onChange={(e) => setField("marketSize", e.target.value)} />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium">Color</label>
-              <Input name="color" type="color" defaultValue="#3b82f6" className="h-10" />
+              <Input type="color" value={form.color} onChange={(e) => setField("color", e.target.value)} className="h-10" />
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={submitting || !form.name.trim()}>
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</> : "Create"}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -240,32 +309,34 @@ export default function ManageTerritoriesPage() {
             <DialogTitle>Edit Territory</DialogTitle>
             <DialogDescription>Update territory details</DialogDescription>
           </DialogHeader>
-          <form action={handleUpdate} className="space-y-4">
+          <form onSubmit={handleUpdate} className="space-y-4">
             <div>
               <label className="text-sm font-medium">Name *</label>
-              <Input name="name" defaultValue={editTarget?.name ?? ""} required />
+              <Input value={form.name} onChange={(e) => setField("name", e.target.value)} required />
             </div>
             <div>
               <label className="text-sm font-medium">Description</label>
-              <Textarea name="description" defaultValue={editTarget?.description ?? ""} />
+              <Textarea value={form.description} onChange={(e) => setField("description", e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Target Revenue</label>
-                <Input name="targetRevenue" type="number" step="0.01" defaultValue={editTarget?.targetRevenue ?? ""} />
+                <Input type="number" step="0.01" value={form.targetRevenue} onChange={(e) => setField("targetRevenue", e.target.value)} />
               </div>
               <div>
                 <label className="text-sm font-medium">Market Size</label>
-                <Input name="marketSize" type="number" defaultValue={editTarget?.marketSize ?? ""} />
+                <Input type="number" value={form.marketSize} onChange={(e) => setField("marketSize", e.target.value)} />
               </div>
             </div>
             <div>
               <label className="text-sm font-medium">Color</label>
-              <Input name="color" type="color" defaultValue={editTarget?.color ?? "#3b82f6"} className="h-10" />
+              <Input type="color" value={form.color} onChange={(e) => setField("color", e.target.value)} className="h-10" />
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={submitting || !form.name.trim()}>
+                {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : "Save"}
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -308,7 +379,7 @@ export default function ManageTerritoriesPage() {
                       className="h-7 w-7 text-destructive"
                       onClick={async () => {
                         await removeSalesProfileFromTerritoryAction(assignTarget.id, m.salesProfileId);
-                        queryClient.invalidateQueries({ queryKey: ["territories"] });
+                        invalidate();
                       }}
                     >
                       <X className="h-3.5 w-3.5" />
