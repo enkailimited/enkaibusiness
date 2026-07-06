@@ -8,8 +8,14 @@ import { z } from "zod";
 const createTerritorySchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  targetRevenue: z.coerce.number().optional(),
-  marketSize: z.coerce.number().int().optional(),
+  targetRevenue: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    z.number().optional(),
+  ),
+  marketSize: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    z.number().int().optional(),
+  ),
   color: z.string().optional(),
 });
 
