@@ -33,6 +33,7 @@ const baseActions = [
   { title: "Commissions", href: "/platform/sales-team/commissions", icon: DollarSign },
   { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart },
   { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin },
+  { title: "Manage Territories", href: "/platform/sales-team/territories/manage", icon: MapPin, managerOnly: true },
   { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
   { title: "Leads", href: "/platform/sales-team/leads", icon: PhoneCall },
   { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
