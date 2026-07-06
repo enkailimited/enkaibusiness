@@ -14,8 +14,8 @@ export function registerEmailWorker(): void {
     };
 
     try {
-      const { sendEmail } = await import("@/notifications/email/services/smtp-service");
-      await sendEmail(to, subject, html);
+      const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");
+      await sendEmailWithDefaultConfig(to, subject, html);
 
       await prisma.jobRecord.updateMany({
         where: { type: "send-email", status: "queued" },
