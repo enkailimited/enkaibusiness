@@ -39,7 +39,7 @@ export async function requestPasswordResetOTP(email: string): Promise<ActionResp
 
     const body = `
       <div style="text-align:center">
-        <div style="width:48px;height:48px;margin:0 auto 16px;background:linear-gradient(135deg,#1e40af,#2563eb);border-radius:12px;display:flex;align-items:center;justify-content:center">
+        <div style="width:48px;height:48px;margin:0 auto 16px;background:#2563eb;border-radius:12px;display:flex;align-items:center;justify-content:center">
           <span style="color:#fff;font-size:24px;line-height:1">&#x1F512;</span>
         </div>
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#111827">Password Reset</h1>
