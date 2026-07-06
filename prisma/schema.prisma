@@ -78,9 +78,14 @@ enum LeadSource {
 enum LeadStatus {
   NEW
   CONTACTED
+  APPOINTMENT_SET
   INTERESTED
   DEMO
+  PROPOSAL
   NEGOTIATION
+  REGISTERED
+  INSTALLED
+  ACTIVE
   CONVERTED
   LOST
 }
@@ -574,6 +579,7 @@ model User {
   journalEntriesCreated            JournalEntry[]         @relation("JournalEntryCreatedBy")
   distributors                     Distributor[]
   installers                       Installer[]
+  reviewedWeeklyReports            WeeklyReport[] @relation("WeeklyReportReviewedBy")
 
   @@map("users")
 }
@@ -2440,6 +2446,7 @@ model SalesProfile {
   recurringCommissionConfigs RecurringCommissionConfig[]
   salesTargets SalesTarget[]
   payoutMethods PayoutMethod[]
+  weeklyReports WeeklyReport[]
 
   @@index([hierarchyId])
   @@index([managerId])
@@ -2582,6 +2589,40 @@ model CommissionPayout {
   paidBy  User?              @relation("PayoutPaidBy", fields: [paidById], references: [id])
 
   @@map("commission_payouts")
+}
+
+// ─── WeeklyReport ──────────────────────────────────────────────────────────
+
+enum WeeklyReportStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+}
+
+model WeeklyReport {
+  id              String              @id @default(uuid()) @db.Uuid
+  salesProfileId  String              @map("sales_profile_id") @db.Uuid
+  weekStart       DateTime            @map("week_start")
+  leadsContacted  Int                 @default(0) @map("leads_contacted")
+  demosDone       Int                 @default(0) @map("demos_done")
+  registrations   Int                 @default(0)
+  challenges      String?
+  nextPlan        String?             @map("next_plan")
+  status          WeeklyReportStatus  @default(DRAFT)
+  reviewedById    String?             @map("reviewed_by") @db.Uuid
+  reviewNotes     String?             @map("review_notes")
+  reviewedAt      DateTime?           @map("reviewed_at")
+  submittedAt     DateTime?           @map("submitted_at")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  salesProfile SalesProfile @relation(fields: [salesProfileId], references: [id])
+  reviewedBy   User?        @relation("WeeklyReportReviewedBy", fields: [reviewedById], references: [id])
+
+  @@unique([salesProfileId, weekStart])
+  @@index([salesProfileId])
+  @@index([weekStart])
+  @@map("weekly_reports")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
