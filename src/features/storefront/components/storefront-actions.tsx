@@ -10,16 +10,16 @@ export function StorefrontActions({ storefrontId, status }: { storefrontId: stri
   const router = useRouter();
 
 //   const [pubState, publish, pubPending] = useActionState(async () => {
-    const res = await publishStorefrontAction(storefrontId);
-    if (res.success) router.refresh();
-    return res;
-  }, null);
-
+//     const res = await publishStorefrontAction(storefrontId);
+//     if (res.success) router.refresh();
+//     return res;
+//   }, null);
+// 
 //   const [archState, archive, archPending] = useActionState(async () => {
-    const res = await archiveStorefrontAction(storefrontId);
-    if (res.success) router.refresh();
-    return res;
-  }, null);
+//     const res = await archiveStorefrontAction(storefrontId);
+//     if (res.success) router.refresh();
+//     return res;
+//   }, null);
 
   return (
     <div className="flex gap-2">

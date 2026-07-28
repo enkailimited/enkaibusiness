@@ -135,8 +135,8 @@ export async function listProducts(
     }
     if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
       where.price = {};
-      if (filters?.minPrice !== undefined) where.price as any.gte = filters.minPrice;
-      if (filters?.maxPrice !== undefined) where.price as any.lte = filters.maxPrice;
+      if (filters?.minPrice !== undefined) (where.price as any).gte = filters.minPrice;
+      if (filters?.maxPrice !== undefined) (where.price as any).lte = filters.maxPrice;
     }
 
     let orderBy: Record<string, unknown> = { name: "asc" };

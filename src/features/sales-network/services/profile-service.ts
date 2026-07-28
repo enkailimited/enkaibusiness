@@ -17,11 +17,11 @@ const userSelect = {
 } as const;
 
 // const subUserSelect = {
-  id: true,
-  firstName: true,
-  lastName: true,
-  email: true,
-} as const;
+//   id: true,
+//   firstName: true,
+//   lastName: true,
+//   email: true,
+// } as const;
 
 const managerInclude = {
   include: {

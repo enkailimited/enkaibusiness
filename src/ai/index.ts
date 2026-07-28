@@ -1,3 +1,5 @@
+import "@/features/mining/ai/knowledge";
+
 export { complete, embed, configureProvider, type LLMMessage, type LLMCompletion, type LLMConfig } from "./llm/provider";
 
 export { ask, indexKnowledge, removeKnowledge, clearBusinessKnowledge, type KnowledgeChunk, type RAGResult } from "./rag/pipeline";

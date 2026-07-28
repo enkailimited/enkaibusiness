@@ -79,9 +79,9 @@ export class ProcurementAdvisor {
   }
 
 //   async getBestSupplier(businessId: string, productName?: string): Promise<SupplierAnalytic | null> {
-    const suppliers = await this.analyzeSuppliers(businessId);
-    return suppliers[0] || null;
-  }
+//     const suppliers = await this.analyzeSuppliers(businessId);
+//     return suppliers[0] || null;
+//   }
 
   async getCheapestSupplier(businessId: string): Promise<SupplierAnalytic | null> {
     const suppliers = await this.analyzeSuppliers(businessId);

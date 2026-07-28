@@ -585,6 +585,12 @@ model User {
   installers                       Installer[]
   reviewedWeeklyReports            WeeklyReport[] @relation("WeeklyReportReviewedBy")
   oauthTokens                      OAuthToken[]
+  miningSitesCreated               MiningSite[]           @relation("MiningSiteCreatedBy")
+  miningLicensesCreated            MiningLicense[]        @relation("MiningLicenseCreatedBy")
+  miningEquipmentCreated           MiningEquipment[]      @relation("MiningEquipmentCreatedBy")
+  fuelTransactionsCreated          FuelTransaction[]      @relation("FuelTransactionCreatedBy")
+  miningProductionLogsCreated      MiningProductionLog[]  @relation("MiningProductionLogCreatedBy")
+  miningServiceLogsCreated         MiningServiceLog[]     @relation("MiningServiceLogCreatedBy")
 
   @@map("users")
 }
@@ -842,6 +848,12 @@ model Business {
   customerLifetimeValues  CustomerLifetimeValue[]
   apiKeys                 ApiKey[]
   webhooks                Webhook[]
+  miningSites             MiningSite[]
+  miningLicenses          MiningLicense[]
+  miningEquipment         MiningEquipment[]
+  fuelTransactions        FuelTransaction[]
+  miningProductionLogs    MiningProductionLog[]
+  miningServiceLogs       MiningServiceLog[]
   oauthClients            OAuthClient[]
 
   @@unique([workspaceId, slug])
@@ -1217,9 +1229,10 @@ model CatalogItem {
   deliveryNoteItems    DeliveryNoteItem[]
   customerWishlists     CustomerWishlist[]
   customerFavorites     CustomerFavorite[]
-  customerReviews       CustomerReview[]
+  customerReviews       CustomerReview[] @relation("CustomerReviewCatalogItem")
   bookings              Booking[]
   bookingItems          BookingItem[]
+  miningProductionLogs  MiningProductionLog[] @relation("MiningProductionLogCatalogItem")
 
   @@unique([businessId, slug])
   @@unique([businessId, sku])
@@ -4038,7 +4051,7 @@ model CustomerReview {
 
   account     CustomerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
   business    Business        @relation(fields: [businessId], references: [id])
-  catalogItem CatalogItem?    @relation(fields: [catalogItemId], references: [id])
+  catalogItem CatalogItem? @relation("CustomerReviewCatalogItem", fields: [catalogItemId], references: [id])
   branch      Branch?         @relation(fields: [branchId], references: [id])
   booking     Booking?        @relation(fields: [bookingId], references: [id])
 
@@ -5237,4 +5250,211 @@ model OAuthToken {
   @@index([refreshToken])
   @@index([clientId, userId])
   @@map("oauth_tokens")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MINING — Phase 1
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum MiningSiteStatus {
+  ACTIVE
+  INACTIVE
+  DEPLETED
+  ON_HOLD
+}
+
+enum MiningLicenseStatus {
+  ACTIVE
+  PENDING
+  EXPIRED
+  REVOKED
+}
+
+enum MiningEquipmentStatus {
+  OPERATIONAL
+  MAINTENANCE
+  REPAIR
+  RETIRED
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  LUBRICANT
+  GREASE
+}
+
+model MiningSite {
+  id           String            @id @default(uuid()) @db.Uuid
+  businessId   String            @map("business_id") @db.Uuid
+  name         String
+  location     String?
+  coordinates  String?           @map("coordinates")
+  size         Decimal?          @db.Decimal(15, 2)
+  sizeUnit     String?           @map("size_unit") // hectares, acres, sqm
+  mineralType  String?           @map("mineral_type") // gold, gemstone, coal, etc
+  status       MiningSiteStatus  @default(ACTIVE) @map("status")
+  description  String?
+  metadata     Json?             @default("{}")
+  createdById  String?           @map("created_by") @db.Uuid
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdBy      User?                @relation("MiningSiteCreatedBy", fields: [createdById], references: [id])
+  licenses       MiningLicense[]
+  equipment      MiningEquipment[]
+  fuelTxns       FuelTransaction[]    @relation("FuelTransactionSite")
+  productionLogs MiningProductionLog[]
+
+  @@index([businessId])
+  @@index([status])
+  @@map("mining_sites")
+}
+
+model MiningLicense {
+  id             String                @id @default(uuid()) @db.Uuid
+  businessId     String                @map("business_id") @db.Uuid
+  siteId         String?               @map("site_id") @db.Uuid
+  licenseNumber  String                @map("license_number")
+  type           String                // mining_license, claim, permit, exploration
+  issuingBody    String?               @map("issuing_body")
+  status         MiningLicenseStatus   @default(PENDING) @map("status")
+  issueDate      DateTime              @map("issue_date")
+  expiryDate     DateTime?             @map("expiry_date")
+  description    String?
+  documentUrl    String?               @map("document_url")
+  metadata       Json?                 @default("{}")
+  createdById    String?               @map("created_by") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  business  Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  site      MiningSite? @relation(fields: [siteId], references: [id])
+  createdBy User?     @relation("MiningLicenseCreatedBy", fields: [createdById], references: [id])
+
+  @@unique([businessId, licenseNumber])
+  @@index([businessId])
+  @@index([siteId])
+  @@index([status])
+  @@map("mining_licenses")
+}
+
+model MiningEquipment {
+  id              String                  @id @default(uuid()) @db.Uuid
+  businessId      String                  @map("business_id") @db.Uuid
+  siteId          String?                 @map("site_id") @db.Uuid
+  name            String
+  equipmentType   String                  @map("equipment_type") // excavator, loader, truck, drill, crusher, generator
+  make            String?
+  model           String?
+  serialNumber    String?                 @map("serial_number")
+  year            Int?
+  status          MiningEquipmentStatus   @default(OPERATIONAL) @map("status")
+  purchaseDate    DateTime?               @map("purchase_date")
+  purchasePrice   Decimal?                @map("purchase_price") @db.Decimal(15, 2)
+  fuelType        FuelType                @default(DIESEL) @map("fuel_type")
+  fuelCapacity    Decimal?                @map("fuel_capacity") @db.Decimal(10, 2)
+  hourlyFuelUsage Decimal?                @map("hourly_fuel_usage") @db.Decimal(10, 2)
+  lastMaintenance DateTime?               @map("last_maintenance")
+  nextMaintenance DateTime?               @map("next_maintenance")
+  meterReading    Decimal?                @default(0) @map("meter_reading") @db.Decimal(15, 2)
+  meterUnit       String?                 @map("meter_unit") // hours, km
+  imageUrl        String?                 @map("image_url")
+  notes           String?
+  metadata        Json?                   @default("{}")
+  isActive        Boolean                 @default(true) @map("is_active")
+  createdById     String?                 @map("created_by") @db.Uuid
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  business     Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  site         MiningSite?          @relation(fields: [siteId], references: [id])
+  createdBy    User?                @relation("MiningEquipmentCreatedBy", fields: [createdById], references: [id])
+  fuelTxns     FuelTransaction[]    @relation("FuelTransactionEquipment")
+  serviceLogs  MiningServiceLog[]
+
+  @@index([businessId])
+  @@index([siteId])
+  @@index([status])
+  @@index([equipmentType])
+  @@map("mining_equipment")
+}
+
+model FuelTransaction {
+  id            String    @id @default(uuid()) @db.Uuid
+  businessId    String    @map("business_id") @db.Uuid
+  siteId        String?   @map("site_id") @db.Uuid
+  equipmentId   String?   @map("equipment_id") @db.Uuid
+  fuelType      FuelType  @default(DIESEL) @map("fuel_type")
+  quantity      Decimal   @db.Decimal(15, 2)
+  unitCost      Decimal?  @map("unit_cost") @db.Decimal(15, 2)
+  totalCost     Decimal?  @map("total_cost") @db.Decimal(15, 2)
+  supplier      String?
+  receiptRef    String?   @map("receipt_ref")
+  transactionDate DateTime @default(now()) @map("transaction_date")
+  notes         String?
+  createdById   String?   @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  business  Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  site      MiningSite?     @relation("FuelTransactionSite", fields: [siteId], references: [id])
+  equipment MiningEquipment? @relation("FuelTransactionEquipment", fields: [equipmentId], references: [id])
+  createdBy User?           @relation("FuelTransactionCreatedBy", fields: [createdById], references: [id])
+
+  @@index([businessId])
+  @@index([siteId])
+  @@index([equipmentId])
+  @@index([fuelType])
+  @@index([transactionDate])
+  @@map("fuel_transactions")
+}
+
+model MiningProductionLog {
+  id             String    @id @default(uuid()) @db.Uuid
+  businessId     String    @map("business_id") @db.Uuid
+  siteId         String?   @map("site_id") @db.Uuid
+  catalogItemId  String?   @map("catalog_item_id") @db.Uuid
+  productionDate DateTime  @map("production_date")
+  quantity       Decimal   @db.Decimal(15, 2)
+  unit           String    @default("tonnes")
+  grade          Decimal?  @db.Decimal(10, 2)
+  notes          String?
+  createdById    String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  site        MiningSite?     @relation(fields: [siteId], references: [id])
+  catalogItem CatalogItem?    @relation("MiningProductionLogCatalogItem", fields: [catalogItemId], references: [id])
+  createdBy   User?           @relation("MiningProductionLogCreatedBy", fields: [createdById], references: [id])
+
+  @@index([businessId])
+  @@index([siteId])
+  @@index([productionDate])
+  @@map("mining_production_logs")
+}
+
+model MiningServiceLog {
+  id              String                @id @default(uuid()) @db.Uuid
+  businessId      String                @map("business_id") @db.Uuid
+  equipmentId     String                @map("equipment_id") @db.Uuid
+  serviceType     String                @map("service_type") // routine, repair, inspection
+  description     String?
+  serviceDate     DateTime              @map("service_date")
+  cost            Decimal?              @db.Decimal(15, 2)
+  meterAtService  Decimal?              @map("meter_at_service") @db.Decimal(15, 2)
+  nextServiceDate DateTime?             @map("next_service_date")
+  nextServiceMeter Decimal?             @map("next_service_meter") @db.Decimal(15, 2)
+  notes           String?
+  createdById     String?               @map("created_by") @db.Uuid
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  business  Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  equipment MiningEquipment @relation(fields: [equipmentId], references: [id])
+  createdBy User?           @relation("MiningServiceLogCreatedBy", fields: [createdById], references: [id])
+
+  @@index([businessId])
+  @@index([equipmentId])
+  @@index([serviceDate])
+  @@map("mining_service_logs")
 }

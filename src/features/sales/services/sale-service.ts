@@ -394,8 +394,8 @@ export async function getBusinessSales(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.saleDate = {};
-    if (filter.dateFrom) where.saleDate as any.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.saleDate as any.lte = new Date(filter.dateTo);
+    if (filter.dateFrom) (where.saleDate as any).gte = new Date(filter.dateFrom);
+    if (filter.dateTo) (where.saleDate as any).lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;

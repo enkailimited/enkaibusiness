@@ -31,23 +31,23 @@ export default function SalesTeamLayout({ children }: { children: React.ReactNod
   ) ?? false;
 
 //   const salesNavItems = useMemo(() => [
-    { title: "Dashboard", href: "/platform/sales-team", icon: LayoutDashboard },
-    { title: "My Sales", href: "/platform/sales-team/sales", icon: BarChart3 },
-    ...(canManageTeam ? [{ title: "My Team", href: "/platform/sales-team/team", icon: UserPlus }] : []),
-    { title: "Leads", href: "/platform/sales-team/leads", icon: PhoneCall },
-    { title: "Targets", href: "/platform/sales-team/targets", icon: Target },
-    { title: "Commissions", href: "/platform/sales-team/commissions", icon: DollarSign },
-    { title: "Clients", href: "/platform/sales-team/clients", icon: Users },
-    { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart },
-    { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin },
-    ...(canManageTeam ? [{ title: "Manage Territories", href: "/platform/sales-team/territories/manage", icon: MapPin }] : []),
-    { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
-    { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
-    { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award },
-    { title: "Installations", href: "/platform/sales-team/installations", icon: Wrench },
-    { title: "QR Experiences", href: "/platform/sales-team/qr", icon: QrCode },
-    { title: "Storefronts", href: "/platform/sales-team/storefront", icon: Globe },
-  ], [canManageTeam]);
+//     { title: "Dashboard", href: "/platform/sales-team", icon: LayoutDashboard },
+//     { title: "My Sales", href: "/platform/sales-team/sales", icon: BarChart3 },
+//     ...(canManageTeam ? [{ title: "My Team", href: "/platform/sales-team/team", icon: UserPlus }] : []),
+//     { title: "Leads", href: "/platform/sales-team/leads", icon: PhoneCall },
+//     { title: "Targets", href: "/platform/sales-team/targets", icon: Target },
+//     { title: "Commissions", href: "/platform/sales-team/commissions", icon: DollarSign },
+//     { title: "Clients", href: "/platform/sales-team/clients", icon: Users },
+//     { title: "Reports", href: "/platform/sales-team/reports", icon: FileBarChart },
+//     { title: "Territories", href: "/platform/sales-team/territories", icon: MapPin },
+//     ...(canManageTeam ? [{ title: "Manage Territories", href: "/platform/sales-team/territories/manage", icon: MapPin }] : []),
+//     { title: "Performance", href: "/platform/sales-team/performance", icon: TrendingUp },
+//     { title: "Orders", href: "/platform/sales-team/orders", icon: ShoppingBag },
+//     { title: "Achievements", href: "/platform/sales-team/achievements", icon: Award },
+//     { title: "Installations", href: "/platform/sales-team/installations", icon: Wrench },
+//     { title: "QR Experiences", href: "/platform/sales-team/qr", icon: QrCode },
+//     { title: "Storefronts", href: "/platform/sales-team/storefront", icon: Globe },
+//   ], [canManageTeam]);
 
   return (
     <div className="min-h-screen bg-muted/20">

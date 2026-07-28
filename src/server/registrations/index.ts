@@ -4,7 +4,7 @@ export { BusinessRegistrationEngine } from "./business";
 export { RegistrationContext } from "./context";
 export * from "./shared";
 export { registerRegistrationEventHandlers } from "./events";
-export { CommerceResolver, HealthcareResolver, AgricultureResolver, DbBusinessTypeResolver } from "./resolvers";
+export { CommerceResolver, MiningResolver, HealthcareResolver, AgricultureResolver, DbBusinessTypeResolver } from "./resolvers";
 export { businessTypeService } from "./business-type/service";
 export type { BusinessTypeRecord } from "./business-type/service";
 export type { BusinessTypeResolver, BusinessTypeConfig, BusinessPricingInfo } from "./resolvers";

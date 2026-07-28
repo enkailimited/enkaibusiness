@@ -51,6 +51,11 @@ const VOICE_COMMANDS: Record<string, string[]> = {
     "donor-info", "campaign-status", "member-directory",
     "event-schedule", "grant-status",
   ],
+  mining: [
+    "site-status", "production-report", "equipment-status",
+    "fuel-consumption", "license-expiry", "safety-check",
+    "mineral-inventory", "excavation-plan",
+  ],
 };
 
 export class IndustryAIResolver {

@@ -162,8 +162,8 @@ export async function getBusinessQuotations(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.quoteDate = {};
-    if (filter.dateFrom) where.quoteDate as any.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.quoteDate as any.lte = new Date(filter.dateTo);
+    if (filter.dateFrom) (where.quoteDate as any).gte = new Date(filter.dateFrom);
+    if (filter.dateTo) (where.quoteDate as any).lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;

@@ -13,13 +13,13 @@ interface Theme {
 
 export function ThemeSelector({ themes, storefrontId }: { themes: Theme[]; storefrontId: string }) {
   const router = useRouter();
-// //   const [state, action, pending] = useActionState(async (prev: unknown, formData: FormData) => {
-    const themeId = formData.get("themeId") as string;
-    if (!themeId) return null;
-    const res = await setActiveThemeAction(storefrontId, themeId);
-    if (res.success) router.refresh();
-    return res;
-  }, null);
+//   const [state, action, pending] = useActionState(async (prev: unknown, formData: FormData) => {
+//     const themeId = formData.get("themeId") as string;
+//     if (!themeId) return null;
+//     const res = await setActiveThemeAction(storefrontId, themeId);
+//     if (res.success) router.refresh();
+//     return res;
+//   }, null);
 
   return (
     <div className="border rounded-lg p-6 bg-card">

@@ -41,9 +41,9 @@ export interface TaxRequest {
 export class TaxEngine {
   async calculate(request: TaxRequest): Promise<TaxCalculation> {
 //     const business = await prisma.business.findUnique({
-      where: { id: request.businessId },
-      select: { currency: true },
-    });
+//       where: { id: request.businessId },
+//       select: { currency: true },
+//     });
 
     const countryCode = request.countryCode || "TZ";
     const taxMode = request.taxMode || "exclusive";

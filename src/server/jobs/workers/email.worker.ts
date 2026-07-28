@@ -6,12 +6,12 @@ import { boss } from "../queue";
 export function registerEmailWorker(): void {
   boss.work("send-email", async ([job]) => {
 // //     const { to, subject, html, businessId, userId } = (job as any).data as {
-      to: string;
-      subject: string;
-      html: string;
-      businessId?: string;
-      userId?: string;
-    };
+//       to: string;
+//       subject: string;
+//       html: string;
+//       businessId?: string;
+//       userId?: string;
+//     };
 
     try {
       const { sendEmailWithDefaultConfig } = await import("@/notifications/email/services/smtp-service");

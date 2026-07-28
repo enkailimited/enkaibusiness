@@ -177,8 +177,8 @@ export async function getBusinessPurchaseOrders(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.orderDate = {};
-    if (filter.dateFrom) where.orderDate as any.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.orderDate as any.lte = new Date(filter.dateTo);
+    if (filter.dateFrom) (where.orderDate as any).gte = new Date(filter.dateFrom);
+    if (filter.dateTo) (where.orderDate as any).lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;

@@ -7,11 +7,13 @@ import {
 } from "./types";
 import { businessTypeService } from "../business-type/service";
 import { CommerceResolver } from "./commerce";
+import { MiningResolver } from "./mining";
 import { HealthcareResolver } from "./healthcare";
 import { AgricultureResolver } from "./agriculture";
 
 const RESOLVER_MAP: Record<string, new () => BusinessTypeResolver> = {
   commerce: CommerceResolver,
+  mining: MiningResolver,
   healthcare: HealthcareResolver,
   agriculture: AgricultureResolver,
 };

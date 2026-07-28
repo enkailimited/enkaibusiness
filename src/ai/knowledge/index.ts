@@ -11,6 +11,7 @@ export type KnowledgeDomain =
   | "agriculture"
   | "healthcare"
   | "education"
+  | "mining"
   | "programming";
 
 export interface KnowledgeEntry {
