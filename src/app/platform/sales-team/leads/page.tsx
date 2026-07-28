@@ -15,7 +15,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Select } from "@/components/ui/select";
 import {
   PhoneCall,
   Users,
@@ -26,8 +25,8 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  MessageSquare,
-  RotateCcw,
+  // MessageSquare,
+  // RotateCcw,
 } from "lucide-react";
 import type { LeadWithAssignments, LeadMetrics } from "@/features/leads/types";
 import {

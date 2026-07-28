@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Loader2, TrendingUp, Users, DollarSign } from "lucide-react";
+import { Target, TrendingUp, Users, DollarSign } from "lucide-react";
 import { getMyPerformanceMetrics, getMyTargetsAction } from "@/server/actions/sales-team";
 import { formatCurrency } from "@/lib/utils";
 

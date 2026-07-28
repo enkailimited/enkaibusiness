@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createExpense,
   updateExpense,
@@ -21,6 +22,9 @@ export async function createExpenseAction(
 ): Promise<ActionResponse> {
   const user = await requireAuth();
 
+  const can = await hasPermission(user.id, "expenses.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const parsed = createExpenseSchema.safeParse({
     categoryId: formData.get("categoryId"),
     amount: formData.get("amount"),
@@ -38,7 +42,7 @@ export async function createExpenseAction(
     };
   }
 
-  const result = await createExpense(parsed.data, businessId, user.workspaceId, user.id);
+  const result = await createExpense(parsed.data, businessId, (user as any).workspaceId, user.id);
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/expenses`);
@@ -53,7 +57,9 @@ export async function updateExpenseAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expenses.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateExpenseSchema.safeParse({
     categoryId: formData.get("categoryId") || undefined,
@@ -103,6 +109,8 @@ export async function listExpensesAction(
 
 export async function approveExpenseAction(id: string, businessId: string) {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "expenses.approve", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await approveExpense(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/expenses`);
@@ -111,7 +119,9 @@ export async function approveExpenseAction(id: string, businessId: string) {
 }
 
 export async function markExpenseAsPaidAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expenses.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markExpenseAsPaid(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/expenses`);
@@ -120,7 +130,9 @@ export async function markExpenseAsPaidAction(id: string, businessId: string) {
 }
 
 export async function deleteExpenseAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expenses.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteExpense(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/expenses`);

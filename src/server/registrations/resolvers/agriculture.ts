@@ -21,9 +21,9 @@ export class AgricultureResolver implements BusinessTypeResolver {
     return ["farm", "field"];
   }
 
-  async resolveLevel(input: { branchId?: string | null; storeId?: string | null }): Promise<string> {
-    return "farm";
-  }
+//   async resolveLevel(input: { branchId?: string | null; storeId?: string | null }): Promise<string> {
+//     return "farm";
+//   }
 
   async getDefaultPricing(): Promise<BusinessPricingInfo> {
     return {

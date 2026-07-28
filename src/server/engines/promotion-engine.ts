@@ -25,7 +25,7 @@ export class PromotionEngine {
     totalDiscount: number;
     finalSubtotal: number;
   }> {
-    const now = request.date || new Date();
+//     const now = request.date || new Date();
     const promotions: PromotionResult[] = [];
 
     if (request.promoCode) {
@@ -49,12 +49,12 @@ export class PromotionEngine {
     let remaining = request.subtotal;
 
     for (const promo of finalPromotions) {
-      if (promo.type === "discount-percent") {
-        const discount = remaining * (promo.discountPercent / 100);
+      if ((promo as any).type === "discount-percent") {
+        const discount = remaining * ((promo as any).discountPercent / 100);
         totalDiscount += discount;
         remaining -= discount;
-      } else if (promo.type === "discount-amount") {
-        const discount = Math.min(promo.discountAmount, remaining);
+      } else if ((promo as any).type === "discount-amount") {
+        const discount = Math.min((promo as any).discountAmount, remaining);
         totalDiscount += discount;
         remaining -= discount;
       }

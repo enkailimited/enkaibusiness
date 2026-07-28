@@ -5,7 +5,7 @@ import { InvoiceForm } from "@/features/invoices/components/invoice-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DialogForm } from "@/components/ui/dialog-form";
 import { requireAuth } from "@/server/auth";
-import { prisma } from "@/server/db";
+// import { prisma } from "@/server/db";
 import { listCustomers } from "@/features/customers/services/customer-service";
 
 interface Props { params: Promise<{ businessId: string }> }

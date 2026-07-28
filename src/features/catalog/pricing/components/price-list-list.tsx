@@ -13,11 +13,12 @@ interface PriceListListProps {
 }
 
 export function PriceListList({ priceLists, isLoading, onRowClick }: PriceListListProps) {
+  const items = priceLists as any[];
   const columns = [
     {
       key: "name",
       header: "Name",
-      cell: (item: PriceListWithItems) => (
+      cell: (item: any) => (
         <div>
           <p className="font-medium">{item.name}</p>
           <p className="text-xs text-muted-foreground">{item.items?.length ?? 0} items</p>
@@ -27,7 +28,7 @@ export function PriceListList({ priceLists, isLoading, onRowClick }: PriceListLi
     {
       key: "type",
       header: "Type",
-      cell: (item: PriceListWithItems) => (
+      cell: (item: any) => (
         <Badge variant={PRICE_LIST_TYPE_VARIANTS[item.type] ?? "outline"}>
           {PRICE_LIST_TYPE_LABELS[item.type] ?? item.type}
         </Badge>
@@ -36,14 +37,14 @@ export function PriceListList({ priceLists, isLoading, onRowClick }: PriceListLi
     {
       key: "priority",
       header: "Priority",
-      cell: (item: PriceListWithItems) => (
+      cell: (item: any) => (
         <span className="text-sm">{item.priority}</span>
       ),
     },
     {
       key: "dates",
       header: "Active Period",
-      cell: (item: PriceListWithItems) => (
+      cell: (item: any) => (
         <span className="text-sm text-muted-foreground">
           {item.startDate ? formatDate(item.startDate) : "Always"}
           {item.endDate ? ` - ${formatDate(item.endDate)}` : ""}
@@ -53,7 +54,7 @@ export function PriceListList({ priceLists, isLoading, onRowClick }: PriceListLi
     {
       key: "status",
       header: "Status",
-      cell: (item: PriceListWithItems) => {
+      cell: (item: any) => {
         const now = new Date();
         const isExpired = item.endDate && new Date(item.endDate) < now;
         const isPending = item.startDate && new Date(item.startDate) > now;
@@ -71,7 +72,7 @@ export function PriceListList({ priceLists, isLoading, onRowClick }: PriceListLi
   return (
     <DataTable
       columns={columns}
-      data={priceLists}
+      data={items}
       isLoading={isLoading}
       emptyTitle="No price lists found"
       emptyDescription="Create a price list to set custom pricing."

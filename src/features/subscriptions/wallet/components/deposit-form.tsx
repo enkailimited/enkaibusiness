@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { submitDepositRequestAction } from "../../wallet-deposits/actions";
 
 interface DepositFormProps {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { createPriceListSchema, updatePriceListSchema } from "../schemas";
 import {
   createPriceList,
@@ -11,7 +12,7 @@ import {
   deletePriceList,
   addPriceListItem,
   removePriceListItem,
-  updatePriceListItem,
+//   updatePriceListItem,
 } from "../services/price-list-service";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -19,8 +20,13 @@ export async function createPriceListAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
   const businessId = formData.get("businessId") as string;
+
+  const canCreate = await hasPermission(user.id, "catalog.create", businessId);
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create price lists" };
+  }
 
   const items: Array<Record<string, unknown>> = [];
   let i = 0;
@@ -65,8 +71,17 @@ export async function updatePriceListAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
-  const businessId = formData.get("businessId") as string;
+  const user = await requireAuth();
+
+  const existing = await getPriceList(priceListId);
+  if (!existing) {
+    return { success: false, message: "Price list not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existing.businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update price lists" };
+  }
 
   const parsed = updatePriceListSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -111,7 +126,12 @@ export async function deletePriceListAction(
   priceListId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "catalog.delete", businessId);
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete price lists" };
+  }
 
   const result = await deletePriceList(priceListId);
 
@@ -127,7 +147,17 @@ export async function addPriceListItemAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existing = await getPriceList(priceListId);
+  if (!existing) {
+    return { success: false, message: "Price list not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existing.businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update price lists" };
+  }
 
   const data = {
     catalogItemId: formData.get("catalogItemId") as string,
@@ -145,10 +175,15 @@ export async function addPriceListItemAction(
 
 export async function removePriceListItemAction(
   itemId: string,
-  priceListId: string,
+//   priceListId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update price lists" };
+  }
 
   const result = await removePriceListItem(itemId);
 

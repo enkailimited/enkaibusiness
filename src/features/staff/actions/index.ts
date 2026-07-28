@@ -12,13 +12,17 @@ import {
   removeAssignment,
 } from "../services/staff-service";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function updateStaffAction(
   staffId: string,
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "staff.update", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateStaffSchema.safeParse({
     firstName: formData.get("firstName") || undefined,
@@ -68,7 +72,10 @@ export async function createStaffAssignmentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "staff.create", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createAssignmentSchema.safeParse({
     staffId: formData.get("staffId"),
@@ -110,8 +117,9 @@ export async function deleteStaffAction(
   staffId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
-
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "staff.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteStaff(staffId);
 
   if (result.success) {

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createBranch,
   updateBranch,
@@ -24,7 +25,9 @@ export async function createBranchAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "branches.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createBranchSchema.safeParse({
     name: formData.get("name"),
@@ -64,7 +67,9 @@ export async function updateBranchAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "branches.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateBranchSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -109,7 +114,9 @@ export async function getBusinessBranchesAction(businessId: string) {
 }
 
 export async function deleteBranchAction(businessId: string, branchId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "branches.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteBranch(branchId);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/branches`);

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 
@@ -9,7 +10,10 @@ export async function savePlatformSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "settings.update");
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const name = (formData.get("platform_name") || "").toString().trim();
   const email = (formData.get("support_email") || "").toString().trim();

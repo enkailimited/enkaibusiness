@@ -11,6 +11,7 @@ import {
 } from "../services/goods-received-service";
 import { createGoodsReceivedSchema, updateGoodsReceivedSchema, goodsReceivedFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createGoodsReceivedAction(
   workspaceId: string,
@@ -18,7 +19,9 @@ export async function createGoodsReceivedAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "goods_received.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;
@@ -136,7 +139,9 @@ export async function listGoodsReceivedAction(
 }
 
 export async function deleteGoodsReceivedAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "goods_received.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteGoodsReceived(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/goods-received`);

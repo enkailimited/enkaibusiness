@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cancelBookingAction } from "../actions";
 import { Loader2 } from "lucide-react";
 
-export function CancelBookingButton({ bookingId, businessSlug }: { bookingId: string; businessSlug: string }) {
+// export function CancelBookingButton({ bookingId, businessSlug }: { bookingId: string; businessSlug: string }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(
     async () => cancelBookingAction(bookingId),

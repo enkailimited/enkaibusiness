@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createSale,
   getSale,
@@ -20,6 +21,9 @@ export async function createSaleAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "sales.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -87,7 +91,10 @@ export async function updateSaleAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "sales.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -165,6 +172,8 @@ export async function listSalesAction(
 
 export async function voidSaleAction(id: string, businessId: string) {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "sales.void", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await voidSale(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);
@@ -176,6 +185,8 @@ export async function voidSaleAction(id: string, businessId: string) {
 
 export async function deleteSaleAction(id: string, businessId: string) {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "sales.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteSale(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/sales`);

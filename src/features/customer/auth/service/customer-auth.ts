@@ -7,7 +7,7 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
-const REFRESH_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
+// const REFRESH_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export interface CustomerTokenPayload extends JWTPayload {
   sub: string;

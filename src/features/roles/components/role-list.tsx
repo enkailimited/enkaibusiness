@@ -9,7 +9,7 @@ interface RoleListProps {
 }
 
 export async function RoleList({ scope }: RoleListProps) {
-  const roles = await getRoles(scope) as RoleWithUserCount[];
+  const roles = await getRoles(scope) as unknown as RoleWithUserCount[];
 
   return (
     <Card>

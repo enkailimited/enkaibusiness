@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Loader2, CreditCard, Calendar, Building2 } from "lucide-react";
+import { ShoppingBag, Loader2, CreditCard, Calendar } from "lucide-react";
 import { getMyCommissionEntries } from "@/server/actions/sales-team";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 export default function OrdersPage() {
   const [entries, setEntries] = useState<any[]>([]);

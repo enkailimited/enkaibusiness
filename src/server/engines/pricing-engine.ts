@@ -80,8 +80,8 @@ export class PricingEngine {
     businessId: string,
     catalogItemId: string,
     segment?: CustomerSegment,
-    quantity?: number,
-    branchId?: string,
+//     quantity?: number,
+//     branchId?: string,
     date?: Date,
   ) {
     const now = date || new Date();
@@ -116,9 +116,9 @@ export class PricingEngine {
 
   private async resolveFromPriceList(
     priceList: any,
-    catalogItemId: string,
+//     catalogItemId: string,
     quantity: number,
-    segment?: CustomerSegment,
+//     segment?: CustomerSegment,
   ): Promise<{
     unitPrice: number;
     priceType: string;

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { parseCart, cartTotal } from "@/features/customer/cart/cart-service";
 import { getBusinessBySlug } from "@/features/customer/catalog/services/catalog-service";
 import { CartClient } from "@/features/customer/cart/components/cart-client";

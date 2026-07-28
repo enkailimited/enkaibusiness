@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileBarChart, Loader2, Download, TrendingUp, Users, DollarSign, Target, BarChart3 } from "lucide-react";
+import { Download, TrendingUp, Users, DollarSign, Target, BarChart3 } from "lucide-react";
 import { getMyPerformanceMetrics, getMyLeadMetrics, getMyMonthlySalesHistory, getMyCommissionMetrics } from "@/server/actions/sales-team";
 import { formatCurrency } from "@/lib/utils";
 

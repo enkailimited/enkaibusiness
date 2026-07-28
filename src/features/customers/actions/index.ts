@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createCustomer,
   updateCustomer,
@@ -18,6 +19,11 @@ export async function createCustomerAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "customers.create", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = createCustomerSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -55,7 +61,12 @@ export async function updateCustomerAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "customers.update", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = updateCustomerSchema.safeParse({
     firstName: formData.get("firstName") || undefined,
@@ -108,7 +119,11 @@ export async function listCustomersAction(
 }
 
 export async function deleteCustomerAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "customers.delete", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await deleteCustomer(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/customers`);

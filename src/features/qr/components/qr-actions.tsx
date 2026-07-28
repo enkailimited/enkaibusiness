@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Power, PowerOff } from "lucide-react";
 import { activateQRExperienceAction, deactivateQRExperienceAction } from "../actions";
 
-export function QrActions({ experienceId, status, code }: { experienceId: string; status: string; code: string }) {
+// export function QrActions({ experienceId, status, code }: { experienceId: string; status: string; code: string }) {
   const router = useRouter();
-  const [actState, activate, actPending] = useActionState(async () => {
+//   const [actState, activate, actPending] = useActionState(async () => {
     const res = await activateQRExperienceAction(experienceId);
     router.refresh();
     return res;
   }, null);
 
-  const [deactState, deactivate, deactPending] = useActionState(async () => {
+//   const [deactState, deactivate, deactPending] = useActionState(async () => {
     const res = await deactivateQRExperienceAction(experienceId);
     router.refresh();
     return res;

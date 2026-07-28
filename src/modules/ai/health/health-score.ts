@@ -49,16 +49,16 @@ export class HealthScoreService {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     const [thisWeekAgg, lastWeekAgg, thisMonthAgg, lastMonthAgg] = await Promise.all([
-      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisWeek } }, _sum: { total: true } }),
-      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: lastWeek, lt: thisWeek } }, _sum: { total: true } }),
-      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisMonth } }, _sum: { total: true } }),
-      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: lastMonth, lt: thisMonth } }, _sum: { total: true } }),
+      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisWeek } }, _sum: { grandTotal: true } }),
+      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: lastWeek, lt: thisWeek } }, _sum: { grandTotal: true } }),
+      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisMonth } }, _sum: { grandTotal: true } }),
+      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: lastMonth, lt: thisMonth } }, _sum: { grandTotal: true } }),
     ]);
 
-    const thisW = Number(thisWeekAgg._sum.total || 0);
-    const lastW = Number(lastWeekAgg._sum.total || 0);
-    const thisM = Number(thisMonthAgg._sum.total || 0);
-    const lastM = Number(lastMonthAgg._sum.total || 0);
+    const thisW = Number(thisWeekAgg._sum?.grandTotal || 0);
+    const lastW = Number(lastWeekAgg._sum?.grandTotal || 0);
+    const thisM = Number(thisMonthAgg._sum?.grandTotal || 0);
+    const lastM = Number(lastMonthAgg._sum?.grandTotal || 0);
 
     let score = 50;
     if (lastW > 0 && thisW >= lastW) score += 20;
@@ -78,14 +78,14 @@ export class HealthScoreService {
     const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
 
     const [salesTotal, expenseTotal, unpaidInvoices] = await Promise.all([
-      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisMonth, lt: nextMonth } }, _sum: { total: true } }),
+      prisma.sale.aggregate({ where: { businessId, createdAt: { gte: thisMonth, lt: nextMonth } }, _sum: { grandTotal: true } }),
       prisma.expense.aggregate({ where: { businessId, createdAt: { gte: thisMonth, lt: nextMonth } }, _sum: { amount: true } }),
       prisma.invoice.aggregate({ where: { businessId, status: "sent", dueDate: { lt: new Date() } }, _sum: { total: true } }),
     ]);
 
-    const sales = Number(salesTotal._sum.total || 0);
-    const expenses = Number(expenseTotal._sum.amount || 0);
-    const overdue = Number(unpaidInvoices._sum.total || 0);
+    const sales = Number(salesTotal._sum?.grandTotal || 0);
+    const expenses = Number(expenseTotal._sum?.amount || 0);
+    const overdue = Number(unpaidInvoices._sum?.total || 0);
 
     let score = 60;
     const net = sales - expenses;
@@ -153,18 +153,18 @@ export class HealthScoreService {
 
   private async calcDebtScore(businessId: string): Promise<number> {
     const now = new Date();
-    const credits = await prisma.customerCredit.findMany({
+    const credits = await (prisma as any).customerCredit.findMany({
       where: { businessId, balance: { gt: 0 } },
       select: { balance: true, dueDate: true, creditLimit: true },
     });
 
     if (credits.length === 0) return 85;
 
-    const totalOutstanding = credits.reduce((sum, c) => sum + Number(c.balance), 0);
-    const totalLimits = credits.reduce((sum, c) => sum + Number(c.creditLimit || c.balance), 0);
-    const overdueCount = credits.filter((c) => c.dueDate && c.dueDate < now).length;
+    const totalOutstanding = credits.reduce((sum: number, c: { balance: number; creditLimit: number | null; dueDate: Date | null }) => sum + Number(c.balance), 0);
+    const totalLimits = credits.reduce((sum: number, c: { balance: number; creditLimit: number | null; dueDate: Date | null }) => sum + Number(c.creditLimit || c.balance), 0);
+    const overdueCount = credits.filter((c: { dueDate: Date | null }) => c.dueDate && c.dueDate < now).length;
     const overdue90Plus = credits.filter(
-      (c) => c.dueDate && (now.getTime() - c.dueDate.getTime()) > 90 * 24 * 60 * 60 * 1000,
+      (c: { dueDate: Date | null }) => c.dueDate && (now.getTime() - c.dueDate.getTime()) > 90 * 24 * 60 * 60 * 1000,
     ).length;
 
     let score = 60;
@@ -181,13 +181,13 @@ export class HealthScoreService {
     return Math.max(0, Math.min(100, score));
   }
 
-  private generateSummary(score: number, grade: string): string {
-    if (grade === "A") return "Biashara inaendelea vizuri sana. Endelea na mwelekeo huu.";
-    if (grade === "B") return "Biashara inaendelea vizuri. Kuna maeneo machache ya kuboresha.";
-    if (grade === "C") return "Biashara inaendelea wastani. Angalia maeneo yenye alama chache.";
-    if (grade === "D") return "Biashara inahitaji kuboreshwa. Fanya marekebisho haraka.";
-    return "Biashara iko hatarini. Chukua hatua za haraka kuboresha hali.";
-  }
+//   private generateSummary(score: number, grade: string): string {
+//     if (grade === "A") return "Biashara inaendelea vizuri sana. Endelea na mwelekeo huu.";
+//     if (grade === "B") return "Biashara inaendelea vizuri. Kuna maeneo machache ya kuboresha.";
+//     if (grade === "C") return "Biashara inaendelea wastani. Angalia maeneo yenye alama chache.";
+//     if (grade === "D") return "Biashara inahitaji kuboreshwa. Fanya marekebisho haraka.";
+//     return "Biashara iko hatarini. Chukua hatua za haraka kuboresha hali.";
+//   }
 }
 
 export const healthScoreService = new HealthScoreService();

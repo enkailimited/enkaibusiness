@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { UploadWithUser, ImageUploadResult, UploadOptions } from "../types";
 import type { UploadFilterSchema } from "../schemas";
+import { searchService } from "@/server/search";
 
 const uploadInclude = {
   uploadedBy: {
@@ -54,9 +55,6 @@ export async function getUploads(
 
   if (filter?.folder) where.folder = filter.folder;
   if (filter?.mimeType) where.mimeType = { startsWith: filter.mimeType.split("/")[0] + "/" };
-  if (filter?.search) {
-    where.fileName = { contains: filter.search, mode: "insensitive" };
-  }
   if (filter?.startDate || filter?.endDate) {
     const createdAt: Record<string, Date> = {};
     if (filter.startDate) createdAt.gte = new Date(filter.startDate);
@@ -68,20 +66,19 @@ export async function getUploads(
   const limit = filter?.limit ?? 50;
   const skip = (page - 1) * limit;
 
-  const [uploads, total] = await Promise.all([
-    prisma.upload.findMany({
-      where,
-      include: uploadInclude,
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.upload.count({ where }),
-  ]);
+  const result = await searchService.uploads({
+    query: filter?.search,
+    businessId,
+    where,
+    include: uploadInclude,
+    orderBy: { createdAt: "desc" },
+    offset: skip,
+    limit,
+  });
 
   return {
-    uploads: (uploads as unknown as Record<string, unknown>[]).map(toUploadWithUser),
-    total,
+    uploads: (result.items as unknown as Record<string, unknown>[]).map(toUploadWithUser),
+    total: result.total,
   };
 }
 

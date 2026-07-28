@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/server/db";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createWorkspace,
   updateWorkspace,
@@ -20,6 +22,8 @@ export async function createWorkspaceAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.create");
+  if (!can) return { success: false, message: "You do not have permission to create workspaces" };
 
   const parsed = createWorkspaceSchema.safeParse({
     name: formData.get("name"),
@@ -49,7 +53,9 @@ export async function updateWorkspaceAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.update");
+  if (!can) return { success: false, message: "You do not have permission to update workspaces" };
 
   const parsed = updateWorkspaceSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -85,7 +91,9 @@ export async function getWorkspaceAction(id: string) {
 }
 
 export async function deleteWorkspaceAction(id: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.delete");
+  if (!can) return { success: false, message: "You do not have permission to delete workspaces" };
   const result = await deleteWorkspace(id);
   if (result.success) {
     revalidatePath("/workspaces");
@@ -98,7 +106,9 @@ export async function addMemberAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.manage_members");
+  if (!can) return { success: false, message: "You do not have permission to manage members" };
 
   const parsed = addMemberSchema.safeParse({
     email: formData.get("email"),
@@ -128,7 +138,9 @@ export async function updateMemberRoleAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.manage_members");
+  if (!can) return { success: false, message: "You do not have permission to manage members" };
 
   const parsed = updateMemberRoleSchema.safeParse({
     role: formData.get("role"),
@@ -152,7 +164,9 @@ export async function updateMemberRoleAction(
 }
 
 export async function removeMemberAction(workspaceId: string, userId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.manage_members");
+  if (!can) return { success: false, message: "You do not have permission to manage members" };
   const result = await removeWorkspaceMember(workspaceId, userId);
   if (result.success) {
     revalidatePath(`/workspaces/${workspaceId}`);
@@ -162,6 +176,8 @@ export async function removeMemberAction(workspaceId: string, userId: string) {
 
 export async function createMyWorkspaceAction() {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "workspaces.create");
+  if (!can) return { success: false, message: "You do not have permission to create workspaces" };
 
   const wsName = `${user.firstName} ${user.lastName}'s Workspace`;
   const slug = `${user.firstName.toLowerCase()}-${user.lastName.toLowerCase()}-${Date.now()}`;
@@ -172,6 +188,20 @@ export async function createMyWorkspaceAction() {
   );
 
   if (result.success) {
+    // Assign business-level owner role so user can access workspace
+    // User will create their actual business later after login
+    const ownerRole = await prisma.role.findUnique({ where: { slug: "owner" } });
+    if (ownerRole) {
+      const existing = await prisma.userRole.findFirst({
+        where: { userId: user.id, roleId: ownerRole.id, businessId: null },
+      });
+      if (!existing) {
+        await prisma.userRole.create({
+          data: { userId: user.id, roleId: ownerRole.id, businessId: null },
+        });
+      }
+    }
+
     revalidatePath("/workspaces");
   }
 

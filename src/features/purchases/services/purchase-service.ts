@@ -8,6 +8,7 @@ import { computePurchaseStatus, validatePurchaseBalance } from "../types";
 import { isAdvancedProcurement } from "@/features/procurement/services/procurement-service";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 import { emitPurchaseCreated } from "@/modules/ai/events/event-bus";
+import { searchService } from "@/server/search";
 
 async function getBranchRequirement(businessId: string): Promise<boolean> {
   try {
@@ -324,7 +325,7 @@ export async function getBusinessPurchases(
   businessId: string,
   filter?: PurchaseFilterSchema,
 ): Promise<PurchaseListItem[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.branchId) {
     where.branchId = filter.branchId;
@@ -340,30 +341,27 @@ export async function getBusinessPurchases(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.purchaseDate = {};
-    if (filter.dateFrom) where.purchaseDate.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.purchaseDate.lte = new Date(filter.dateTo);
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { reference: { contains: filter.search, mode: "insensitive" } },
-      { supplier: { name: { contains: filter.search, mode: "insensitive" } } },
-    ];
+    if (filter.dateFrom) where.purchaseDate as any.gte = new Date(filter.dateFrom);
+    if (filter.dateTo) where.purchaseDate as any.lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;
   const skip = ((filter?.page ?? 1) - 1) * take;
 
-  const raw = await prisma.purchase.findMany({
+  const result = await searchService.purchases({
+    query: filter?.search,
+    businessId,
     where,
     include: {
       supplier: { select: { id: true, name: true } },
       _count: { select: { items: true } },
     },
     orderBy: { purchaseDate: "desc" },
-    skip,
-    take,
+    offset: skip,
+    limit: take,
   });
+
+  const raw = result.items;
 
   return raw.map((p) => ({
     ...p,
@@ -401,8 +399,8 @@ export async function cancelPurchase(
       if (!advanced) {
         const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
 
-        log("purchase.cancel", "reversing stock", { locationId: location.id, itemCount: existing.items.length });
         if (location) {
+          log("purchase.cancel", "reversing stock", { locationId: location.id, itemCount: existing.items.length });
           for (const item of existing.items) {
             const catalogItem = await tx.catalogItem.findUnique({
               where: { id: item.catalogItemId },

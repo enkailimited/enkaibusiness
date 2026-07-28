@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createCampaign,
   getCampaign,
@@ -22,6 +23,11 @@ export async function createCampaignAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "qr.create");
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create campaigns" };
+  }
 
   const parsed = createCampaignSchema.safeParse({
     name: formData.get("name"),
@@ -63,7 +69,12 @@ export async function updateCampaignAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update campaigns" };
+  }
 
   const parsed = updateCampaignSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -92,7 +103,13 @@ export async function updateCampaignAction(
 }
 
 export async function deleteCampaignAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "qr.delete");
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete campaigns" };
+  }
+
   const result = await deleteCampaign(id);
   if (result.success) {
     revalidatePath("/qr-ordering");
@@ -101,7 +118,13 @@ export async function deleteCampaignAction(id: string): Promise<ActionResponse> 
 }
 
 export async function launchCampaignAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to launch campaigns" };
+  }
+
   const result = await launchCampaign(id);
   if (result.success) {
     revalidatePath("/qr-ordering");
@@ -110,7 +133,13 @@ export async function launchCampaignAction(id: string): Promise<ActionResponse> 
 }
 
 export async function completeCampaignAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to complete campaigns" };
+  }
+
   const result = await completeCampaign(id);
   if (result.success) {
     revalidatePath("/qr-ordering");
@@ -119,7 +148,13 @@ export async function completeCampaignAction(id: string): Promise<ActionResponse
 }
 
 export async function cancelCampaignAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to cancel campaigns" };
+  }
+
   const result = await cancelCampaign(id);
   if (result.success) {
     revalidatePath("/qr-ordering");

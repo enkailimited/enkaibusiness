@@ -52,7 +52,7 @@ export async function checkLeadDuplicates(
   const exactMatch = matches.find((m) => {
     const sameEmail = email && m.email && m.email.toLowerCase() === email.toLowerCase();
     const samePhone = phone && m.phone === phone;
-    const sameName = firstName && lastName && m.firstName.toLowerCase() === firstName.toLowerCase() && m.lastName.toLowerCase() === lastName.toLowerCase();
+//     const sameName = firstName && lastName && m.firstName.toLowerCase() === firstName.toLowerCase() && m.lastName.toLowerCase() === lastName.toLowerCase();
     return sameEmail || samePhone;
   });
 

@@ -30,7 +30,7 @@ export default function SalesPage() {
     fetchData();
   }, [fetchData]);
 
-  const currency = "TSh";
+//   const currency = "TSh";
 
   return (
     <div className="space-y-6 pb-10">

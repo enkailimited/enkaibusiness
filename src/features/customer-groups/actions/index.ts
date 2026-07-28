@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createGroup,
   updateGroup,
@@ -17,7 +18,9 @@ export async function createGroupAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_groups.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission to create customer groups" };
 
   const parsed = createGroupSchema.safeParse({
     name: formData.get("name"),
@@ -49,7 +52,9 @@ export async function updateGroupAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_groups.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission to update customer groups" };
 
   const parsed = updateGroupSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -86,7 +91,9 @@ export async function listGroupsAction(businessId: string) {
 }
 
 export async function deleteGroupAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_groups.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission to delete customer groups" };
   const result = await deleteGroup(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/customer-groups`);

@@ -21,9 +21,9 @@ export class HealthcareResolver implements BusinessTypeResolver {
     return ["facility", "department", "ward"];
   }
 
-  async resolveLevel(input: { branchId?: string | null; storeId?: string | null }): Promise<string> {
-    return "facility";
-  }
+//   async resolveLevel(input: { branchId?: string | null; storeId?: string | null }): Promise<string> {
+//     return "facility";
+//   }
 
   async getDefaultPricing(): Promise<BusinessPricingInfo> {
     return {

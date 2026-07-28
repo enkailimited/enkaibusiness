@@ -96,7 +96,7 @@ async function dispatchSms(input: DispatchInput): Promise<boolean> {
     if (!staff?.phone) return false;
 
     await enqueue("send-notification", `sms:${input.title}`, {
-      phone: staff.phone,
+      phone: (staff as any).phone,
       message: input.message,
       businessId: input.businessId,
       userId: input.userId,

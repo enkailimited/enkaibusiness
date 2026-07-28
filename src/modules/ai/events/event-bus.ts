@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { broadcast } from "@/server/sse";
 
 export type FirdausEventType =
   | "SaleCreated"
@@ -111,6 +112,8 @@ class FirdausEventBus {
         attempts: 0,
       },
     });
+
+    broadcast(event.businessId, event.type, event.data);
 
     await this.executeHandlers(event, record.id);
   }
@@ -228,7 +231,7 @@ export function registerDefaultHandlers(): void {
   firdausEventBus.on("SaleCreated", async (event) => {
     try {
       const recommendations = await reorderEngine.getReorderRecommendations(event.businessId);
-      const urgent = recommendations.filter((r) => r.priority === "immediate" || r.priority === "today");
+      const urgent = recommendations.filter((r: { priority: string }) => r.priority === "immediate" || r.priority === "today");
       if (urgent.length > 0) {
         await prisma.notification.create({
           data: {

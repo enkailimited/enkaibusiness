@@ -20,16 +20,20 @@ import {
   updateLeadSchema,
   assignLeadSchema,
   createLeadActivitySchema,
-  leadFilterSchema,
+//   leadFilterSchema,
 } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 import type { LeadFilters } from "../types";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createLeadAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "leads.create", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createLeadSchema.safeParse({
     firstName: formData.get("firstName"),
@@ -73,7 +77,10 @@ export async function updateLeadAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "leads.update", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateLeadSchema.safeParse({
     firstName: formData.get("firstName") || undefined,
@@ -195,8 +202,11 @@ export async function addLeadActivityAction(
 export async function convertLeadAction(
   leadId: string,
   convertedToUserId: string,
+  businessId?: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "leads.convert", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await convertLead(leadId, convertedToUserId);
 
   if (result.success) {
@@ -207,8 +217,10 @@ export async function convertLeadAction(
   return result;
 }
 
-export async function deleteLeadAction(id: string) {
-  await requireAuth();
+export async function deleteLeadAction(id: string, businessId?: string) {
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "leads.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteLead(id);
 
   if (result.success) {

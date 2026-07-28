@@ -13,7 +13,7 @@ export const updateStaffSchema = z.object({
 
 export const createAssignmentSchema = z.object({
   staffId: z.string().uuid("Invalid staff ID"),
-  level: z.enum(["business", "branch", "store"], {
+  level: z.enum(["business", "branch", "store"] as const, {
     errorMap: () => ({ message: "Level must be business, branch, or store" }),
   }),
   businessId: z.string().uuid("Invalid business ID"),
@@ -24,7 +24,7 @@ export const createAssignmentSchema = z.object({
 });
 
 export const updateAssignmentSchema = z.object({
-  level: z.enum(["business", "branch", "store"]).optional(),
+  level: z.enum(["business", "branch", "store"] as const).optional(),
   branchId: z.string().uuid("Invalid branch ID").nullable().optional(),
   storeId: z.string().uuid("Invalid store ID").nullable().optional(),
   roleId: z.string().uuid("Invalid role ID").nullable().optional(),

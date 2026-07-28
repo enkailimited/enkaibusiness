@@ -13,6 +13,7 @@ import {
 } from "../services/transfer-service";
 import { createTransferSchema, updateTransferSchema, transferFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createTransferAction(
   businessId: string,
@@ -20,6 +21,8 @@ export async function createTransferAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_transfers.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;
@@ -67,7 +70,9 @@ export async function updateTransferAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_transfers.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;
@@ -129,7 +134,9 @@ export async function listTransfersAction(
 }
 
 export async function deleteTransferAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_transfers.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteTransfer(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
@@ -141,7 +148,9 @@ export async function dispatchTransferAction(
   id: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_transfers.dispatch", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await dispatchTransfer(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-transfers`);
@@ -155,7 +164,9 @@ export async function receiveTransferAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_transfers.receive", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;

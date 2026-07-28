@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { createProductSchema, updateProductSchema } from "../schemas";
 import {
   createProduct,
@@ -10,7 +11,7 @@ import {
   listProducts,
   deleteProduct,
   addProductVariant,
-  updateProductVariant,
+//   updateProductVariant,
   removeProductVariant,
 } from "../services/product-service";
 import type { ActionResponse } from "@/types/relationships";
@@ -21,6 +22,11 @@ export async function createProductAction(
 ): Promise<ActionResponse> {
   const user = await requireAuth();
   const businessId = formData.get("businessId") as string;
+
+  const canCreate = await hasPermission(user.id, "catalog.create", businessId);
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create products" };
+  }
 
   const variants: Array<Record<string, unknown>> = [];
   let i = 0;
@@ -78,6 +84,11 @@ export async function updateProductAction(
   const user = await requireAuth();
   const businessId = formData.get("businessId") as string;
 
+  const canUpdate = await hasPermission(user.id, "catalog.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update products" };
+  }
+
   const parsed = updateProductSchema.safeParse({
     name: formData.get("name") || undefined,
     description: formData.get("description") || undefined,
@@ -123,7 +134,12 @@ export async function deleteProductAction(
   productId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "catalog.delete", businessId);
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete products" };
+  }
 
   const result = await deleteProduct(productId);
 
@@ -139,7 +155,17 @@ export async function addProductVariantAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existing = await getProduct(productId);
+  if (!existing) {
+    return { success: false, message: "Product not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existing.businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update products" };
+  }
 
   const data = {
     name: formData.get("name") as string,
@@ -159,10 +185,15 @@ export async function addProductVariantAction(
 
 export async function removeProductVariantAction(
   variantId: string,
-  productId: string,
+//   productId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update products" };
+  }
 
   const result = await removeProductVariant(variantId);
 

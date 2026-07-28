@@ -85,6 +85,33 @@ export async function registerAction(input: RegisterInput): Promise<ActionRespon
   }
 }
 
+export async function assignOwnerRoleAction(): Promise<ActionResponse> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, message: "Not authenticated" };
+    }
+    const ownerRole = await prisma.role.findUnique({ where: { slug: "owner" } });
+    if (!ownerRole) {
+      return { success: false, message: "Owner role not found" };
+    }
+    const existing = await prisma.userRole.findFirst({
+      where: { userId: session.user.id, roleId: ownerRole.id, businessId: null },
+    });
+    if (!existing) {
+      await prisma.userRole.create({
+        data: { userId: session.user.id, roleId: ownerRole.id },
+      });
+    }
+    return { success: true, message: "Owner role assigned" };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to assign owner role",
+    };
+  }
+}
+
 export async function logoutAction(): Promise<ActionResponse> {
   try {
     await auth.api.signOut({

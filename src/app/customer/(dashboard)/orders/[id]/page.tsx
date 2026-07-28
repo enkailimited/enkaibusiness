@@ -105,12 +105,14 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         </div>
       </div>
 
-      <div className="border rounded-lg p-4">
-        <h2 className="font-semibold mb-2">Customer Details</h2>
-        <p className="text-sm text-muted-foreground">{order.customer.firstName} {order.customer.lastName}</p>
-        {order.customer.email && <p className="text-sm text-muted-foreground">{order.customer.email}</p>}
-        {order.customer.phone && <p className="text-sm text-muted-foreground">{order.customer.phone}</p>}
-      </div>
+      {order.customer && (
+        <div className="border rounded-lg p-4">
+          <h2 className="font-semibold mb-2">Customer Details</h2>
+          <p className="text-sm text-muted-foreground">{order.customer.firstName} {order.customer.lastName}</p>
+          {order.customer.email && <p className="text-sm text-muted-foreground">{order.customer.email}</p>}
+          {order.customer.phone && <p className="text-sm text-muted-foreground">{order.customer.phone}</p>}
+        </div>
+      )}
 
       <div className="flex gap-4">
         <Link

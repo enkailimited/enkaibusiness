@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createQRCodes,
   getQRCode,
@@ -24,7 +25,12 @@ export async function createQRCodesAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "qr.create");
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create QR codes" };
+  }
 
   const parsed = createQRCodeSchema.safeParse({
     campaignId: formData.get("campaignId"),
@@ -63,7 +69,12 @@ export async function updateQRCodeAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update QR codes" };
+  }
 
   const status = formData.get("status") as string | null;
 
@@ -82,7 +93,13 @@ export async function updateQRCodeAction(
 export async function deleteQRCodeAction(
   id: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "qr.delete");
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete QR codes" };
+  }
+
   const result = await deleteQRCode(id);
   if (result.success) {
     revalidatePath("/qr-ordering");
@@ -95,6 +112,11 @@ export async function assignQRCodeAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "qr.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to assign QR codes" };
+  }
 
   const parsed = assignQRCodeSchema.safeParse({
     qrCodeIds: JSON.parse((formData.get("qrCodeIds") as string) || "[]"),
@@ -138,6 +160,11 @@ export async function installQRCodeAction(
       message: "Validation failed",
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
+  }
+
+  const canUpdate = await hasPermission(user.id, "qr.update", parsed.data.businessId || undefined);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to install QR codes" };
   }
 
   if (parsed.data.businessId) {

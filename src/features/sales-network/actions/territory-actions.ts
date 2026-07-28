@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import { z } from "zod";
 
@@ -28,6 +29,11 @@ export async function createTerritoryAction(
   try {
     const authUser = await requireAuth();
 
+    const canCreate = await hasPermission(authUser.id, "sales_network.create");
+    if (!canCreate) {
+      return { success: false, message: "You do not have permission to create territories" };
+    }
+
     const parsed = createTerritorySchema.parse({
       name: formData.get("name"),
       description: formData.get("description"),
@@ -50,7 +56,7 @@ export async function createTerritoryAction(
     return { success: true, message: "Territory created successfully" };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.errors.map((e) => e.message).join(", ") };
+      return { success: false, message: error.issues.map((e: { message: string }) => e.message).join(", ") };
     }
     return { success: false, message: error instanceof Error ? error.message : "Failed to create territory" };
   }
@@ -61,8 +67,13 @@ export async function updateTerritoryAction(
   formData: FormData,
 ): Promise<{ success: boolean; message: string }> {
   try {
-    await requireAuth();
+    const authUser = await requireAuth();
     const id = formData.get("id") as string;
+
+    const canUpdate = await hasPermission(authUser.id, "sales_network.update");
+    if (!canUpdate) {
+      return { success: false, message: "You do not have permission to update territories" };
+    }
     if (!id) return { success: false, message: "Territory ID is required" };
 
     const parsed = updateTerritorySchema.parse({
@@ -82,7 +93,7 @@ export async function updateTerritoryAction(
     return { success: true, message: "Territory updated successfully" };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, message: error.errors.map((e) => e.message).join(", ") };
+      return { success: false, message: error.issues.map((e: { message: string }) => e.message).join(", ") };
     }
     return { success: false, message: error instanceof Error ? error.message : "Failed to update territory" };
   }
@@ -90,7 +101,13 @@ export async function updateTerritoryAction(
 
 export async function deleteTerritoryAction(id: string): Promise<{ success: boolean; message: string }> {
   try {
-    await requireAuth();
+    const authUser = await requireAuth();
+
+    const canDelete = await hasPermission(authUser.id, "sales_network.delete");
+    if (!canDelete) {
+      return { success: false, message: "You do not have permission to delete territories" };
+    }
+
     await prisma.territory.delete({ where: { id } });
     revalidatePath("/platform/sales-team/territories/manage");
     return { success: true, message: "Territory deleted successfully" };
@@ -105,7 +122,12 @@ export async function assignSalesProfileToTerritoryAction(
   isPrimary: boolean = false,
 ): Promise<{ success: boolean; message: string }> {
   try {
-    await requireAuth();
+    const authUser = await requireAuth();
+
+    const canUpdate = await hasPermission(authUser.id, "sales_network.update");
+    if (!canUpdate) {
+      return { success: false, message: "You do not have permission to assign territory members" };
+    }
 
     const existing = await prisma.territoryAssignment.findUnique({
       where: { territoryId_salesProfileId: { territoryId, salesProfileId } },
@@ -130,7 +152,13 @@ export async function removeSalesProfileFromTerritoryAction(
   salesProfileId: string,
 ): Promise<{ success: boolean; message: string }> {
   try {
-    await requireAuth();
+    const authUser = await requireAuth();
+
+    const canUpdate = await hasPermission(authUser.id, "sales_network.update");
+    if (!canUpdate) {
+      return { success: false, message: "You do not have permission to remove territory members" };
+    }
+
     await prisma.territoryAssignment.delete({
       where: { territoryId_salesProfileId: { territoryId, salesProfileId } },
     });

@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getInitials } from "@/lib/utils";
-import { RefreshCw, Pencil, Mail, Loader2 } from "lucide-react";
+import { RefreshCw, Mail } from "lucide-react";
 
 import { getMembersAction, reinviteWorkspaceMemberAction } from "@/features/members/actions";
 
@@ -44,9 +44,9 @@ export default function WorkspaceMembersPage() {
   const [loading, setLoading] = useState(true);
   const [reinviteTarget, setReinviteTarget] = useState<Member | null>(null);
   const [reinviteForm, setReinviteForm] = useState({ email: "", phone: "" });
-  const [editTarget, setEditTarget] = useState<Member | null>(null);
-  const [editForm, setEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
-  const queryClient = useQueryClient();
+// //   const [editTarget, setEditTarget] = useState<Member | null>(null);
+// //   const [editForm, setEditForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
+//   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const load = useCallback(async () => {

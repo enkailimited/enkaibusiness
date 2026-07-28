@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
-import { SubscriptionStatus } from "@prisma/client";
+import { hasPermission } from "@/features/roles/services/assignment-service";
+// import { SubscriptionStatus } from "@prisma/client";
 import { serialize } from "@/lib/utils";
 import {
   createPlan,
@@ -37,7 +38,9 @@ export async function createPlanAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.manage");
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createSubscriptionPlanSchema.safeParse({
     name: formData.get("name"),
@@ -80,7 +83,9 @@ export async function updatePlanAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.manage");
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateSubscriptionPlanSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -112,7 +117,9 @@ export async function togglePlanActiveAction(
   id: string,
   isActive: boolean,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.manage");
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await togglePlanActive(id, isActive);
 
   if (result.success) {
@@ -128,7 +135,7 @@ export async function subscribeAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = createSubscriptionSchema.safeParse({
     planId: formData.get("planId"),
@@ -142,6 +149,9 @@ export async function subscribeAction(
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
   }
+
+  const can = await hasPermission(user.id, "subscriptions.create", parsed.data.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await subscribe(parsed.data);
 
@@ -171,7 +181,9 @@ export async function getSubscriptionAction(id: string) {
 export async function cancelSubscriptionAction(
   id: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.update");
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await cancelSubscription(id);
 
   if (result.success) {
@@ -182,7 +194,9 @@ export async function cancelSubscriptionAction(
 }
 
 export async function renewSubscriptionAction(id: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.update");
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await renewSubscription(id);
 
   if (result.success) {
@@ -196,7 +210,9 @@ export async function updateSubscriptionStatusAction(
   id: string,
   status: string,
 ) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "subscriptions.update");
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await updateSubscriptionStatus(id, status);
 
   if (result.success) {
@@ -212,7 +228,9 @@ export async function recordPaymentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "payments.process");
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = recordPaymentSchema.safeParse({
     subscriptionId: formData.get("subscriptionId"),

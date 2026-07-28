@@ -25,7 +25,7 @@ export async function createRoleAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await createRole(parsed.data);
@@ -53,7 +53,7 @@ export async function updateRoleAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await updateRole(id, parsed.data);
@@ -89,7 +89,7 @@ export async function assignPermissionAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await assignPermissionToRole(parsed.data.roleId, parsed.data.permissionId);
@@ -113,7 +113,7 @@ export async function removePermissionAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await removePermissionFromRole(parsed.data.roleId, parsed.data.permissionId);
@@ -138,7 +138,7 @@ export async function assignRoleToUserAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await assignRoleToUser(parsed.data.userId, parsed.data.roleId, parsed.data.businessId);
@@ -196,7 +196,7 @@ export async function removeRoleFromUserAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: { message: string }) => e.message).join(", ") };
   }
 
   const result = await removeRoleFromUser(parsed.data.userId, parsed.data.roleId, parsed.data.businessId);

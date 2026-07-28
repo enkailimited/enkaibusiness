@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateQuotationSchema, UpdateQuotationSchema, QuotationFilterSchema } from "../schemas";
 import type { QuotationWithRelations, QuotationListItem } from "../types";
+import { searchService } from "@/server/search";
 
 export async function createQuotation(
   data: CreateQuotationSchema,
@@ -154,36 +155,34 @@ export async function getBusinessQuotations(
   businessId: string,
   filter?: QuotationFilterSchema,
 ): Promise<QuotationListItem[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.customerId) where.customerId = filter.customerId;
   if (filter?.status) where.status = filter.status;
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.quoteDate = {};
-    if (filter.dateFrom) where.quoteDate.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.quoteDate.lte = new Date(filter.dateTo);
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { notes: { contains: filter.search, mode: "insensitive" } },
-    ];
+    if (filter.dateFrom) where.quoteDate as any.gte = new Date(filter.dateFrom);
+    if (filter.dateTo) where.quoteDate as any.lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;
   const skip = ((filter?.page ?? 1) - 1) * take;
 
-  const raw = await prisma.quotation.findMany({
+  const result = await searchService.quotations({
+    query: filter?.search,
+    businessId,
     where,
     include: {
       customer: { select: { id: true, firstName: true, lastName: true } },
       _count: { select: { items: true } },
     },
     orderBy: { quoteDate: "desc" },
-    skip,
-    take,
+    offset: skip,
+    limit: take,
   });
+
+  const raw = result.items;
 
   return raw.map((q) => ({
     ...q,

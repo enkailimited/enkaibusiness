@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   recordActivity,
   getActivities,
@@ -16,7 +17,12 @@ export async function recordActivityAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canRecord = await hasPermission(user.id, "activities.record");
+  if (!canRecord) {
+    return { success: false, message: "You do not have permission to record activities" };
+  }
 
   const parsed = createActivitySchema.safeParse({
     userId: formData.get("userId"),
@@ -71,7 +77,12 @@ export async function recordActivityRaw(
     userAgent?: string;
   },
 ): Promise<ActionResponse & { data?: { id: string } }> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canRecord = await hasPermission(user.id, "activities.record");
+  if (!canRecord) {
+    return { success: false, message: "You do not have permission to record activities" };
+  }
 
   const parsed = createActivitySchema.safeParse(data);
 

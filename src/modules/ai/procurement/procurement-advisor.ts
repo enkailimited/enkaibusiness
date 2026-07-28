@@ -38,7 +38,7 @@ export class ProcurementAdvisor {
     return suppliers.map((s) => {
       const orders = s.purchaseOrders;
       const totalSpent = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
-      const totalItems = orders.reduce((sum, o) => sum + o.items.reduce((s2, i) => s2 + Number(i.quantity), 0), 0);
+//       const totalItems = orders.reduce((sum, o) => sum + o.items.reduce((s2, i) => s2 + Number(i.quantity), 0), 0);
       const orderCount = orders.length;
 
       const deliveryDays = orders
@@ -54,7 +54,7 @@ export class ProcurementAdvisor {
       const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
 
       const reliability = orderCount > 0
-        ? Math.min(100, (orders.filter((o) => o.status === "received").length / orderCount) * 100)
+        ? Math.min(100, (orders.filter((o) => (o as any).status === "received").length / orderCount) * 100)
         : 50;
 
       const deliveryScore = Math.max(0, 100 - avgDelivery * 5);
@@ -78,7 +78,7 @@ export class ProcurementAdvisor {
     }).sort((a, b) => b.score - a.score);
   }
 
-  async getBestSupplier(businessId: string, productName?: string): Promise<SupplierAnalytic | null> {
+//   async getBestSupplier(businessId: string, productName?: string): Promise<SupplierAnalytic | null> {
     const suppliers = await this.analyzeSuppliers(businessId);
     return suppliers[0] || null;
   }

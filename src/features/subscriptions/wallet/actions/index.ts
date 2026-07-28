@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { serialize } from "@/lib/utils";
 import {
   getWallet,
@@ -28,7 +29,12 @@ export async function recordDepositAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canProcess = await hasPermission(user.id, "payments.process", businessId);
+  if (!canProcess) {
+    return { success: false, message: "You do not have permission to record deposits" };
+  }
 
   const parsed = createWalletTransactionSchema.safeParse({
     type: "deposit",
@@ -59,7 +65,12 @@ export async function recordTransactionAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canProcess = await hasPermission(user.id, "payments.process", businessId);
+  if (!canProcess) {
+    return { success: false, message: "You do not have permission to record transactions" };
+  }
 
   const parsed = createWalletTransactionSchema.safeParse({
     type: formData.get("type"),
@@ -99,7 +110,13 @@ export async function addBonusAction(
   amount: number,
   description?: string,
 ) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canProcess = await hasPermission(user.id, "payments.process", businessId);
+  if (!canProcess) {
+    return { success: false, message: "You do not have permission to add bonuses" };
+  }
+
   const result = await addBonus(businessId, amount, description);
 
   if (result.success) {

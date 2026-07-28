@@ -22,7 +22,7 @@ import {
   removeSalesProfileFromTerritoryAction,
   listAvailableSalesProfilesAction,
 } from "@/features/sales-network/actions/territory-actions";
-import { Plus, MapPin, Users, Target, Trash2, Edit3, X, DollarSign, Loader2 } from "lucide-react";
+import { Plus, MapPin, Users, Trash2, Edit3, X, DollarSign, Loader2 } from "lucide-react";
 
 interface TerritoryMember {
   id: string;

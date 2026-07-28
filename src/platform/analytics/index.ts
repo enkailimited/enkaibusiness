@@ -44,7 +44,7 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
   const revenueByMonth = aggregateRevenueByMonth(subscriptions);
 
   const [totalSales, totalBusinesses, totalUsers, totalWorkspaces] = await Promise.all([
-    prisma.sale.aggregate({ _sum: { total: true } }),
+    prisma.sale.aggregate({ _sum: { grandTotal: true } }),
     prisma.business.count(),
     prisma.user.count(),
     prisma.workspace.count(),
@@ -56,7 +56,7 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
     revenueByMonth,
     topIndustries: modes.map((m) => ({ industry: m.industry, count: m._count })),
     totalVolume: {
-      sales: Number(totalSales._sum.total || 0),
+      sales: Number(totalSales._sum.grandTotal || 0),
       businesses: totalBusinesses,
       users: totalUsers,
       workspaces: totalWorkspaces,

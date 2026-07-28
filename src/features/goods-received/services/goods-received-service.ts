@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateGoodsReceivedSchema, UpdateGoodsReceivedSchema, GoodsReceivedFilterSchema } from "../schemas";
 import type { GoodsReceivedWithRelations } from "../types";
+import { searchService } from "@/server/search";
 import { generateReference } from "../constants";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
 import { emitGoodsReceived } from "@/modules/ai/events/event-bus";
@@ -269,11 +270,10 @@ export async function listGoodsReceived(
   businessId: string,
   filter?: GoodsReceivedFilterSchema,
 ): Promise<GoodsReceivedWithRelations[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.purchaseOrderId) where.purchaseOrderId = filter.purchaseOrderId;
   if (filter?.staffId) where.staffId = filter.staffId;
-  if (filter?.reference) where.reference = { contains: filter.reference, mode: "insensitive" };
 
   if (filter?.startDate || filter?.endDate) {
     const receivedDate: Record<string, Date> = {};
@@ -282,13 +282,15 @@ export async function listGoodsReceived(
     where.receivedDate = receivedDate;
   }
 
-  const raw = await prisma.goodsReceived.findMany({
+  const result = await searchService.goodsReceived({
+    query: filter?.reference,
+    businessId,
     where,
     include: goodsReceivedInclude,
     orderBy: { receivedDate: "desc" },
   });
 
-  return raw.map((r) => ({ ...r, staff: flattenStaff(r.staff) })) as unknown as GoodsReceivedWithRelations[];
+  return result.items.map((r) => ({ ...r, staff: flattenStaff(r.staff) })) as unknown as GoodsReceivedWithRelations[];
 }
 
 export async function deleteGoodsReceived(id: string): Promise<ActionResponse> {

@@ -64,7 +64,7 @@ export function ProductForm({ businessId, product, onSuccess }: ProductFormProps
   }
 
   const addVariant = () => setVariantCount((c) => c + 1);
-  const removeVariant = (index: number) => setVariantCount((c) => Math.max(0, c - 1));
+//   const removeVariant = (index: number) => setVariantCount((c) => Math.max(0, c - 1));
 
   return (
     <Card className="border-0 shadow-none">

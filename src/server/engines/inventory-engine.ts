@@ -217,7 +217,7 @@ export class InventoryEngine {
 
     if (balance) {
       const oldQty = Number(balance.quantityOnHand);
-      const oldCost = Number(balance.unitCost || 0);
+      const oldCost = Number((balance as any).unitCost || 0);
       const newTotalCost = (oldQty * oldCost) + (baseQuantity * params.unitCost);
       const newAvgCost = (oldQty + baseQuantity) > 0 ? newTotalCost / (oldQty + baseQuantity) : params.unitCost;
 
@@ -292,7 +292,7 @@ export class InventoryEngine {
       locationId: params.toLocationId,
       quantity: params.quantity,
       businessId: params.businessId,
-      unitCost: Number(balance.unitCost || 0),
+      unitCost: Number((balance as any).unitCost || 0),
       reference: params.reference,
       referenceType: "transfer",
     });

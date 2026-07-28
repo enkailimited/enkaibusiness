@@ -1,4 +1,4 @@
-import { startQueue, boss } from "./queue";
+import { startQueue } from "./queue";
 import { registerEmailWorker } from "./workers/email.worker";
 import { registerNotificationWorker } from "./workers/notification.worker";
 import { registerAnalyticsWorker, registerReportGenerator } from "./workers/analytics.worker";

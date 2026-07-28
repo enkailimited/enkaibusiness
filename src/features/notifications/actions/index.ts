@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createNotification,
   createBulkNotifications,
@@ -21,7 +22,9 @@ export async function createNotificationAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "notifications.create");
+  if (!can) return { success: false, message: "You do not have permission to create notifications" };
 
   const parsed = createNotificationSchema.safeParse({
     userId: formData.get("userId"),
@@ -69,6 +72,8 @@ export async function markAsReadAction(
   notificationId: string,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "notifications.update");
+  if (!can) return { success: false, message: "You do not have permission to update notifications" };
   const result = await markAsRead(notificationId, user.id);
 
   if (result.success) {
@@ -80,6 +85,8 @@ export async function markAsReadAction(
 
 export async function markAllAsReadAction(): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "notifications.update");
+  if (!can) return { success: false, message: "You do not have permission to update notifications" };
   const result = await markAllAsRead(user.id);
 
   if (result.success) {
@@ -98,6 +105,8 @@ export async function deleteNotificationAction(
   id: string,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "notifications.delete");
+  if (!can) return { success: false, message: "You do not have permission to delete notifications" };
   const result = await deleteNotification(id, user.id);
 
   if (result.success) {
@@ -111,7 +120,9 @@ export async function createBulkNotificationsAction(
   userIds: string[],
   data: { title: string; message?: string; type: string; referenceType?: string; referenceId?: string },
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "notifications.create");
+  if (!can) return { success: false, message: "You do not have permission to create notifications" };
 
   const parsed = createNotificationSchema
     .omit({ userId: true })

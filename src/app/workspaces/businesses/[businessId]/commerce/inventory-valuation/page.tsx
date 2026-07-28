@@ -3,10 +3,10 @@
 import { use, useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInventoryValuationAction, getInventoryValuationSummaryAction } from "@/features/financial/actions";
-import { Package, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 interface Props { params: Promise<{ businessId: string }> }
 

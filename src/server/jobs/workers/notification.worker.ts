@@ -5,7 +5,7 @@ import { boss } from "../queue";
 
 export function registerNotificationWorker(): void {
   boss.work("send-notification", async ([job]) => {
-    const { userId, businessId, title, message, type, referenceType, referenceId, link } = job.data as {
+    const { userId, businessId, title, message, type, referenceType, referenceId, link } = (job as any).data as {
       userId: string;
       businessId?: string;
       title: string;

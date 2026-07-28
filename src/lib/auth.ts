@@ -122,6 +122,7 @@ export const auth = betterAuth({
               mustChangePassword: true,
             },
           });
+
         },
       },
     },

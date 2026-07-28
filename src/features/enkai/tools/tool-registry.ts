@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ToolDefinition, ToolResult, ToolRegistry } from "./types";
 
 function createRegistry(): ToolRegistry {
@@ -49,26 +50,23 @@ function createRegistry(): ToolRegistry {
       const item = params.item as string;
       const businessId = params.businessId as string;
 
-      const catalogItem = await prisma.catalogItem.findFirst({
-        where: {
-          businessId,
-          OR: [
-            { name: { contains: item, mode: "insensitive" } },
-            { sku: { contains: item, mode: "insensitive" } },
-          ],
-          isActive: true,
-        },
+      const searchResult = await searchService.catalogItems<any>({
+        query: item,
+        businessId,
+        where: { isActive: true },
         include: {
           balances: { include: { location: true } },
         },
+        limit: 1,
       });
+      const catalogItem = searchResult.items[0];
 
       if (!catalogItem) {
         return { success: false, message: `Bidhaa "${item}" haikupatikana.` };
       }
 
-      const totalStock = catalogItem.balances.reduce((sum, b) => sum + Number(b.quantityOnHand), 0);
-      const locations = catalogItem.balances.map((b) =>
+      const totalStock = catalogItem.balances.reduce((sum: number, b: any) => sum + Number(b.quantityOnHand), 0);
+      const locations = (catalogItem.balances as any[]).map((b: any) =>
         `${b.location.name}: ${Number(b.quantityOnHand)}`).join(", ");
 
       return {
@@ -78,7 +76,7 @@ function createRegistry(): ToolRegistry {
           itemName: catalogItem.name,
           sku: catalogItem.sku,
           totalStock,
-          locations: catalogItem.balances.map((b) => ({
+          locations: (catalogItem.balances as any[]).map((b: any) => ({
             location: b.location.name,
             quantity: Number(b.quantityOnHand),
             available: Number(b.quantityAvailable),
@@ -102,16 +100,13 @@ function createRegistry(): ToolRegistry {
       const item = params.item as string;
       const businessId = params.businessId as string;
 
-      const catalogItem = await prisma.catalogItem.findFirst({
-        where: {
-          businessId,
-          OR: [
-            { name: { contains: item, mode: "insensitive" } },
-            { sku: { contains: item, mode: "insensitive" } },
-          ],
-          isActive: true,
-        },
+      const searchResult = await searchService.catalogItems<any>({
+        query: item,
+        businessId,
+        where: { isActive: true },
+        limit: 1,
       });
+      const catalogItem = searchResult.items[0];
 
       if (!catalogItem) {
         return { success: false, message: `Bidhaa "${item}" haikupatikana.` };
@@ -165,16 +160,22 @@ function createRegistry(): ToolRegistry {
       // Resolve catalog item
       const catalogItem = itemId
         ? await prisma.catalogItem.findUnique({ where: { id: itemId, businessId }, include: { balances: { take: 1 } } })
-        : await prisma.catalogItem.findFirst({
-            where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
-            include: { balances: { take: 1 } },
-          });
+        : await (async () => {
+            const searchResult = await searchService.catalogItems<any>({
+              query: item,
+              businessId,
+              where: { isActive: true },
+              include: { balances: { take: 1 } },
+              limit: 1,
+            });
+            return searchResult.items[0];
+          })();
 
       if (!catalogItem) {
         return { success: false, message: `Bidhaa "${item}" haikupatikana kwenye katalogi.` };
       }
 
-      const totalStock = catalogItem.balances.reduce((s, b) => s + Number(b.quantityOnHand), 0);
+      const totalStock = catalogItem.balances.reduce((s: number, b: any) => s + Number(b.quantityOnHand), 0);
       if (totalStock < quantity) {
         return { success: false, message: `Stock haitoshi. Zimebaki ${totalStock} tu.` };
       }
@@ -190,17 +191,12 @@ function createRegistry(): ToolRegistry {
       // Step 1: Resolve customer (walk-in if not specified)
       let customerId: string | null = null;
       if (customerName) {
-        const customer = await prisma.customer.findFirst({
-          where: {
-            businessId,
-            OR: [
-              { firstName: { contains: customerName, mode: "insensitive" } },
-              { lastName: { contains: customerName, mode: "insensitive" } },
-              { phone: { contains: customerName } },
-            ],
-          },
-          select: { id: true },
+        const customerResult = await searchService.customers<any>({
+          query: customerName,
+          businessId,
+          limit: 1,
         });
+        const customer = customerResult.items[0];
         if (customer) customerId = customer.id;
       }
       if (!customerId) {
@@ -234,8 +230,8 @@ function createRegistry(): ToolRegistry {
       });
 
       // Step 3: Deduct inventory (POS flow)
-      await prisma.inventoryBalance.update({
-        where: { locationId_catalogItemId_variantId: { locationId, catalogItemId: catalogItem.id, variantId: null } },
+      await prisma.inventoryBalance.updateMany({
+        where: { locationId, catalogItemId: catalogItem.id, variantId: null },
         data: {
           quantityOnHand: { decrement: quantity },
           quantityAvailable: { decrement: quantity },
@@ -280,25 +276,17 @@ function createRegistry(): ToolRegistry {
       const query = params.query as string;
       const businessId = params.businessId as string | undefined;
 
-      const where: Record<string, unknown> = {
-        OR: [
-          { firstName: { contains: query, mode: "insensitive" } },
-          { lastName: { contains: query, mode: "insensitive" } },
-          { phone: { contains: query } },
-          { email: { contains: query, mode: "insensitive" } },
-        ],
-      };
-      if (businessId) where.businessId = businessId;
-
-      const customers = await prisma.customer.findMany({
-        where: where as Parameters<typeof prisma.customer.findMany>[0],
-        take: 5,
+      const customersResult = await searchService.customers<any>({
+        query,
+        ...(businessId ? { businessId } : {}),
+        limit: 5,
         include: {
           customerGroup: { select: { name: true, discountPercent: true } },
           creditAccount: { select: { balance: true, creditLimit: true } },
           _count: { select: { sales: true } },
         },
       });
+      const customers = customersResult.items;
 
       if (customers.length === 0) {
         return { success: false, message: `Hakuna mteja anayefanana na "${query}".` };
@@ -307,7 +295,7 @@ function createRegistry(): ToolRegistry {
       const customerList = customers.map((c) => {
         const name = `${c.firstName} ${c.lastName || ""}`.trim();
         const balance = c.creditAccount ? Number(c.creditAccount.balance) : 0;
-        const limit = c.creditAccount ? Number(c.creditAccount.creditLimit) : 0;
+//         const limit = c.creditAccount ? Number(c.creditAccount.creditLimit) : 0;
         return `• ${name} - ${c.phone || "hakuna simu"}${balance > 0 ? ` - Deni: TZS ${balance.toLocaleString("sw-TZ")}` : ""}`;
       }).join("\n");
 
@@ -428,9 +416,15 @@ function createRegistry(): ToolRegistry {
 
       let catalogItem = itemId
         ? await prisma.catalogItem.findUnique({ where: { id: itemId, businessId } })
-        : await prisma.catalogItem.findFirst({
-            where: { businessId, name: { contains: item, mode: "insensitive" }, isActive: true },
-          });
+        : await (async () => {
+            const searchResult = await searchService.catalogItems<any>({
+              query: item,
+              businessId,
+              where: { isActive: true },
+              limit: 1,
+            });
+            return searchResult.items[0];
+          })();
 
       if (!catalogItem) {
         catalogItem = await prisma.catalogItem.create({
@@ -457,13 +451,11 @@ function createRegistry(): ToolRegistry {
         return { success: false, message: "Hakuna sehemu ya stock imesanidiwa." };
       }
 
-      const balance = await prisma.inventoryBalance.findUnique({
+      const balance = await prisma.inventoryBalance.findFirst({
         where: {
-          locationId_catalogItemId_variantId: {
-            locationId: inventoryLocation.id,
-            catalogItemId: catalogItem.id,
-            variantId: null,
-          },
+          locationId: inventoryLocation.id,
+          catalogItemId: catalogItem.id,
+          variantId: null,
         },
       });
 
@@ -510,15 +502,11 @@ function createRegistry(): ToolRegistry {
     handler: async (params) => {
       const query = params.query as string;
 
-      const suppliers = await prisma.supplier.findMany({
-        where: {
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { phone: { contains: query } },
-          ],
-        },
-        take: 5,
+      const suppliersResult = await searchService.suppliers<any>({
+        query,
+        limit: 5,
       });
+      const suppliers = suppliersResult.items;
 
       if (suppliers.length === 0) {
         return { success: false, message: `Hakuna msambazaji anayefanana na "${query}".` };
@@ -852,8 +840,8 @@ function createRegistry(): ToolRegistry {
       const toLocationId = params.toLocationId as string;
       const businessId = params.businessId as string;
 
-      const fromBalance = await prisma.inventoryBalance.findUnique({
-        where: { locationId_catalogItemId_variantId: { locationId: fromLocationId, catalogItemId: itemId, variantId: null } },
+      const fromBalance = await prisma.inventoryBalance.findFirst({
+        where: { locationId: fromLocationId, catalogItemId: itemId, variantId: null },
       });
       if (!fromBalance || Number(fromBalance.quantityOnHand) < quantity) {
         return { success: false, message: "Stock haitoshi kwenye sehemu ya kutoka." };
@@ -871,17 +859,17 @@ function createRegistry(): ToolRegistry {
         },
       });
 
-      await prisma.inventoryBalance.update({
-        where: { locationId_catalogItemId_variantId: { locationId: fromLocationId, catalogItemId: itemId, variantId: null } },
+      await prisma.inventoryBalance.updateMany({
+        where: { locationId: fromLocationId, catalogItemId: itemId, variantId: null },
         data: { quantityOnHand: { decrement: quantity }, quantityAvailable: { decrement: quantity } },
       });
 
-      const toBalance = await prisma.inventoryBalance.findUnique({
-        where: { locationId_catalogItemId_variantId: { locationId: toLocationId, catalogItemId: itemId, variantId: null } },
+      const toBalance = await prisma.inventoryBalance.findFirst({
+        where: { locationId: toLocationId, catalogItemId: itemId, variantId: null },
       });
       if (toBalance) {
-        await prisma.inventoryBalance.update({
-          where: { locationId_catalogItemId_variantId: { locationId: toLocationId, catalogItemId: itemId, variantId: null } },
+        await prisma.inventoryBalance.updateMany({
+          where: { locationId: toLocationId, catalogItemId: itemId, variantId: null },
           data: { quantityOnHand: { increment: quantity }, quantityAvailable: { increment: quantity } },
         });
       }
@@ -911,15 +899,15 @@ function createRegistry(): ToolRegistry {
       const quantity = Number(params.quantity);
       const locationId = params.locationId as string;
 
-      const balance = await prisma.inventoryBalance.findUnique({
-        where: { locationId_catalogItemId_variantId: { locationId, catalogItemId: itemId, variantId: null } },
+      const balance = await prisma.inventoryBalance.findFirst({
+        where: { locationId, catalogItemId: itemId, variantId: null },
       });
       if (!balance) {
         return { success: false, message: "Hakuna rekodi ya stock." };
       }
 
-      await prisma.inventoryBalance.update({
-        where: { locationId_catalogItemId_variantId: { locationId, catalogItemId: itemId, variantId: null } },
+      await prisma.inventoryBalance.updateMany({
+        where: { locationId, catalogItemId: itemId, variantId: null },
         data: { quantityOnHand: quantity, quantityAvailable: quantity },
       });
 
@@ -1108,31 +1096,23 @@ function createRegistry(): ToolRegistry {
       const name = params.name as string | undefined;
       const businessId = params.businessId as string;
 
-      const where: Record<string, unknown> = { businessId };
-      if (name) {
-        where.user = {
-          OR: [
-            { firstName: { contains: name, mode: "insensitive" } },
-            { lastName: { contains: name, mode: "insensitive" } },
-          ],
-        };
-      }
-
-      const staff = await prisma.staff.findMany({
-        where: where as Parameters<typeof prisma.staff.findMany>[0],
+      const staffSearchResult = await searchService.staff<any>({
+        ...(name ? { query: name } : {}),
+        businessId,
         include: {
           user: { select: { firstName: true, lastName: true, email: true } },
           assignments: { include: { role: { select: { name: true } }, branch: { select: { name: true } } }, take: 3 },
         },
-        take: 10,
+        limit: 10,
       });
+      const staff = staffSearchResult.items;
 
       if (staff.length === 0) {
         return { success: false, message: "Hakuna wafanyakazi waliopatikana." };
       }
 
       const staffList = staff.map((s) => {
-        const roles = s.assignments.map((a) => a.role?.name).filter(Boolean).join(", ");
+        const roles = s.assignments.map((a: { role?: { name?: string } | null; branch?: { name?: string } | null }) => a.role?.name).filter(Boolean).join(", ");
         return `• ${s.user.firstName} ${s.user.lastName} - ${s.position || roles || "hakuna cheo"}`;
       }).join("\n");
 
@@ -1145,7 +1125,7 @@ function createRegistry(): ToolRegistry {
             email: s.user.email,
             position: s.position,
             code: s.employeeCode,
-            assignments: s.assignments.map((a) => ({
+            assignments: s.assignments.map((a: { role?: { name?: string } | null; branch?: { name?: string } | null }) => ({
               role: a.role?.name,
               branch: a.branch?.name,
             })),

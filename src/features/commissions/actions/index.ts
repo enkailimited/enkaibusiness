@@ -12,6 +12,7 @@ import {
 } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 import type { CommissionFilters } from "../types";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function getCommissionRulesAction() {
   await requireAuth();
@@ -27,7 +28,10 @@ export async function createCommissionRuleAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "commissions.create", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createCommissionRuleSchema.safeParse({
     name: formData.get("name"),
@@ -109,8 +113,10 @@ export async function getEntriesByProfileAction(salesProfileId: string, status?:
   return getEntriesByProfile(salesProfileId, status);
 }
 
-export async function approveCommissionEntryAction(ledgerId: string) {
-  await requireAuth();
+export async function approveCommissionEntryAction(ledgerId: string, businessId?: string) {
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "commissions.approve", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await approveEntry(ledgerId);
 
   if (result.success) {
@@ -125,6 +131,9 @@ export async function createPayoutAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "commissions.payout", businessId || undefined);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createPayoutSchema.safeParse({
     entries: JSON.parse((formData.get("entries") as string) || "[]"),

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import {
   getBusinessProfileSettings,
@@ -33,7 +34,7 @@ import {
   deleteSetting,
   getSettingsByCategory,
 } from "../services/setting-service";
-import { createSettingSchema, updateSettingSchema, settingFilterSchema } from "../schemas";
+import { createSettingSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
 import { z } from "zod";
 import type { BusinessProfileSettings, TaxSettings, ReceiptSettings, NumberingSettings, PaymentSettings, UserPreferences } from "../types";
@@ -50,7 +51,12 @@ export async function updateBusinessSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update business settings" };
+  }
 
   const data: Partial<BusinessProfileSettings> = {};
   const fields: (keyof BusinessProfileSettings)[] = [
@@ -79,7 +85,12 @@ export async function updateTaxSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update tax settings" };
+  }
 
   const data: Partial<TaxSettings> = {};
   const taxRate = formData.get("taxRate");
@@ -109,7 +120,12 @@ export async function updateReceiptSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update receipt settings" };
+  }
 
   const data: Partial<ReceiptSettings> = {};
   const header = formData.get("header");
@@ -140,7 +156,12 @@ export async function updateNumberingSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update numbering settings" };
+  }
 
   const data: Partial<NumberingSettings> = {};
   const prefixFields: (keyof NumberingSettings)[] = [
@@ -178,7 +199,12 @@ export async function updatePaymentSettingsAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update", businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update payment settings" };
+  }
 
   const data: Partial<PaymentSettings> = {};
   const defaultPaymentMethod = formData.get("defaultPaymentMethod");
@@ -205,7 +231,11 @@ export async function updateUserPreferencesAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  if (user.id !== userId) {
+    return { success: false, message: "You can only update your own preferences" };
+  }
 
   const data: Partial<UserPreferences> = {};
   const language = formData.get("language");
@@ -238,7 +268,19 @@ export async function setSettingAction(
   value: unknown,
   options?: { businessId?: string; userId?: string; description?: string; isPublic?: boolean },
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  if (options?.businessId) {
+    const canUpdate = await hasPermission(user.id, "settings.update", options.businessId);
+    if (!canUpdate) {
+      return { success: false, message: "You do not have permission to update settings" };
+    }
+  } else {
+    const canUpdate = await hasPermission(user.id, "settings.update");
+    if (!canUpdate) {
+      return { success: false, message: "You do not have permission to update settings" };
+    }
+  }
 
   const parsed = createSettingSchema.partial().safeParse({
     key,
@@ -264,7 +306,13 @@ const workspaceNameSchema = z.string().min(1, "Name is required").max(200);
 const workspaceDescSchema = z.string().max(1000);
 
 export async function deleteSettingAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "settings.update");
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete settings" };
+  }
+
   const parsed = uuidSchema.safeParse(id);
   if (!parsed.success) return { success: false, message: "Invalid setting ID" };
   return deleteSetting(id);
@@ -290,13 +338,19 @@ export async function getWorkspaceSettingsAction() {
 }
 
 export async function saveWorkspaceSettingsAction(id: string, name: string, description: string) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "settings.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update workspace settings" };
+  }
+
   const idParsed = uuidSchema.safeParse(id);
   const nameParsed = workspaceNameSchema.safeParse(name);
   const descParsed = workspaceDescSchema.safeParse(description);
   if (!idParsed.success) return { success: false, message: "Invalid workspace ID" };
-  if (!nameParsed.success) return { success: false, message: nameParsed.error.errors[0].message };
-  if (!descParsed.success) return { success: false, message: descParsed.error.errors[0].message };
+  if (!nameParsed.success) return { success: false, message: nameParsed.error.issues[0].message };
+  if (!descParsed.success) return { success: false, message: descParsed.error.issues[0].message };
   await prisma.workspace.update({ where: { id }, data: { name, description } });
   return { success: true };
 }

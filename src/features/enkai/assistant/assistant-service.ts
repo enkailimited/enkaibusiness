@@ -1,9 +1,9 @@
 import "server-only";
 
-import { parseCommand, getHelpText } from "../commands/command-parser";
+
 import { memoryStore } from "../memory/memory-store";
 import { toolRegistry } from "../tools/tool-registry";
-import { systemPrompt, helpSwahili, incompleteTransaction, errorMessage } from "../prompts/prompts";
+import { helpSwahili, incompleteTransaction, errorMessage } from "../prompts/prompts";
 import type { AssistantMessage, AssistantContext, AssistantResponse, IntentHandler } from "./types";
 import type { IntentType } from "../commands/types";
 import { processWithBrain } from "../brain/business-brain";
@@ -456,40 +456,40 @@ const intentHandlers: IntentHandler[] = [
   },
 ];
 
-function findHandler(intent: IntentType): IntentHandler | undefined {
-  return intentHandlers.find((h) => h.intent === intent);
-}
+// function findHandler(intent: IntentType): IntentHandler | undefined {
+//   return intentHandlers.find((h) => h.intent === intent);
+// }
+//
+// async function checkPermission(context: AssistantContext, requiredPermission?: string): Promise<boolean> {
+//   if (!requiredPermission || !context.userId) return true;
+//   if (context.permissions && context.permissions.includes(requiredPermission)) return true;
+//   if (context.permissions && context.permissions.includes("*")) return true;
+//   return false;
+// }
 
-async function checkPermission(context: AssistantContext, requiredPermission?: string): Promise<boolean> {
-  if (!requiredPermission || !context.userId) return true;
-  if (context.permissions && context.permissions.includes(requiredPermission)) return true;
-  if (context.permissions && context.permissions.includes("*")) return true;
-  return false;
-}
-
-async function createAuditLog(
-  userId: string,
-  businessId: string | undefined,
-  action: string,
-  details: Record<string, unknown>,
-): Promise<void> {
-  try {
-    const { prisma } = await import("@/server/db");
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        businessId: businessId || "",
-        action,
-        entity: "firdaus_assistant",
-        entityId: action,
-        before: null,
-        after: details,
-      },
-    });
-  } catch (err) {
-    console.error("Failed to create audit log:", err);
-  }
-}
+// async function createAuditLog(
+//   userId: string,
+//   businessId: string | undefined,
+//   action: string,
+//   details: Record<string, unknown>,
+// ): Promise<void> {
+//   try {
+//     const { prisma } = await import("@/server/db");
+//     await prisma.auditLog.create({
+//       data: {
+//         userId,
+//         businessId: businessId || "",
+//         action,
+//         entity: "firdaus_assistant",
+//         entityId: action,
+//         before: null,
+//         after: details,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Failed to create audit log:", err);
+//   }
+// }
 
 export async function processMessage(
   input: string,

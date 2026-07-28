@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createReturn,
   updateReturn,
@@ -21,6 +22,11 @@ export async function createReturnAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "returns.create", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const items: Array<{ catalogItemId: string; variantId?: string; quantity: number; unitPrice: number; reason?: string; condition?: string }> = [];
   let i = 0;
@@ -54,7 +60,7 @@ export async function createReturnAction(
     };
   }
 
-  const result = await createReturn(parsed.data, businessId, user.workspaceId);
+  const result = await createReturn(parsed.data, businessId, (user as any).workspaceId);
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
@@ -69,7 +75,12 @@ export async function updateReturnAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "returns.update", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = updateReturnSchema.safeParse({
     reason: formData.get("reason") || undefined,
@@ -121,7 +132,11 @@ export async function listReturnsAction(
 }
 
 export async function approveReturnAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "returns.approve", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await approveReturn(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);
@@ -139,7 +154,11 @@ export async function rejectReturnAction(id: string, businessId: string) {
 }
 
 export async function deleteReturnAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "returns.delete", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await deleteReturn(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/returns`);

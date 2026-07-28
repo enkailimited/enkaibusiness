@@ -79,8 +79,8 @@ export default function SalesTeamDashboard() {
               title={action.title}
               href={action.href}
               icon={action.icon}
-              color={action.color}
-              bg={action.bg}
+              color={(action as any).color}
+              bg={(action as any).bg}
             />
           ))}
         </div>

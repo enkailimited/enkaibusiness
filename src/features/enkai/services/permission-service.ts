@@ -38,7 +38,7 @@ export async function checkPermission(
 
     for (const assignment of staff.assignments) {
       if (!assignment.role) continue;
-      const perms = assignment.role.rolePermissions.map((rp) => rp.permission.key);
+      const perms = assignment.role.rolePermissions.map((rp) => (rp.permission as any).key);
       if (perms.includes(requiredPermission) || perms.includes("*")) {
         return { allowed: true, role: assignment.role.name };
       }
@@ -66,10 +66,10 @@ export async function checkSalesHierarchy(
 
     if (!profile) return { level: null };
 
-    if (profile.nationalManager) return { level: "national_manager" };
-    if (profile.regionalManager) return { level: "regional_manager", regionId: profile.regionalManager.regionId || undefined };
-    if (profile.teamLeader) return { level: "team_leader" };
-    if (profile.freelancer) return { level: "freelancer" };
+    if ((profile as any).nationalManager) return { level: "national_manager" };
+    if ((profile as any).regionalManager) return { level: "regional_manager", regionId: profile.regionalManager.regionId || undefined };
+    if ((profile as any).teamLeader) return { level: "team_leader" };
+    if ((profile as any).freelancer) return { level: "freelancer" };
 
     return { level: null };
   } catch {

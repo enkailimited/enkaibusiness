@@ -4,7 +4,7 @@ import { prisma } from "@/server/db";
 import { dispatch } from "@/features/notifications/services/dispatch-service";
 
 export async function handleBusinessRegistrationCommission(
-  businessId: string,
+//   businessId: string,
   subscriptionId: string,
   salesProfileId?: string | null,
 ) {

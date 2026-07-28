@@ -94,7 +94,7 @@ export async function enqueue(
 }
 
 export async function schedule(
-  type: JobType,
+//   type: JobType,
   name: string,
   cron: string,
   data: Record<string, unknown>,
@@ -124,12 +124,13 @@ export async function getQueueStats(): Promise<{
   failed: number;
   cancelled: number;
 }> {
+  const b = boss as any;
   const [created, active, completed, failed, cancelled] = await Promise.all([
-    boss.getQueueSize("created"),
-    boss.getQueueSize("active"),
-    boss.getQueueSize("completed"),
-    boss.getQueueSize("failed"),
-    boss.getQueueSize("cancelled"),
+    b.getQueueSize("created"),
+    b.getQueueSize("active"),
+    b.getQueueSize("completed"),
+    b.getQueueSize("failed"),
+    b.getQueueSize("cancelled"),
   ]);
 
   return {

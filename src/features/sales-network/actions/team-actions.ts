@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import { serialize } from "@/lib/utils";
 
@@ -227,7 +228,7 @@ export async function getAddableHierarchiesAction() {
 }
 
 export async function searchUsersAction(search: string) {
-  const user = await requireAuth();
+//   const user = await requireAuth();
 
   if (!search || search.length < 2) return [];
 
@@ -257,6 +258,8 @@ export async function addTeamMemberAction(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const authUser = await requireAuth();
+    const can = await hasPermission(authUser.id, "sales_network.manage");
+    if (!can) return { success: false, message: "You do not have permission" };
     const targetUserId = formData.get("userId") as string;
     const hierarchyId = formData.get("hierarchyId") as string;
 

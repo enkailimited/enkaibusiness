@@ -87,11 +87,11 @@ export async function generateInsights(config: InsightConfig): Promise<BusinessI
     where: { businessId },
     orderBy: { createdAt: "desc" },
     take: 100,
-    select: { total: true, createdAt: true },
+    select: { grandTotal: true, createdAt: true },
   });
 
   if (saleDates.length > 0) {
-    const totalRevenue = saleDates.reduce((sum, s) => sum + Number(s.total), 0);
+    const totalRevenue = saleDates.reduce((sum, s) => sum + Number(s.grandTotal), 0);
     insights.push({
       type: "sales-trend",
       title: "Sales Overview",

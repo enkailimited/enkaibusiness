@@ -10,6 +10,7 @@ import {
 } from "../services/pos-service";
 import { createSessionSchema, closeSessionSchema, posSessionFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function openSessionAction(
   businessId: string,
@@ -17,6 +18,8 @@ export async function openSessionAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "pos.open_session", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createSessionSchema.safeParse({
     storeId: formData.get("storeId") || undefined,
@@ -47,6 +50,8 @@ export async function closeSessionAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "pos.close_session", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = closeSessionSchema.safeParse({
     closingFloat: formData.get("closingFloat") || 0,

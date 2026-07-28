@@ -24,7 +24,7 @@ export async function createPermissionAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: Error) => e.message).join(", ") };
   }
 
   const result = await createPermission(parsed.data);
@@ -52,7 +52,7 @@ export async function updatePermissionAction(
   });
 
   if (!parsed.success) {
-    return { success: false, message: parsed.error.errors.map((e) => e.message).join(", ") };
+    return { success: false, message: parsed.error.issues.map((e: Error) => e.message).join(", ") };
   }
 
   const result = await updatePermission(id, parsed.data);

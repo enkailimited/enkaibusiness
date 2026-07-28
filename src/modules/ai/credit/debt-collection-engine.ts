@@ -28,7 +28,7 @@ export class DebtCollectionEngine {
   async getOverdueAccounts(businessId: string): Promise<DebtAccount[]> {
     const now = new Date();
 
-    const credits = await prisma.customerCredit.findMany({
+    const credits = await (prisma as any).customerCredit.findMany({
       where: { businessId, balance: { gt: 0 } },
       include: {
         customer: { select: { id: true, firstName: true, lastName: true, phone: true } },
@@ -37,7 +37,7 @@ export class DebtCollectionEngine {
       orderBy: { balance: "desc" },
     });
 
-    return credits.map((c) => {
+    return credits.map((c: { customer: { id: string; firstName: string; lastName: string | null; phone: string | null } | null; dueDate: Date | null; balance: number; creditLimit: number | null; transactions: { createdAt: Date }[] }) => {
       const daysOverdue = c.dueDate ? Math.ceil((now.getTime() - c.dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0;
       let risk: DebtAccount["risk"] = "low";
       if (daysOverdue > 90) risk = "critical";
@@ -55,7 +55,7 @@ export class DebtCollectionEngine {
         lastPayment: c.transactions[0]?.createdAt || null,
         risk,
       };
-    }).filter((d) => d.balance > 0);
+    }).filter((d: { balance: number }) => d.balance > 0);
   }
 
   async generateReminders(businessId: string): Promise<CollectionReminder[]> {
@@ -74,7 +74,7 @@ export class DebtCollectionEngine {
     };
 
     for (const account of overdueAccounts.filter((a) => a.daysOverdue >= 7)) {
-      const template = templates[account.risk] || templates.low;
+      const template = (templates[account.risk] || templates.low)!;
       let priority: CollectionReminder["priority"] = "low";
       if (account.risk === "critical") priority = "urgent";
       else if (account.risk === "high") priority = "high";
@@ -116,7 +116,7 @@ export class DebtCollectionEngine {
       countOverdue: accounts.length,
       criticalCount: critical.length,
       highRiskAmount: highRisk.reduce((sum, a) => sum + a.balance, 0),
-      topDebtor: accounts.length > 0
+      topDebtor: accounts.length > 0 && accounts[0]
         ? { name: accounts[0].customerName, amount: accounts[0].balance }
         : null,
     };

@@ -7,7 +7,7 @@ export const variantSchema = z.object({
   price: z.number().min(0).optional(),
   costPrice: z.number().min(0).optional(),
   imageUrl: z.string().url().optional().or(z.literal("")),
-  attributes: z.record(z.unknown()).optional(),
+  attributes: z.record(z.string(), z.unknown()).optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
 

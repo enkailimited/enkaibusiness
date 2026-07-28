@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { prisma } from "@/server/db";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createLocationSchema,
   updateLocationSchema,
@@ -12,12 +14,12 @@ import {
   createLocation,
   updateLocation,
   getLocation,
-  getBusinessLocations,
+//   getBusinessLocations,
   deleteLocation,
 } from "../services/location-service";
 import {
   updateBalance,
-  getBalancesByLocation,
+//   getBalancesByLocation,
   transferStock,
   adjustStock,
 } from "../services/balance-service";
@@ -27,7 +29,7 @@ export async function createLocationAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = createLocationSchema.safeParse({
     businessId: formData.get("businessId"),
@@ -44,6 +46,9 @@ export async function createLocationAction(
     };
   }
 
+  const can = await hasPermission(user.id, "inventory.create", parsed.data.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await createLocation(parsed.data);
 
   if (result.success) {
@@ -58,7 +63,7 @@ export async function updateLocationAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = updateLocationSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -83,6 +88,9 @@ export async function updateLocationAction(
     return { success: false, message: "Location not found" };
   }
 
+  const can = await hasPermission(user.id, "inventory.update", location.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await updateLocation(locationId, parsed.data);
 
   if (result.success) {
@@ -96,7 +104,9 @@ export async function deleteLocationAction(
   locationId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "inventory.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await deleteLocation(locationId);
 
@@ -112,7 +122,15 @@ export async function updateBalanceAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const balance = await prisma.inventoryBalance.findUnique({
+    where: { id: balanceId },
+    include: { location: true },
+  });
+  if (!balance) return { success: false, message: "Balance not found" };
+  const can = await hasPermission(user.id, "inventory.update", balance.location.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateBalanceSchema.safeParse({
     quantityOnHand: formData.get("quantityOnHand") || undefined,
@@ -139,7 +157,7 @@ export async function transferStockAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = transferSchema.safeParse({
     fromLocationId: formData.get("fromLocationId"),
@@ -159,13 +177,15 @@ export async function transferStockAction(
     };
   }
 
+  const fromLocation = await getLocation(parsed.data.fromLocationId);
+  if (!fromLocation) return { success: false, message: "Source location not found" };
+  const can = await hasPermission(user.id, "inventory.transfer", fromLocation.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await transferStock(parsed.data);
 
   if (result.success) {
-    const location = await getLocation(parsed.data.fromLocationId);
-    if (location) {
-      revalidatePath(`/workspaces/businesses/${location.businessId}/commerce/inventory`);
-    }
+    revalidatePath(`/workspaces/businesses/${fromLocation.businessId}/commerce/inventory`);
   }
 
   return result;
@@ -179,7 +199,9 @@ export async function adjustStockAction(
   variantId?: string,
   notes?: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "inventory.adjust", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await adjustStock(locationId, catalogItemId, newQuantity, variantId, notes);
 

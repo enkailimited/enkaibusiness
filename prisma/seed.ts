@@ -610,12 +610,118 @@ async function main() {
 
   console.log(`✔ Created ${commissionRuleData.length} commission rules`);
 
+  // ─── 9. Demo Data ────────────────────────────────────────────────────────
+
+  const workspaceId = "00000000-0000-0000-0000-000000000010";
+  const businessId = "00000000-0000-0000-0000-000000000020";
+
+  const workspace = await prisma.workspace.upsert({
+    where: { id: workspaceId },
+    update: {},
+    create: {
+      id: workspaceId,
+      name: "Enkai Demo",
+      slug: "enkai-demo",
+    },
+  });
+
+  await prisma.workspaceMember.upsert({
+    where: { userId_workspaceId: { userId: superUserId, workspaceId: workspace.id } },
+    update: {},
+    create: {
+      workspaceId: workspace.id,
+      userId: superUserId,
+      role: "OWNER",
+    },
+  });
+
+  const business = await prisma.business.upsert({
+    where: { id: businessId },
+    update: {},
+    create: {
+      id: businessId,
+      workspaceId: workspace.id,
+      name: "Demo Shop",
+      slug: "demo-shop",
+      businessTypeId: commerceType.id,
+      createdById: superUserId,
+      updatedById: superUserId,
+    },
+  });
+
+  await prisma.businessMode.upsert({
+    where: { businessId_industry_mode: { businessId, industry: "COMMERCE", mode: "retail" } },
+    update: {},
+    create: {
+      businessId,
+      industry: "COMMERCE",
+      mode: "retail",
+    },
+  });
+
+  const category = await prisma.category.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000030" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000030",
+      businessId,
+      name: "General",
+      slug: "general",
+    },
+  });
+
+  await prisma.catalogItem.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000040" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000040",
+      businessId,
+      name: "Sample Product",
+      slug: "sample-product",
+      sku: "SP-001",
+      itemType: "PRODUCT",
+      isService: false,
+      trackStock: true,
+      categoryId: category.id,
+      createdById: superUserId,
+      updatedById: superUserId,
+    },
+  });
+
+  await prisma.customer.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000050" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000050",
+      businessId,
+      firstName: "Walk-in",
+      lastName: "Customer",
+      email: "walkin@demo.com",
+    },
+  });
+
+  await prisma.supplier.upsert({
+    where: { id: "00000000-0000-0000-0000-000000000060" },
+    update: {},
+    create: {
+      id: "00000000-0000-0000-0000-000000000060",
+      businessId,
+      name: "Default Supplier",
+      email: "supplier@demo.com",
+    },
+  });
+
+  console.log("✔ Created demo workspace, business, products, customer, supplier");
+
   // ─── Done ───────────────────────────────────────────────────────────────
 
   console.log("\n✅ Production seeding complete!\n");
   console.log("Super user:");
-  console.log("  Email:    123456789.masanja.joseph@gmail.com");
+  console.log("  Email:    123456789.masanja@gmail.com");
   console.log("  Password: Enkai@2024!");
+  console.log("Demo business:");
+  console.log("  Name:     Demo Shop");
+  console.log("  Industry: Commerce (Retail)");
 }
 
 main()

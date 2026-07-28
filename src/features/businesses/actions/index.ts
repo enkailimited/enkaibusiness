@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import { serialize } from "@/lib/utils";
 import { createBusinessSchema, registerBusinessSchema, updateBusinessSchema } from "../schemas";
@@ -133,6 +134,8 @@ export async function createBusinessAction(
 ): Promise<ActionResponse> {
   try {
     const user = await requireAuth();
+    const can = await hasPermission(user.id, "businesses.create");
+    if (!can) return { success: false, message: "You do not have permission to create businesses" };
 
     const parsed = createBusinessSchema.safeParse({
       name: formData.get("name"),
@@ -209,6 +212,8 @@ export async function registerBusinessAction(
 ): Promise<ActionResponse & { data?: { businessId: string; workspaceId?: string; subscriptionId: string } }> {
   try {
     const user = await requireAuth();
+    const can = await hasPermission(user.id, "businesses.create");
+    if (!can) return { success: false, message: "You do not have permission to register businesses" };
 
     const parsed = registerBusinessSchema.safeParse(input);
     if (!parsed.success) {
@@ -324,6 +329,8 @@ export async function updateBusinessAction(
 ): Promise<ActionResponse> {
   try {
     const user = await requireAuth();
+    const can = await hasPermission(user.id, "businesses.update", id);
+    if (!can) return { success: false, message: "You do not have permission to update businesses" };
 
     const parsed = updateBusinessSchema.safeParse({
       name: formData.get("name") || undefined,
@@ -381,7 +388,9 @@ export async function getWorkspaceBusinessesAction(workspaceId: string) {
 
 export async function deleteBusinessAction(businessId: string, workspaceId: string) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "businesses.delete", businessId);
+    if (!can) return { success: false, message: "You do not have permission to delete businesses" };
     const result = await deleteBusiness(businessId);
     if (result.success) {
       revalidatePath(`/workspaces/${workspaceId}`);
@@ -397,7 +406,9 @@ export async function toggleQrOrderingAction(
   businessId: string,
   enable: boolean,
 ): Promise<ActionResponse & { data?: { dailyPrice: number; setupFee: number; qrPrintingFee: number } }> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "businesses.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission to update QR ordering" };
 
   try {
     const business = await prisma.business.findUnique({

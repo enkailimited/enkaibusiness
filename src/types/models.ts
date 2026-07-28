@@ -579,3 +579,95 @@ export interface CommunicationLog {
   referenceId: string | null;
   createdAt: string;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string | null;
+  type: string;
+  isRead: boolean;
+  link: string | null;
+  referenceType: string | null;
+  referenceId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceList {
+  id: string;
+  businessId: string;
+  name: string;
+  type: string;
+  priority: number;
+  startDate: string | null;
+  endDate: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PriceListItem {
+  id: string;
+  priceListId: string;
+  catalogItemId: string;
+  variantId: string | null;
+  unitPrice: number;
+  minQuantity: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CatalogItemAssignment {
+  id: string;
+  catalogItemId: string;
+  branchId: string | null;
+  storeId: string | null;
+  isAvailable: boolean;
+  sortOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CatalogItemVariant {
+  id: string;
+  catalogItemId: string;
+  name: string;
+  sku: string | null;
+  price: number | null;
+  costPrice: number | null;
+  attributes: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CatalogItemImage {
+  id: string;
+  catalogItemId: string;
+  url: string;
+  alt: string | null;
+  sortOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerGroup {
+  id: string;
+  businessId: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QRMenuItem {
+  id: string;
+  qrMenuId: string;
+  catalogItemId: string;
+  price: number;
+  isAvailable: boolean;
+  sortOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+}

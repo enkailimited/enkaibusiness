@@ -130,11 +130,11 @@ export async function getItemsAvailableAtStore(
 function aggregateByItem(assignments: unknown[]): ItemAvailability[] {
   const map = new Map<string, ItemAvailability>();
 
-  for (const a of assignments as AssignmentWithRelations[]) {
+  for (const a of assignments as any[]) {
     if (!map.has(a.catalogItemId)) {
       map.set(a.catalogItemId, {
         catalogItemId: a.catalogItemId,
-        itemName: (a as any).catalogItem?.name ?? "Unknown",
+        itemName: a.catalogItem?.name ?? "Unknown",
         assignments: [],
       });
     }

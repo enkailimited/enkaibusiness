@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import { serialize } from "@/lib/utils";
 import type { ActionResponse } from "@/types/relationships";
@@ -60,6 +61,8 @@ export async function reinviteWorkspaceMemberAction(
 ): Promise<ActionResponse> {
   try {
     const sessionUser = await requireAuth();
+    const can = await hasPermission(sessionUser.id, "members.update");
+    if (!can) return { success: false, message: "You do not have permission to manage members" };
 
     const member = await prisma.workspaceMember.findUnique({
       where: { id: memberId },

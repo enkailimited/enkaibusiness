@@ -113,6 +113,18 @@ export class SearchService {
     return this.search<T>("cashRegister", ["name"], options);
   }
 
+  async territories<T extends SearchDocument>(options: SearchOptions): Promise<SearchResults<T>> {
+    return this.search<T>("territory", ["name"], options);
+  }
+
+  async salesProfiles<T extends SearchDocument>(options: SearchOptions): Promise<SearchResults<T>> {
+    return this.search<T>("salesProfile", ["user.firstName", "user.lastName", "user.email"], options);
+  }
+
+  async staff<T extends SearchDocument>(options: SearchOptions): Promise<SearchResults<T>> {
+    return this.search<T>("staff", ["user.firstName", "user.lastName"], options);
+  }
+
   async findByUsername(username: string): Promise<{ id: string } | null> {
     return (prisma as PrismaClient).user.findFirst({
       where: { username: { equals: username, mode: "insensitive" } },

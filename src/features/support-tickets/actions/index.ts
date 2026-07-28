@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createTicket,
   getTicket,
@@ -24,14 +25,17 @@ export async function createTicketAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = (formData.get("businessId") as string) || undefined;
+  const can = await hasPermission(user.id, "support_tickets.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission to create support tickets" };
 
   const parsed = createTicketSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description") || undefined,
     customerId: formData.get("customerId"),
     priority: formData.get("priority") || undefined,
-    businessId: formData.get("businessId") || undefined,
+    businessId: businessId,
   });
 
   if (!parsed.success) {
@@ -73,7 +77,9 @@ export async function updateTicketAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to update support tickets" };
 
   const parsed = updateTicketSchema.safeParse({
     title: formData.get("title") || undefined,
@@ -103,7 +109,9 @@ export async function updateTicketStatusAction(
   id: string,
   status: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to update support tickets" };
 
   if (!["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"].includes(status)) {
     return { success: false, message: "Invalid status" };
@@ -123,7 +131,9 @@ export async function assignTicketAction(
   ticketId: string,
   userId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to assign support tickets" };
 
   const parsed = assignTicketSchema.safeParse({ ticketId, userId });
   if (!parsed.success) {
@@ -145,7 +155,9 @@ export async function assignTicketAction(
 }
 
 export async function resolveTicketAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to resolve support tickets" };
   const result = await updateTicketStatus(id, "RESOLVED");
 
   if (result.success) {
@@ -157,7 +169,9 @@ export async function resolveTicketAction(id: string): Promise<ActionResponse> {
 }
 
 export async function closeTicketAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to close support tickets" };
   const result = await updateTicketStatus(id, "CLOSED");
 
   if (result.success) {
@@ -169,7 +183,9 @@ export async function closeTicketAction(id: string): Promise<ActionResponse> {
 }
 
 export async function reopenTicketAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.update");
+  if (!can) return { success: false, message: "You do not have permission to reopen support tickets" };
   const result = await updateTicketStatus(id, "OPEN");
 
   if (result.success) {
@@ -181,7 +197,9 @@ export async function reopenTicketAction(id: string): Promise<ActionResponse> {
 }
 
 export async function deleteTicketAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "support_tickets.delete");
+  if (!can) return { success: false, message: "You do not have permission to delete support tickets" };
   const result = await deleteTicket(id);
 
   if (result.success) {

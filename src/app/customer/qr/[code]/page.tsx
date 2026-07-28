@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getQRExperienceByCode, recordQRScan, getIndustryForMode, getModeLabel } from "@/features/qr/services/qr-service";
 import { QrCommerceBrowse } from "@/features/qr/components/experiences/commerce-browse";
 import { QrRestaurantMenu } from "@/features/qr/components/experiences/restaurant-menu";
 import { QrGeneralInfo } from "@/features/qr/components/experiences/general-info";

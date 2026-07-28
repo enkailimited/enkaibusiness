@@ -29,6 +29,16 @@ export interface EmbeddingResult {
   model: string;
 }
 
+export const VALID_PROVIDERS = ["openai", "anthropic", "gemini", "custom"] as const;
+
+export interface LLMConfigValidation {
+  valid: boolean;
+  configured: boolean;
+  provider: string;
+  model: string;
+  issues: string[];
+}
+
 const providerConfigs: Record<string, Partial<LLMConfig>> = {};
 
 export function configureProvider(businessId: string, config: Partial<LLMConfig>): void {
@@ -51,6 +61,41 @@ export function getProviderConfig(businessId?: string): LLMConfig {
   }
 
   return defaults;
+}
+
+export function validateLLMConfig(businessId?: string): LLMConfigValidation {
+  const config = getProviderConfig(businessId);
+  const issues: string[] = [];
+
+  if (!VALID_PROVIDERS.includes(config.provider as typeof VALID_PROVIDERS[number])) {
+    issues.push(`Unknown provider "${config.provider}". Valid: ${VALID_PROVIDERS.join(", ")}`);
+  }
+
+  if (!config.apiKey) {
+    issues.push("AI_API_KEY is not set. Set it in environment or via configureProvider().");
+  }
+
+  if (!config.model) {
+    issues.push("AI_MODEL is not set. Set it in environment or via configureProvider().");
+  }
+
+  const providerDefaults: Record<string, string> = {
+    openai: "gpt-4o",
+    anthropic: "claude-3-5-sonnet-20241022",
+    gemini: "gemini-2.0-flash-exp",
+  };
+
+  if (providerDefaults[config.provider] && !process.env.AI_MODEL && !businessId) {
+    issues.push(`Using default model "${providerDefaults[config.provider]}" for ${config.provider}. Set AI_MODEL to override.`);
+  }
+
+  return {
+    valid: issues.length === 0 || (issues.length === 1 && issues[0]!.startsWith("Using default model")),
+    configured: !!config.apiKey,
+    provider: config.provider,
+    model: config.model,
+    issues,
+  };
 }
 
 export async function complete(
@@ -156,7 +201,7 @@ async function completeGemini(
   }));
 
   const response = await fetch(
-    `${config.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta/models/"}{config.model}:generateContent?key=${config.apiKey}`,
+    `${config.baseUrl ?? "https://generativelanguage.googleapis.com/v1beta/models/"}${config.model}:generateContent?key=${config.apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

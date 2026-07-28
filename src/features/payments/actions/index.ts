@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createPaymentMethodSchema,
   updatePaymentMethodSchema,
@@ -11,14 +12,14 @@ import {
 import {
   createPaymentMethod,
   updatePaymentMethod,
-  getBusinessPaymentMethods,
+//   getBusinessPaymentMethods,
   getPaymentMethod,
   deletePaymentMethod,
 } from "../services/payment-method-service";
 import {
   createPayment,
   listPayments,
-  getPayment,
+//   getPayment,
   voidPayment,
 } from "../services/payment-service";
 import type { ActionResponse } from "@/types/relationships";
@@ -27,7 +28,7 @@ export async function createPaymentMethodAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = createPaymentMethodSchema.safeParse({
     businessId: formData.get("businessId"),
@@ -43,6 +44,9 @@ export async function createPaymentMethodAction(
     };
   }
 
+  const can = await hasPermission(user.id, "payments.process", parsed.data.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await createPaymentMethod(parsed.data);
 
   if (result.success) {
@@ -57,7 +61,7 @@ export async function updatePaymentMethodAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = updatePaymentMethodSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -78,6 +82,9 @@ export async function updatePaymentMethodAction(
     return { success: false, message: "Payment method not found" };
   }
 
+  const can = await hasPermission(user.id, "payments.process", method.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await updatePaymentMethod(methodId, parsed.data);
 
   if (result.success) {
@@ -91,7 +98,15 @@ export async function deletePaymentMethodAction(
   methodId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const method = await getPaymentMethod(methodId);
+  if (!method) {
+    return { success: false, message: "Payment method not found" };
+  }
+
+  const can = await hasPermission(user.id, "payments.process", method.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await deletePaymentMethod(methodId);
 
@@ -106,7 +121,7 @@ export async function createPaymentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = createPaymentSchema.safeParse({
     businessId: formData.get("businessId"),
@@ -136,6 +151,9 @@ export async function createPaymentAction(
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
   }
+
+  const can = await hasPermission(user.id, "payments.process", parsed.data.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await createPayment(parsed.data);
 
@@ -172,7 +190,9 @@ export async function voidPaymentAction(
   paymentId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "payments.refund", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await voidPayment(paymentId);
 

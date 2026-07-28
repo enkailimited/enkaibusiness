@@ -580,6 +580,7 @@ model User {
   distributors                     Distributor[]
   installers                       Installer[]
   reviewedWeeklyReports            WeeklyReport[] @relation("WeeklyReportReviewedBy")
+  oauthTokens                      OAuthToken[]
 
   @@map("users")
 }
@@ -835,6 +836,9 @@ model Business {
   crmPipelines            CRMPipeline[]
   crmDeals                CRMDeal[]
   customerLifetimeValues  CustomerLifetimeValue[]
+  apiKeys                 ApiKey[]
+  webhooks                Webhook[]
+  oauthClients            OAuthClient[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -5114,4 +5118,119 @@ model PayoutMethod {
 
   @@index([salesProfileId])
   @@map("payout_methods")
+}
+
+// ─── API Key ──────────────────────────────────────────────────────────────────
+
+model ApiKey {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  name        String
+  keyPrefix   String   @map("key_prefix")
+  keyHash     String   @map("key_hash")
+  permissions Json     @default("[]") @db.JsonB
+  scope       String   @default("business")
+  expiresAt   DateTime? @map("expires_at")
+  isActive    Boolean  @default(true) @map("is_active")
+  lastUsedAt  DateTime? @map("last_used_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, isActive])
+  @@index([keyPrefix])
+  @@map("api_keys")
+}
+
+// ─── Webhook ──────────────────────────────────────────────────────────────────
+
+model Webhook {
+  id              String    @id @default(uuid()) @db.Uuid
+  businessId      String    @map("business_id") @db.Uuid
+  name            String
+  url             String
+  secret          String    @map("secret")
+  events          Json      @default("[]") @db.JsonB
+  isActive        Boolean   @default(true) @map("is_active")
+  headers         Json?     @default("{}") @db.JsonB
+  retryCount      Int       @default(3) @map("retry_count")
+  timeoutMs       Int       @default(5000) @map("timeout_ms")
+  lastTriggeredAt DateTime? @map("last_triggered_at")
+  lastDeliveryStatus String? @map("last_delivery_status")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([businessId, isActive])
+  @@map("webhooks")
+}
+
+// ─── Webhook Delivery Log ─────────────────────────────────────────────────────
+
+model WebhookDelivery {
+  id          String   @id @default(uuid()) @db.Uuid
+  webhookId   String   @map("webhook_id") @db.Uuid
+  event       String
+  payload     Json     @db.JsonB
+  status      String
+  statusCode  Int?     @map("status_code")
+  responseBody String? @map("response_body")
+  durationMs  Int?     @map("duration_ms")
+  attempt     Int      @default(1)
+  error       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
+  @@index([status])
+  @@map("webhook_deliveries")
+}
+
+// ─── OAuth Client ─────────────────────────────────────────────────────────────
+
+model OAuthClient {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @map("business_id") @db.Uuid
+  name        String
+  clientId    String   @unique @map("client_id")
+  clientSecret String  @map("client_secret")
+  redirectUris String[] @map("redirect_uris")
+  grants      String[] @default(["authorization_code", "refresh_token"])
+  scopes      String[] @default(["read"])
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  tokens   OAuthToken[]
+
+  @@index([clientId])
+  @@index([businessId])
+  @@map("oauth_clients")
+}
+
+model OAuthToken {
+  id            String   @id @default(uuid()) @db.Uuid
+  clientId      String   @map("client_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  accessToken   String   @unique @map("access_token")
+  refreshToken  String?  @unique @map("refresh_token")
+  tokenType     String   @default("bearer") @map("token_type")
+  scopes        String[]
+  expiresAt     DateTime @map("expires_at")
+  refreshExpiresAt DateTime? @map("refresh_expires_at")
+  isRevoked     Boolean  @default(false) @map("is_revoked")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  client OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id])
+
+  @@index([accessToken])
+  @@index([refreshToken])
+  @@index([clientId, userId])
+  @@map("oauth_tokens")
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import {
   createMenuItem,
@@ -25,11 +26,19 @@ async function revalidateMenuBusiness(menuItemId: string) {
   }
 }
 
+async function getMenuItemBusinessId(id: string): Promise<string | null> {
+  const item = await prisma.qRMenuItem.findUnique({
+    where: { id },
+    select: { businessId: true },
+  });
+  return item?.businessId ?? null;
+}
+
 export async function createMenuItemAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = createMenuItemSchema.safeParse({
     businessId: formData.get("businessId"),
@@ -46,6 +55,11 @@ export async function createMenuItemAction(
       message: "Validation failed",
       errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
     };
+  }
+
+  const canCreate = await hasPermission(user.id, "catalog.create", parsed.data.businessId);
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create menu items" };
   }
 
   try {
@@ -68,7 +82,17 @@ export async function updateMenuItemAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existingBizId = await getMenuItemBusinessId(id);
+  if (!existingBizId) {
+    return { success: false, message: "Menu item not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existingBizId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update menu items" };
+  }
 
   const parsed = updateMenuItemSchema.safeParse({
     isAvailable: formData.has("isAvailable")
@@ -112,7 +136,18 @@ export async function listMenuItemsAction(qrCodeId: string) {
 }
 
 export async function deleteMenuItemAction(id: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existingBizId = await getMenuItemBusinessId(id);
+  if (!existingBizId) {
+    return { success: false, message: "Menu item not found" };
+  }
+
+  const canDelete = await hasPermission(user.id, "catalog.delete", existingBizId);
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete menu items" };
+  }
+
   const result = await deleteMenuItem(id);
   if (result.success) {
     await revalidateMenuBusiness(id);
@@ -124,7 +159,18 @@ export async function setMenuItemAvailabilityAction(
   id: string,
   isAvailable: boolean,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existingBizId = await getMenuItemBusinessId(id);
+  if (!existingBizId) {
+    return { success: false, message: "Menu item not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existingBizId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update menu items" };
+  }
+
   const result = await setMenuItemAvailability(id, isAvailable);
   if (result.success) {
     await revalidateMenuBusiness(id);

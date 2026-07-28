@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FirdausContext, type FirdausState, type FirdausStatus, DEFAULT_CONVERSATION_CONTEXT } from "./firdaus-context";
+import { FirdausContext, type FirdausState, DEFAULT_CONVERSATION_CONTEXT } from "./firdaus-context";
 import { sendVoiceMessageAction } from "../actions/service-actions";
 import { VoiceState, getStatusLabel } from "../voice/voice-state-machine";
 
@@ -233,9 +233,9 @@ export function FirdausProvider({ children }: { children: React.ReactNode }) {
             timestamp: new Date(),
           },
         ]),
-        currentWorkflow: response.actionData?.currentWorkflow as string || prev.currentWorkflow,
-        currentStep: response.actionData?.currentStep as string || prev.currentStep,
-        collectedParams: response.actionData?.collectedParams as Record<string, unknown> || prev.collectedParams,
+        currentWorkflow: (response as any).actionData?.currentWorkflow as string || prev.currentWorkflow,
+        currentStep: (response as any).actionData?.currentStep as string || prev.currentStep,
+        collectedParams: (response as any).actionData?.collectedParams as Record<string, unknown> || prev.collectedParams,
       }));
 
       speak(response.message);

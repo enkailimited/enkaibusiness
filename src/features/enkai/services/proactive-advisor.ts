@@ -46,7 +46,7 @@ async function generateSnapshot(businessId: string): Promise<BusinessSnapshot> {
   ] = await Promise.all([
     prisma.sale.aggregate({
       where: { businessId, createdAt: { gte: today } },
-      _sum: { total: true },
+      _sum: { grandTotal: true },
     }),
     prisma.catalogItem.findMany({
       where: {
@@ -63,7 +63,7 @@ async function generateSnapshot(businessId: string): Promise<BusinessSnapshot> {
       select: { name: true },
       take: 5,
     }),
-    prisma.customerCredit.findMany({
+    (prisma as any).customerCredit.findMany({
       where: {
         businessId,
         balance: { gt: 0 },
@@ -84,10 +84,10 @@ async function generateSnapshot(businessId: string): Promise<BusinessSnapshot> {
   const topDebtor = overdueCredits[0];
 
   return {
-    todaySales: Number(todaySalesAgg._sum.total || 0),
+    todaySales: Number(todaySalesAgg._sum.grandTotal || 0),
     lowStockCount: lowStockItems.length,
     overdueDebtCount: overdueCredits.length,
-    criticalStockNames: lowStockItems.map((i) => i.name),
+    criticalStockNames: lowStockItems.map((i: { name: string }) => i.name),
     topDebtorName: topDebtor
       ? `${topDebtor.customer?.firstName || ""} ${topDebtor.customer?.lastName || ""}`.trim()
       : undefined,
@@ -137,16 +137,16 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
   const [thisWeekAgg, lastWeekAgg] = await Promise.all([
     prisma.sale.aggregate({
       where: { businessId, createdAt: { gte: thisWeekStart } },
-      _sum: { total: true },
+      _sum: { grandTotal: true },
     }),
     prisma.sale.aggregate({
       where: { businessId, createdAt: { gte: lastWeekStart, lt: thisWeekStart } },
-      _sum: { total: true },
+      _sum: { grandTotal: true },
     }),
   ]);
 
-  const thisTotal = Number(thisWeekAgg._sum.total || 0);
-  const lastTotal = Number(lastWeekAgg._sum.total || 0);
+  const thisTotal = Number(thisWeekAgg._sum?.grandTotal || 0);
+  const lastTotal = Number(lastWeekAgg._sum?.grandTotal || 0);
   if (lastTotal > 0 && thisTotal < lastTotal) {
     const dropPct = ((lastTotal - thisTotal) / lastTotal) * 100;
     if (dropPct > 10) {
@@ -163,7 +163,7 @@ async function generateNotifications(businessId: string): Promise<AdvisorNotific
   }
 
   // 3. Overdue debts
-  const overdueCredits = await prisma.customerCredit.findMany({
+  const overdueCredits = await (prisma as any).customerCredit.findMany({
     where: {
       businessId,
       balance: { gt: 0 },

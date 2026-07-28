@@ -78,16 +78,16 @@ async function checkSalesDrop(businessId: string): Promise<ProactiveInsight | nu
   const [thisWeekSales, lastWeekSales] = await Promise.all([
     prisma.sale.aggregate({
       where: { businessId, createdAt: { gte: thisWeek } },
-      _sum: { total: true },
+      _sum: { grandTotal: true },
     }),
     prisma.sale.aggregate({
       where: { businessId, createdAt: { gte: lastWeek, lt: thisWeek } },
-      _sum: { total: true },
+      _sum: { grandTotal: true },
     }),
   ]);
 
-  const thisTotal = Number(thisWeekSales._sum.total || 0);
-  const lastTotal = Number(lastWeekSales._sum.total || 0);
+  const thisTotal = Number(thisWeekSales._sum?.grandTotal || 0);
+  const lastTotal = Number(lastWeekSales._sum?.grandTotal || 0);
 
   if (lastTotal > 0 && thisTotal < lastTotal) {
     const dropPercent = ((lastTotal - thisTotal) / lastTotal) * 100;
@@ -128,7 +128,7 @@ async function checkProfitChange(businessId: string): Promise<ProactiveInsight |
   function calcProfit(sales: typeof thisMonthSales): { revenue: number; cost: number; profit: number } {
     let revenue = 0, cost = 0;
     for (const sale of sales) {
-      revenue += Number(sale.total);
+      revenue += Number(sale.grandTotal);
       for (const item of sale.items) {
         cost += Number(item.quantity) * Number(item.catalogItem.costPrice || 0);
       }

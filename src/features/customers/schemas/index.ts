@@ -14,7 +14,7 @@ export const createCustomerSchema = z.object({
   customerGroupId: z.string().uuid().optional().or(z.literal("")),
   creditLimit: z.coerce.number().min(0).default(0),
   isActive: z.coerce.boolean().default(true),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

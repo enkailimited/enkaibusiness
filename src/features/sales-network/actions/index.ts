@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createHierarchyLevel,
   updateHierarchyLevel,
@@ -35,7 +36,12 @@ export async function createHierarchyLevelAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "sales_network.create");
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create hierarchy levels" };
+  }
 
   const parsed = createSalesHierarchySchema.safeParse({
     level: formData.get("level") ? Number(formData.get("level")) : undefined,
@@ -66,7 +72,12 @@ export async function updateHierarchyLevelAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "sales_network.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update hierarchy levels" };
+  }
 
   const parsed = updateSalesHierarchySchema.safeParse({
     level: formData.get("level") ? Number(formData.get("level")) : undefined,
@@ -93,7 +104,13 @@ export async function updateHierarchyLevelAction(
 }
 
 export async function deleteHierarchyLevelAction(id: string) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "sales_network.delete");
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to delete hierarchy levels" };
+  }
+
   const result = await deleteHierarchyLevel(id);
 
   if (result.success) {
@@ -118,7 +135,12 @@ export async function createProfileAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "sales_network.create");
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create sales profiles" };
+  }
 
   const parsed = createSalesProfileSchema.safeParse({
     phone: formData.get("phone") || undefined,
@@ -150,7 +172,12 @@ export async function updateProfileAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "sales_network.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update sales profiles" };
+  }
 
   const parsed = updateSalesProfileSchema.safeParse({
     phone: formData.get("phone") || undefined,

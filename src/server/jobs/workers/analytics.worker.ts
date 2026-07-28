@@ -5,7 +5,7 @@ import { boss } from "../queue";
 
 export function registerAnalyticsWorker(): void {
   boss.work("refresh-analytics", async ([job]) => {
-    const { businessId } = job.data as { businessId: string };
+//     const { businessId } = (job as any).data as { businessId: string };
 
     try {
       await prisma.$executeRawUnsafe(
@@ -29,7 +29,7 @@ export function registerAnalyticsWorker(): void {
 
 export function registerReportGenerator(): void {
   boss.work("generate-report", async ([job]) => {
-    const { businessId, reportType, startDate, endDate, format } = job.data as {
+// // // //     const { businessId, reportType, startDate, endDate, format } = (job as any).data as {
       businessId: string;
       reportType: string;
       startDate?: string;
@@ -38,7 +38,7 @@ export function registerReportGenerator(): void {
     };
 
     try {
-      const pdfFormat = format ?? "pdf";
+//       const pdfFormat = format ?? "pdf";
 
       await prisma.jobRecord.updateMany({
         where: { type: "generate-report", status: "queued" },

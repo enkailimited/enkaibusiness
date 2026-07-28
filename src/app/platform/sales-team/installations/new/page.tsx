@@ -82,7 +82,7 @@ function BusinessSelect() {
     <select id="businessId" name="businessId" required className="w-full border rounded-md p-2 bg-background">
       <option value="">Select business</option>
       {loading && <option disabled>Loading...</option>}
-      {businesses.map((b) => (
+      {businesses.map((b: { id: string; name: string }) => (
         <option key={b.id} value={b.id}>{b.name}</option>
       ))}
     </select>

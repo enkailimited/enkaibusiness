@@ -377,46 +377,96 @@ export async function getBranchPerformance(
     select: { id: true, name: true, _count: { select: { staffAssignments: true } } },
   });
 
-  const results: BranchPerformance[] = [];
+  if (branches.length === 0) return [];
 
-  for (const branch of branches) {
-    const [salesAgg, expenseAgg, invBalances, receivablesSum, payablesSum] = await Promise.all([
-      prisma.sale.aggregate({
-        where: { businessId, branchId: branch.id, status: "completed", saleDate: { gte: startDate, lte: endDate } },
-        _sum: { grandTotal: true },
-        _count: true,
-      }),
-      prisma.expense.aggregate({
-        where: { businessId, branchId: branch.id, status: { in: ["approved", "paid"] }, expenseDate: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
-      }),
-      prisma.inventoryBalance.findMany({
-        where: { location: { businessId, branchId: branch.id, isActive: true }, quantityOnHand: { gt: 0 } },
-        select: { quantityOnHand: true, catalogItem: { select: { costPrice: true } } },
-      }),
-      prisma.invoice.aggregate({
-        where: { businessId, branchId: branch.id, status: { in: ["unpaid", "partial", "overdue"] } },
-        _sum: { balanceDue: true },
-      }),
-      prisma.purchase.aggregate({
-        where: { businessId, branchId: branch.id, balanceDue: { gt: 0 } },
-        _sum: { balanceDue: true },
-      }),
-    ]);
+  const branchIds = branches.map(b => b.id);
 
-    const revenue = Number(salesAgg._sum.grandTotal ?? 0);
-    const cogs = await calculateCOGS(businessId, startDate, endDate, branch.id);
+  const [saleAggs, expenseAggs, invBalances, invoiceAggs, purchaseAggs, cogsSales] = await Promise.all([
+    prisma.sale.groupBy({
+      by: ['branchId'],
+      where: { businessId, branchId: { in: branchIds }, status: "completed", saleDate: { gte: startDate, lte: endDate } },
+      _sum: { grandTotal: true },
+      _count: { _all: true },
+    }),
+    prisma.expense.groupBy({
+      by: ['branchId'],
+      where: { businessId, branchId: { in: branchIds }, status: { in: ["approved", "paid"] }, expenseDate: { gte: startDate, lte: endDate } },
+      _sum: { amount: true },
+    }),
+    prisma.inventoryBalance.findMany({
+      where: { location: { businessId, branchId: { in: branchIds }, isActive: true }, quantityOnHand: { gt: 0 } },
+      select: { location: { select: { branchId: true } }, quantityOnHand: true, catalogItem: { select: { costPrice: true } } },
+    }),
+    prisma.invoice.groupBy({
+      by: ['branchId'],
+      where: { businessId, branchId: { in: branchIds }, status: { in: ["unpaid", "partial", "overdue"] } },
+      _sum: { balanceDue: true },
+    }),
+    prisma.purchase.groupBy({
+      by: ['branchId'],
+      where: { businessId, branchId: { in: branchIds }, balanceDue: { gt: 0 } },
+      _sum: { balanceDue: true },
+    }),
+    prisma.sale.findMany({
+      where: { businessId, branchId: { in: branchIds }, status: "completed", saleDate: { gte: startDate, lte: endDate } },
+      select: { branchId: true, items: { select: { quantity: true, costPrice: true, catalogItem: { select: { costPrice: true } } } } },
+    }),
+  ]);
+
+  const saleMap = new Map<string, typeof saleAggs[number]>();
+  for (const s of saleAggs) { if (s.branchId) saleMap.set(s.branchId, s); }
+  const expenseMap = new Map<string, typeof expenseAggs[number]>();
+  for (const e of expenseAggs) { if (e.branchId) expenseMap.set(e.branchId, e); }
+  const invoiceMap = new Map<string, typeof invoiceAggs[number]>();
+  for (const i of invoiceAggs) { if (i.branchId) invoiceMap.set(i.branchId, i); }
+  const purchaseMap = new Map<string, typeof purchaseAggs[number]>();
+  for (const p of purchaseAggs) { if (p.branchId) purchaseMap.set(p.branchId, p); }
+
+  const invByBranch = new Map<string, { quantityOnHand: unknown; catalogItem: { costPrice: unknown } }[]>();
+  for (const ib of invBalances) {
+    const bid = ib.location.branchId;
+    if (!bid) continue;
+    const group = invByBranch.get(bid);
+    if (group) {
+      group.push(ib);
+    } else {
+      invByBranch.set(bid, [ib]);
+    }
+  }
+
+  const cogsByBranch = new Map<string, number>();
+  for (const sale of cogsSales) {
+    const bid = sale.branchId;
+    if (!bid) continue;
+    let branchCogs = cogsByBranch.get(bid) ?? 0;
+    for (const item of sale.items) {
+      const qty = Number(item.quantity);
+      const cost = item.costPrice ? Number(item.costPrice) : (item.catalogItem.costPrice ? Number(item.catalogItem.costPrice) : 0);
+      branchCogs += qty * cost;
+    }
+    cogsByBranch.set(bid, branchCogs);
+  }
+
+  const results: BranchPerformance[] = branches.map(branch => {
+    const sAgg = saleMap.get(branch.id);
+    const eAgg = expenseMap.get(branch.id);
+    const iAgg = invoiceMap.get(branch.id);
+    const pAgg = purchaseMap.get(branch.id);
+    const branchInv = invByBranch.get(branch.id) ?? [];
+    const cogs = cogsByBranch.get(branch.id) ?? 0;
+
+    const revenue = Number(sAgg?._sum.grandTotal ?? 0);
     const grossProfit = revenue - cogs;
-    const expenses = Number(expenseAgg._sum.amount ?? 0);
+    const expenses = Number(eAgg?._sum.amount ?? 0);
     const operatingProfit = grossProfit - expenses;
 
-    const inventoryValue = invBalances.reduce((sum, b) => {
+    const inventoryValue = branchInv.reduce((sum, b) => {
       const qty = Number(b.quantityOnHand);
       const cost = b.catalogItem.costPrice ? Number(b.catalogItem.costPrice) : 0;
       return sum + (qty * cost);
     }, 0);
 
-    results.push({
+    return {
       branchId: branch.id,
       branchName: branch.name,
       revenue,
@@ -424,13 +474,13 @@ export async function getBranchPerformance(
       grossProfit,
       expenses,
       operatingProfit,
-      receivables: Number(receivablesSum._sum.balanceDue ?? 0),
-      payables: Number(payablesSum._sum.balanceDue ?? 0),
+      receivables: Number(iAgg?._sum.balanceDue ?? 0),
+      payables: Number(pAgg?._sum.balanceDue ?? 0),
       inventoryValue,
-      saleCount: salesAgg._count,
+      saleCount: sAgg?._count?._all ?? 0,
       staffCount: branch._count.staffAssignments,
-    });
-  }
+    };
+  });
 
   return results.sort((a, b) => b.revenue - a.revenue);
 }

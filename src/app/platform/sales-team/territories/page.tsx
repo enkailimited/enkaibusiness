@@ -3,9 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Globe, Users, Building2, Target, DollarSign, ExternalLink } from "lucide-react";
+import { MapPin, Globe, Users, Target } from "lucide-react";
 import { getMySalesProfile, getMyPerformanceMetrics } from "@/server/actions/sales-team";
 import { getMyTerritoriesAction } from "@/features/sales-network/actions/territory-actions";
 import Link from "next/link";
@@ -138,7 +138,7 @@ export default function TerritoriesPage() {
                     {territory.members.length > 0 && (
                       <div className="flex items-center gap-1">
                         <Target className="h-3.5 w-3.5" />
-                        <span>Primary: {territory.members[0].salesProfile.user.firstName}</span>
+                        <span>Primary: {territory.members[0]?.salesProfile?.user?.firstName}</span>
                       </div>
                     )}
                   </div>

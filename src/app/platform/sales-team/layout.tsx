@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+// import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
+// import { BottomNav } from "@/components/layout/bottom-nav";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import {
   LayoutDashboard,
@@ -30,7 +30,7 @@ export default function SalesTeamLayout({ children }: { children: React.ReactNod
     ["national-sales-manager", "national-manager", "regional-manager", "team-leader"].includes(r)
   ) ?? false;
 
-  const salesNavItems = useMemo(() => [
+//   const salesNavItems = useMemo(() => [
     { title: "Dashboard", href: "/platform/sales-team", icon: LayoutDashboard },
     { title: "My Sales", href: "/platform/sales-team/sales", icon: BarChart3 },
     ...(canManageTeam ? [{ title: "My Team", href: "/platform/sales-team/team", icon: UserPlus }] : []),

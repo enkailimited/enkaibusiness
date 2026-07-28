@@ -25,7 +25,7 @@ const INDUSTRY_INFO: Record<string, { icon: string; title: string; description: 
 };
 
 export function QrGeneralInfo({ experience, industry }: { experience: QRExperience; industry: string }) {
-  const info = INDUSTRY_INFO[industry] || INDUSTRY_INFO.COMMERCE;
+  const info = (INDUSTRY_INFO[industry] || INDUSTRY_INFO.COMMERCE)!;
 
   return (
     <div className="space-y-6 text-center">

@@ -26,7 +26,7 @@ export const createCatalogItemSchema = z.object({
   trackStock: z.boolean().default(true),
   imageUrl: z.string().optional().or(z.literal("")),
   isActive: z.boolean().default(true),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   variants: z.array(variantSchema).optional(),
 });
 

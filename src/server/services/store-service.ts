@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateStoreSchema } from "@/lib/validations/store";
+import { logger } from "@/server/logger";
 
 export async function createStore(
   branchId: string,
@@ -19,7 +20,7 @@ export async function createStore(
       data: { id: store.id },
     };
   } catch (error) {
-    console.error("Create store error:", error);
+    logger.error("Create store error", error, { module: "StoreService" });
     return { success: false, message: "Failed to create store" };
   }
 }
@@ -32,7 +33,7 @@ export async function updateStore(
     await prisma.store.update({ where: { id }, data });
     return { success: true, message: "Store updated successfully" };
   } catch (error) {
-    console.error("Update store error:", error);
+    logger.error("Update store error", error, { module: "StoreService" });
     return { success: false, message: "Failed to update store" };
   }
 }
@@ -53,7 +54,7 @@ export async function deleteStore(id: string): Promise<ActionResponse> {
     await prisma.store.delete({ where: { id } });
     return { success: true, message: "Store deleted successfully" };
   } catch (error) {
-    console.error("Delete store error:", error);
+    logger.error("Delete store error", error, { module: "StoreService" });
     return { success: false, message: "Failed to delete store" };
   }
 }

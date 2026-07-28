@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   recordAuditLog,
   getAuditLogs,
@@ -57,6 +58,10 @@ export async function recordAuditLogRaw(
     userAgent?: string;
   },
 ): Promise<ActionResponse & { data?: { id: string } }> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "audit_logs.create");
+  if (!can) return { success: false, message: "You do not have permission" };
+
   return recordAuditLog(data);
 }

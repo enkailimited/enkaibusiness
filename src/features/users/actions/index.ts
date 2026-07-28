@@ -2,7 +2,7 @@
 
 import type { ActionResponse } from "@/types/relationships";
 import type { UpdateProfileInput } from "@/features/users/types";
-import { updateProfileSchema } from "@/features/users/schemas";
+import { updateProfileSchema, inviteUserSchema } from "@/features/users/schemas";
 import * as userService from "@/features/users/services/user-service";
 import type { UserProfile } from "@/features/users/types";
 import { requireAuth, getSessionUser } from "@/server/auth";
@@ -105,38 +105,46 @@ export async function inviteUserWithStaffAction(
     return { success: false, message: "You do not have permission to create users" };
   }
 
-  const firstName = (formData.get("firstName") || "").toString().trim();
-  const lastName = (formData.get("lastName") || "").toString().trim();
-  const email = (formData.get("email") || "").toString().trim();
-  const phoneRaw = (formData.get("phone") || "").toString().trim();
-  const usernameRaw = (formData.get("username") || "").toString().trim();
-  const genderRaw = (formData.get("gender") || "").toString().trim();
-  const businessIdRaw = (formData.get("businessId") || "").toString().trim();
-  const branchIdRaw = (formData.get("branchId") || "").toString().trim();
-  const storeIdRaw = (formData.get("storeId") || "").toString().trim();
-  const roleIdRaw = (formData.get("roleId") || "").toString().trim();
-  const positionRaw = (formData.get("position") || "").toString().trim();
-  const employeeCodeRaw = (formData.get("employeeCode") || "").toString().trim();
-  const hireDateRaw = (formData.get("hireDate") || "").toString().trim();
+  const parsed = inviteUserSchema.safeParse({
+    firstName: (formData.get("firstName") || "").toString().trim(),
+    lastName: (formData.get("lastName") || "").toString().trim(),
+    email: (formData.get("email") || "").toString().trim(),
+    phone: (formData.get("phone") || "").toString().trim(),
+    username: (formData.get("username") || "").toString().trim(),
+    gender: (formData.get("gender") || "").toString().trim(),
+    businessId: (formData.get("businessId") || "").toString().trim(),
+    branchId: (formData.get("branchId") || "").toString().trim(),
+    storeId: (formData.get("storeId") || "").toString().trim(),
+    roleId: (formData.get("roleId") || "").toString().trim(),
+    position: (formData.get("position") || "").toString().trim(),
+    employeeCode: (formData.get("employeeCode") || "").toString().trim(),
+    hireDate: (formData.get("hireDate") || "").toString().trim(),
+  });
 
-  if (!firstName || !lastName || !email || !phoneRaw || !usernameRaw || !genderRaw) {
-    return { success: false, message: "First name, last name, email, phone, username and gender are required" };
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Validation failed",
+      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+    };
   }
 
+  const data = parsed.data;
+
   const result = await createInvitedUserWithStaff(sessionUser.id, {
-    firstName,
-    lastName,
-    email,
-    phone: phoneRaw,
-    username: usernameRaw,
-    gender: genderRaw,
-    businessId: businessIdRaw || null,
-    branchId: branchIdRaw || null,
-    storeId: storeIdRaw || null,
-    roleId: roleIdRaw || null,
-    position: positionRaw || null,
-    employeeCode: employeeCodeRaw || null,
-    hireDate: hireDateRaw || null,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    phone: data.phone,
+    username: data.username,
+    gender: data.gender,
+    businessId: data.businessId || null,
+    branchId: data.branchId || null,
+    storeId: data.storeId || null,
+    roleId: data.roleId || null,
+    position: data.position || null,
+    employeeCode: data.employeeCode || null,
+    hireDate: data.hireDate || null,
   });
 
   return result;

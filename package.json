@@ -23,6 +23,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install --with-deps",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -50,7 +53,7 @@
     "motion": "^12.40.0",
     "next": "^16.2.9",
     "next-themes": "^0.4.4",
-    "nodemailer": "^8.0.11",
+    "nodemailer": "^9.0.1",
     "pg": "^8.21.0",
     "pg-boss": "^12.23.0",
     "react": "^19.0.7",
@@ -64,6 +67,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/postcss": "^4.3.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

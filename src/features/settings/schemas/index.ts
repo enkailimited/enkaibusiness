@@ -5,7 +5,7 @@ const categoryIds = SETTING_CATEGORIES.map((c) => c.id) as [string, ...string[]]
 
 export const createSettingSchema = z.object({
   key: z.string().min(1, "Key is required").max(100),
-  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.unknown())]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.unknown())]),
   type: z.enum(["string", "number", "boolean", "json"]).optional(),
   description: z.string().optional(),
   isPublic: z.coerce.boolean().default(false),
@@ -14,7 +14,7 @@ export const createSettingSchema = z.object({
 });
 
 export const updateSettingSchema = z.object({
-  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.unknown())]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.unknown())]),
   description: z.string().optional(),
   isPublic: z.coerce.boolean().optional(),
 });

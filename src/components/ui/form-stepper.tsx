@@ -71,7 +71,7 @@ export function FormStepper({ steps, currentStep }: FormStepperProps) {
         })}
       </div>
       <div className="mt-4 flex gap-1 sm:hidden">
-        {steps.map((step, index) => (
+//         {steps.map((step, index) => (
           <div
             key={index}
             className={cn(

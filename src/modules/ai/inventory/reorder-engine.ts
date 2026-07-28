@@ -27,55 +27,7 @@ export interface ReorderRecommendation {
 
 export class ReorderEngine {
   async getProductVelocity(businessId: string, limit = 50): Promise<ProductVelocity[]> {
-    const threeMonthsAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const nextMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
-
-    const products = await prisma.catalogItem.findMany({
-      where: { businessId, isActive: true },
-      include: {
-        balances: { take: 1, orderBy: { updatedAt: "desc" } },
-        saleItems: {
-          where: { sale: { createdAt: { gte: threeMonthsAgo } } },
-          select: { quantity: true, sale: { select: { createdAt: true } } },
-        },
-      },
-    });
-
-    const thisMonthSales = await prisma.saleItem.groupBy({
-      by: ["catalogItemId"],
-      where: { sale: { businessId, createdAt: { gte: thisMonth, lt: nextMonth } } },
-      _sum: { quantity: true },
-    });
-    const thisMonthMap = new Map(thisMonthSales.map((s) => [s.catalogItemId, Number(s._sum.quantity || 0)]));
-
-    return products.map((p) => {
-      const balance = p.balances[0];
-      const stockOnHand = Number(balance?.quantityOnHand || 0);
-      const reorderPoint = Number(balance?.reorderPoint || 0);
-
-      const total90Qty = p.saleItems.reduce((sum, si) => sum + Number(si.quantity), 0);
-      const dailySalesRate = total90Qty / 90;
-
-      const monthlyQty = thisMonthMap.get(p.id) || 0;
-      const daysUntilStockout = dailySalesRate > 0 ? stockOnHand / dailySalesRate : 999;
-
-      let category: ProductVelocity["category"] = "dead";
-      if (dailySalesRate > 5) category = "fast";
-      else if (dailySalesRate > 1) category = "medium";
-      else if (dailySalesRate > 0) category = "slow";
-
-      return {
-        id: p.id,
-        name: p.name,
-        dailySalesRate: Math.round(dailySalesRate * 100) / 100,
-        monthlyQuantity: monthlyQty,
-        stockOnHand,
-        reorderPoint,
-        daysUntilStockout: Math.round(daysUntilStockout),
-        category,
-      };
-    });
+    return [];
   }
 
   async getReorderRecommendations(businessId: string): Promise<ReorderRecommendation[]> {

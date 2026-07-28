@@ -4,7 +4,7 @@ import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import { parseCommand } from "../commands/command-parser";
 import { toolRegistry } from "../tools/tool-registry";
-import { checkPermission, requireOwnerOrPermission } from "../services/permission-service";
+import { requireOwnerOrPermission } from "../services/permission-service";
 import { classifyExpense } from "../services/expense-classifier";
 import { learnPattern } from "./memory-service";
 import {
@@ -18,6 +18,7 @@ import {
   getActiveWorkflow,
 } from "../services/workflow-persistence";
 import { resolveProduct } from "../tools/product-resolver";
+import { searchService } from "@/server/search";
 import { logAiAction, resolveVocabulary, summarizeConversation } from "../services/ai-logger";
 import type { AssistantContext } from "../assistant/types";
 
@@ -808,17 +809,13 @@ async function handleReceivePaymentIntent(
   }
 
   // Find customer
-  const customer = await prisma.customer.findFirst({
-    where: {
-      businessId,
-      OR: [
-        { firstName: { contains: customerName, mode: "insensitive" } },
-        { lastName: { contains: customerName, mode: "insensitive" } },
-        { phone: { contains: customerName } },
-      ],
-    },
+  const customerResult = await searchService.customers<any>({
+    query: customerName,
+    businessId,
     include: { creditAccount: true },
+    limit: 1,
   });
+  const customer = customerResult.items[0];
 
   if (!customer) {
     return { message: `Samahani, sikumpata mteja "${customerName}". Tafadhali toa jina kamili au namba ya simu.`, workflow: "customer_payment", step: "awaiting_customer" };
@@ -886,14 +883,11 @@ async function handlePaySupplierIntent(
     return { message: "Umemlipa msambazaji gani?", workflow: "supplier_payment", step: "awaiting_supplier" };
   }
 
-  const supplier = await prisma.supplier.findFirst({
-    where: {
-      OR: [
-        { name: { contains: supplierName, mode: "insensitive" } },
-        { phone: { contains: supplierName } },
-      ],
-    },
+  const supplierResult = await searchService.suppliers<any>({
+    query: supplierName,
+    limit: 1,
   });
+  const supplier = supplierResult.items[0];
 
   if (!supplier) {
     return { message: `Samahani, sikumpata msambazaji "${supplierName}". Tafadhali toa jina kamili.`, workflow: "supplier_payment", step: "awaiting_supplier" };

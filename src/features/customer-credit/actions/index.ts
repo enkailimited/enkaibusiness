@@ -18,6 +18,7 @@ import {
   transactionFilterSchema,
 } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createAccountAction(
   businessId: string,
@@ -25,6 +26,8 @@ export async function createAccountAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_credit.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createAccountSchema.safeParse({
     customerId: formData.get("customerId"),
@@ -54,7 +57,9 @@ export async function updateAccountAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_credit.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateAccountSchema.safeParse({
     creditLimit: formData.get("creditLimit") || undefined,
@@ -104,6 +109,8 @@ export async function recordTransactionAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "customer_credit.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = creditTransactionSchema.safeParse({
     accountId: formData.get("accountId"),

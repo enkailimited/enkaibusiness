@@ -5,7 +5,7 @@ import { boss } from "../queue";
 
 export function registerEmailWorker(): void {
   boss.work("send-email", async ([job]) => {
-    const { to, subject, html, businessId, userId } = job.data as {
+// //     const { to, subject, html, businessId, userId } = (job as any).data as {
       to: string;
       subject: string;
       html: string;

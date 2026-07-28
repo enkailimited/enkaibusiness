@@ -4,6 +4,7 @@ import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreatePurchaseOrderSchema, UpdatePurchaseOrderSchema, PurchaseOrderFilterSchema } from "../schemas";
 import type { PurchaseOrderWithItems, PurchaseOrderWithRelations, PurchaseOrderListItem } from "../types";
+import { searchService } from "@/server/search";
 
 export async function createPurchaseOrder(
   data: CreatePurchaseOrderSchema,
@@ -164,7 +165,7 @@ export async function getBusinessPurchaseOrders(
   businessId: string,
   filter?: PurchaseOrderFilterSchema,
 ): Promise<PurchaseOrderListItem[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.supplierId) {
     where.supplierId = filter.supplierId;
@@ -176,30 +177,27 @@ export async function getBusinessPurchaseOrders(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.orderDate = {};
-    if (filter.dateFrom) where.orderDate.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.orderDate.lte = new Date(filter.dateTo);
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { supplier: { name: { contains: filter.search, mode: "insensitive" } } },
-      { notes: { contains: filter.search, mode: "insensitive" } },
-    ];
+    if (filter.dateFrom) where.orderDate as any.gte = new Date(filter.dateFrom);
+    if (filter.dateTo) where.orderDate as any.lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;
   const skip = ((filter?.page ?? 1) - 1) * take;
 
-  const raw = await prisma.purchaseOrder.findMany({
+  const result = await searchService.purchaseOrders({
+    query: filter?.search,
+    businessId,
     where,
     include: {
       supplier: { select: { id: true, name: true } },
       _count: { select: { items: true } },
     },
     orderBy: { orderDate: "desc" },
-    skip,
-    take,
+    offset: skip,
+    limit: take,
   });
+
+  const raw = result.items;
 
   return raw.map((p) => ({
     ...p,

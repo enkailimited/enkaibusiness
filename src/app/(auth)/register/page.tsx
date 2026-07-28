@@ -14,18 +14,23 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { authClient } from "@/lib/auth-client";
 import { normalizePhone } from "@/lib/phone";
 import { createMyWorkspaceAction } from "@/features/workspaces/actions";
+import { assignOwnerRoleAction } from "@/features/auth/actions";
+import { prisma } from "@/server/db";
 import {
-  Loader2, UserPlus, ChevronRight, ChevronLeft, Check, User, Shield, FileText,
+  Loader2, UserPlus, ChevronRight, ChevronLeft, Check, User, Shield, FileText, MapPin, UserPlus as UserPlusIcon,
 } from "lucide-react";
+import { useServerAction } from "zsa";
 
 const STEPS = [
   { id: 1, label: "Personal", icon: User },
-  { id: 2, label: "Security", icon: Shield },
-  { id: 3, label: "Terms", icon: FileText },
+  { id: 2, label: "Residence", icon: MapPin },
+  { id: 3, label: "Security", icon: Shield },
+  { id: 4, label: "Terms", icon: FileText },
 ];
 
 const stepLabels = [
   { title: "Create your account", subtitle: "Tell us about yourself" },
+  { title: "Your residence", subtitle: "Where you live and your guarantor" },
   { title: "Secure your account", subtitle: "Set up login credentials" },
   { title: "Almost there", subtitle: "Review and agree to terms" },
 ] as const;
@@ -46,6 +51,12 @@ export default function RegisterPage() {
     email: "",
     phone: "",
     username: "",
+    address: "",
+    nida: "",
+    guarantorName: "",
+    guarantorPhone: "",
+    guarantorRelationship: "",
+    guarantorAddress: "",
     password: "",
     confirmPassword: "",
   });
@@ -59,6 +70,14 @@ export default function RegisterPage() {
   }
 
   function canProceedToStep3() {
+    return formData.address.trim() &&
+      formData.guarantorName.trim() &&
+      formData.guarantorPhone.trim() &&
+      formData.guarantorRelationship.trim() &&
+      formData.guarantorAddress.trim();
+  }
+
+  function canProceedToStep4() {
     return formData.password.length >= 8 && formData.password === formData.confirmPassword;
   }
 
@@ -72,22 +91,55 @@ export default function RegisterPage() {
       return;
     }
 
-    const normalizedPhone = normalizePhone(formData.phone) || "";
+    try {
+      const normalizedPhone = normalizePhone(formData.phone) || "";
 
-    const { error: signUpError } = await authClient.signUp.email({
-      email: formData.email,
-      password: formData.password,
-      name: `${formData.firstName} ${formData.lastName}`,
-      ...(normalizedPhone ? { phone: normalizedPhone } : {}),
-      ...(formData.username ? { username: formData.username } : {}),
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-    } as Parameters<typeof authClient.signUp.email>[0]);
+      const { error: signUpError } = await authClient.signUp.email({
+        email: formData.email,
+        password: formData.password,
+        name: `${formData.firstName} ${formData.lastName}`,
+        ...(normalizedPhone ? { phone: normalizedPhone } : {}),
+        ...(formData.username ? { username: formData.username } : {}),
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      } as Parameters<typeof authClient.signUp.email>[0]);
 
-    if (signUpError) {
-      setError(signUpError.message || "Failed to create account");
-      setPending(false);
-      return;
+      if (signUpError) {
+        setError(signUpError.message || "Failed to create account");
+        setPending(false);
+        return;
+      }
+
+      // Update user with nida and address after signup
+      const res = await fetch("/api/auth/user-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nida: formData.nida || null,
+          address: formData.address,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to update user profile");
+      }
+
+      // Create guarantor
+      await fetch("/api/auth/guarantor-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.guarantorName,
+          phone: formData.guarantorPhone,
+          relationship: formData.guarantorRelationship,
+          address: formData.guarantorAddress,
+        }),
+      });
+
+      // Assign owner role (public signup = business owner)
+      await assignOwnerRoleAction();
+    } catch (err) {
+      console.error("Post-signup update error:", err);
     }
 
     // Wait briefly for session cookie to propagate after signup
@@ -225,6 +277,89 @@ export default function RegisterPage() {
                   transition={{ duration: 0.25 }}
                   className="space-y-4"
                 >
+                  <FormField label="Physical Address" required>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        name="address"
+                        placeholder="e.g. Mtaa wa Azikiwe, Dar es Salaam"
+                        className="pl-9"
+                        value={formData.address}
+                        onChange={(e) => updateField("address", e.target.value)}
+                        required
+                      />
+                    </div>
+                  </FormField>
+
+                  <FormField label="NIDA Number (optional)">
+                    <Input
+                      name="nida"
+                      placeholder="National ID number"
+                      value={formData.nida}
+                      onChange={(e) => updateField("nida", e.target.value)}
+                    />
+                  </FormField>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                      <UserPlusIcon className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium">Guarantor Information</p>
+                  </div>
+
+                  <FormField label="Guarantor Full Name" required>
+                    <Input
+                      name="guarantorName"
+                      placeholder="Full name"
+                      value={formData.guarantorName}
+                      onChange={(e) => updateField("guarantorName", e.target.value)}
+                      required
+                    />
+                  </FormField>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Guarantor Phone" required>
+                      <Input
+                        type="tel"
+                        name="guarantorPhone"
+                        placeholder="+255 712 345 678"
+                        value={formData.guarantorPhone}
+                        onChange={(e) => updateField("guarantorPhone", e.target.value)}
+                        required
+                      />
+                    </FormField>
+                    <FormField label="Relationship" required>
+                      <Input
+                        name="guarantorRelationship"
+                        placeholder="e.g. Parent, Sibling"
+                        value={formData.guarantorRelationship}
+                        onChange={(e) => updateField("guarantorRelationship", e.target.value)}
+                        required
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Guarantor Address" required>
+                    <Input
+                      name="guarantorAddress"
+                      placeholder="Physical address"
+                      value={formData.guarantorAddress}
+                      onChange={(e) => updateField("guarantorAddress", e.target.value)}
+                      required
+                    />
+                  </FormField>
+                </motion.div>
+              )}
+
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 30 }}
+                  transition={{ duration: 0.25 }}
+                  className="space-y-4"
+                >
                   <FormField label="Phone (optional)">
                     <Input
                       type="tel"
@@ -265,9 +400,9 @@ export default function RegisterPage() {
                 </motion.div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <motion.div
-                  key="step3"
+                  key="step4"
                   initial={{ opacity: 0, x: -30 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 30 }}
@@ -283,6 +418,14 @@ export default function RegisterPage() {
                       <div>
                         <span className="text-xs text-muted-foreground">Email</span>
                         <p className="font-medium truncate">{formData.email}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Address</span>
+                        <p className="font-medium truncate">{formData.address}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Guarantor</span>
+                        <p className="font-medium truncate">{formData.guarantorName}</p>
                       </div>
                     </div>
                   </div>
@@ -352,14 +495,15 @@ export default function RegisterPage() {
               <div />
             )}
 
-            {step < 3 && (
+            {step < 4 && (
               <Button
                 type="button"
                 size="sm"
                 onClick={() => setStep(step + 1)}
                 disabled={
                   (step === 1 && !canProceedToStep2()) ||
-                  (step === 2 && !canProceedToStep3())
+                  (step === 2 && !canProceedToStep3()) ||
+                  (step === 3 && !canProceedToStep4())
                 }
                 className="gap-1"
               >

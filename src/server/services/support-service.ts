@@ -4,6 +4,8 @@ import type { TicketPriority } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateTicketSchema, UpdateTicketSchema } from "@/lib/validations/support";
+import { searchService } from "@/server/search";
+import { logger } from "@/server/logger";
 
 export interface TicketFilters {
   status?: string;
@@ -32,7 +34,7 @@ export async function createTicket(
       data: { id: ticket.id },
     };
   } catch (error) {
-    console.error("Create ticket error:", error);
+    logger.error("Create ticket error", error, { module: "SupportService" });
     return { success: false, message: "Failed to create support ticket" };
   }
 }
@@ -56,14 +58,8 @@ export async function getTickets(filters?: TicketFilters) {
     where.customerId = filters.customerId;
   }
 
-  if (filters?.search) {
-    where.OR = [
-      { title: { contains: filters.search, mode: "insensitive" } },
-      { description: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
-
-  return prisma.supportTicket.findMany({
+  const result = await searchService.supportTickets({
+    query: filters?.search,
     where,
     include: {
       customer: {
@@ -87,6 +83,8 @@ export async function getTickets(filters?: TicketFilters) {
     },
     orderBy: { createdAt: "desc" },
   });
+
+  return result.items;
 }
 
 export async function getTicket(id: string) {
@@ -134,7 +132,7 @@ export async function updateTicket(
 
     return { success: true, message: "Ticket updated successfully" };
   } catch (error) {
-    console.error("Update ticket error:", error);
+    logger.error("Update ticket error", error, { module: "SupportService" });
     return { success: false, message: "Failed to update ticket" };
   }
 }
@@ -166,7 +164,7 @@ export async function updateTicketStatus(
 
     return { success: true, message: `Ticket status updated to ${status}` };
   } catch (error) {
-    console.error("Update ticket status error:", error);
+    logger.error("Update ticket status error", error, { module: "SupportService" });
     return { success: false, message: "Failed to update ticket status" };
   }
 }
@@ -193,7 +191,7 @@ export async function assignTicket(
 
     return { success: true, message: "Ticket assigned successfully" };
   } catch (error) {
-    console.error("Assign ticket error:", error);
+    logger.error("Assign ticket error", error, { module: "SupportService" });
     return { success: false, message: "Failed to assign ticket" };
   }
 }

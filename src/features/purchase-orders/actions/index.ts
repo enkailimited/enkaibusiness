@@ -14,6 +14,7 @@ import {
 } from "../services/purchase-order-service";
 import { createPurchaseOrderSchema, updatePurchaseOrderSchema, purchaseOrderFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createPurchaseOrderAction(
   businessId: string,
@@ -22,6 +23,8 @@ export async function createPurchaseOrderAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "purchase_orders.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -79,7 +82,9 @@ export async function updatePurchaseOrderAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "purchase_orders.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -152,7 +157,9 @@ export async function listPurchaseOrdersAction(
 }
 
 export async function deletePurchaseOrderAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "purchase_orders.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deletePurchaseOrder(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);
@@ -161,7 +168,9 @@ export async function deletePurchaseOrderAction(id: string, businessId: string) 
 }
 
 export async function approvePurchaseOrderAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "purchase_orders.approve", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await approvePurchaseOrder(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/purchase-orders`);

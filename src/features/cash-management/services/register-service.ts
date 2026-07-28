@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateRegisterSchema, UpdateRegisterSchema, RegisterFilterSchema } from "../schemas";
 import type { RegisterWithTransactions } from "../types";
@@ -90,13 +91,8 @@ export async function listRegisters(
   if (filter?.storeId) where.storeId = filter.storeId;
   if (filter?.isActive !== undefined) where.isActive = filter.isActive;
 
-  if (filter?.search) {
-    where.OR = [
-      { name: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const raw = await prisma.cashRegister.findMany({
+  const { items } = await searchService.cashRegisters<any>({
+    query: filter?.search,
     where,
     include: {
       branch: { select: { id: true, name: true } },
@@ -105,13 +101,13 @@ export async function listRegisters(
     orderBy: { name: "asc" },
   });
 
-  return raw.map((r) => ({
+  return items.map((r: any) => ({
     ...r,
-    openingBalance: r.openingBalance.toNumber(),
-    currentBalance: r.currentBalance.toNumber(),
-    createdAt: r.createdAt.toISOString(),
-    updatedAt: r.updatedAt.toISOString(),
-  })) as RegisterWithTransactions[];
+    openingBalance: Number(r.openingBalance),
+    currentBalance: Number(r.currentBalance),
+    createdAt: typeof r.createdAt === "string" ? r.createdAt : new Date(r.createdAt).toISOString(),
+    updatedAt: typeof r.updatedAt === "string" ? r.updatedAt : new Date(r.updatedAt).toISOString(),
+  }));
 }
 
 export async function deleteRegister(id: string): Promise<ActionResponse> {

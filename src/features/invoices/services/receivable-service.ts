@@ -203,7 +203,7 @@ export async function getReceivablesAging(
     },
   });
 
-  const buckets: Record<string, { total: number; invoices: number }> = {
+  const buckets = {
     current: { total: 0, invoices: 0 },
     days1to30: { total: 0, invoices: 0 },
     days31to60: { total: 0, invoices: 0 },

@@ -128,7 +128,7 @@ export class WorkflowEngine {
       awaiting_user_email: "Barua pepe ya mtumiaji?",
       awaiting_user_role: "Cheo cha mtumiaji?",
       awaiting_confirmation: "Je, una uhakika?",
-      completed: null,
+      completed: "",
     };
 
     return questions[wf.currentStep] || null;

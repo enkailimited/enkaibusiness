@@ -185,7 +185,7 @@ export class WorkflowEngine {
     return { status: "pending", currentStage };
   }
 
-  async cancelRequest(requestId: string, userId: string): Promise<void> {
+  async cancelRequest(requestId: string): Promise<void> {
     const request = await prisma.approvalRequest.findUnique({
       where: { id: requestId },
     });

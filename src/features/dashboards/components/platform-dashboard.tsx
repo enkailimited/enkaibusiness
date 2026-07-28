@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { RoleDashboard, KPIData } from "../types";
 import { KPIGrid } from "./kpi-grid";
-import { SalesChart } from "./sales-chart";
+// import { SalesChart } from "./sales-chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface PlatformDashboardProps {

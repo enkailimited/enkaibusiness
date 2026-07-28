@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createSupplier,
   updateSupplier,
@@ -18,6 +19,11 @@ export async function createSupplierAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "suppliers.create", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = createSupplierSchema.safeParse({
     supplierType: formData.get("supplierType") || "local",
@@ -56,7 +62,12 @@ export async function updateSupplierAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "suppliers.update", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = updateSupplierSchema.safeParse({
     supplierType: formData.get("supplierType") || undefined,
@@ -110,7 +121,11 @@ export async function listSuppliersAction(
 }
 
 export async function deleteSupplierAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "suppliers.delete", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await deleteSupplier(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/suppliers`);

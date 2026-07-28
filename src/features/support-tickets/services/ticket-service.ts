@@ -2,6 +2,7 @@ import "server-only";
 
 import type { TicketPriority } from "@prisma/client";
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse, PaginatedResponse } from "@/types/relationships";
 import type { CreateTicketSchema, UpdateTicketSchema, TicketFilterSchema } from "../schemas";
 import type { TicketWithRelations } from "../types";
@@ -85,13 +86,6 @@ export async function listTickets(
     where.businessId = filter.businessId;
   }
 
-  if (filter?.search) {
-    where.OR = [
-      { title: { contains: filter.search, mode: "insensitive" } },
-      { description: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
   if (filter?.fromDate || filter?.toDate) {
     const createdAt: Record<string, Date> = {};
     if (filter?.fromDate) createdAt.gte = new Date(filter.fromDate);
@@ -102,42 +96,40 @@ export async function listTickets(
   const page = filter?.page ?? 1;
   const limit = filter?.limit ?? 20;
 
-  const [raw, total] = await Promise.all([
-    prisma.supportTicket.findMany({
-      where,
-      include: {
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatarUrl: true,
-          },
-        },
-        assignedTo: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            avatarUrl: true,
-          },
+  const result = await searchService.supportTickets({
+    query: filter?.search,
+    where,
+    include: {
+      customer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatarUrl: true,
         },
       },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.supportTicket.count({ where }),
-  ]);
+      assignedTo: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          avatarUrl: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    offset: (page - 1) * limit,
+    limit,
+  });
 
   return {
-    data: raw as unknown as TicketWithRelations[],
-    total,
+    data: result.items as unknown as TicketWithRelations[],
+    total: result.total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(result.total / limit),
   };
 }
 

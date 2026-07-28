@@ -9,13 +9,13 @@ import { publishStorefrontAction, archiveStorefrontAction } from "../actions";
 export function StorefrontActions({ storefrontId, status }: { storefrontId: string; status: string }) {
   const router = useRouter();
 
-  const [pubState, publish, pubPending] = useActionState(async () => {
+//   const [pubState, publish, pubPending] = useActionState(async () => {
     const res = await publishStorefrontAction(storefrontId);
     if (res.success) router.refresh();
     return res;
   }, null);
 
-  const [archState, archive, archPending] = useActionState(async () => {
+//   const [archState, archive, archPending] = useActionState(async () => {
     const res = await archiveStorefrontAction(storefrontId);
     if (res.success) router.refresh();
     return res;

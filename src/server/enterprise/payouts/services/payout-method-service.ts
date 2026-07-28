@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/server/db";
-import { Prisma } from "@prisma/client";
+// import { Prisma } from "@prisma/client";
 import type { PayoutMethodType } from "@prisma/client";
 
 export async function getPayoutMethods(salesProfileId: string) {

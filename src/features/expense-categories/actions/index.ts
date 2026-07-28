@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createCategory,
   updateCategory,
@@ -18,7 +19,9 @@ export async function createCategoryAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expense_categories.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission to create expense categories" };
 
   const parsed = createCategorySchema.safeParse({
     name: formData.get("name"),
@@ -49,7 +52,9 @@ export async function updateCategoryAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expense_categories.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission to update expense categories" };
 
   const parsed = updateCategorySchema.safeParse({
     name: formData.get("name") || undefined,
@@ -90,7 +95,9 @@ export async function listCategoriesAction(businessId: string) {
 }
 
 export async function deleteCategoryAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "expense_categories.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission to delete expense categories" };
   const result = await deleteCategory(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/expense-categories`);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Logo } from "@/components/ui/logo";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/features/users/components/user-avatar";
 import { useAuth } from "@/features/auth/components/auth-provider";
 import { authClient } from "@/lib/auth-client";

@@ -61,12 +61,5 @@ export function absoluteUrl(path: string): string {
  * so they can be passed from Server Components/Actions to Client Components.
  */
 export function serialize<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj, (key, value) => {
-    // If the value is a big number / decimal with a toJSON method, it will already be a string
-    // But if we want to ensure numbers stay numbers where appropriate:
-    if (value && typeof value === "object" && value.d && value.s && value.e !== undefined) {
-      return Number(value);
-    }
-    return value;
-  }));
+  return JSON.parse(JSON.stringify(obj));
 }

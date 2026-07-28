@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   getCustomerOutstandingBalance,
   getCustomerOutstandingInvoices,
@@ -53,6 +54,11 @@ export async function recordInvoicePaymentAction(
   const invoiceId = formData.get("invoiceId") as string;
   const amount = parseFloat(formData.get("amount") as string) || 0;
   const businessId = formData.get("businessId") as string;
+
+  const can = await hasPermission(user.id, "invoices.record_payment", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const workspaceId = formData.get("workspaceId") as string || undefined;
   const paymentMethodId = formData.get("paymentMethodId") as string || undefined;
   const customerId = formData.get("customerId") as string || undefined;
@@ -83,7 +89,11 @@ export async function recordInvoicePaymentAction(
 }
 
 export async function markOverdueInvoicesAction(businessId: string): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "invoices.mark_overdue", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   try {
     const count = await markOverdueInvoices(businessId);
     revalidatePath(`/workspaces/businesses/${businessId}`);

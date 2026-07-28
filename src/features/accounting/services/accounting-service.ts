@@ -193,17 +193,29 @@ export async function getTrialBalance(
 
   const balances: AccountBalance[] = [];
 
-  for (const account of accounts) {
-    const lines = await prisma.journalLine.findMany({
-      where: {
-        chartAccountId: account.id,
-        journalEntry: {
-          businessId,
-          isPosted: true,
-          ...(dateFilter ? { entryDate: dateFilter } : {}),
-        },
+  const accountIds = accounts.map(a => a.id);
+  const allLines = await prisma.journalLine.findMany({
+    where: {
+      chartAccountId: { in: accountIds },
+      journalEntry: {
+        businessId,
+        isPosted: true,
+        ...(dateFilter ? { entryDate: dateFilter } : {}),
       },
-    });
+    },
+  });
+  const linesByAccount = new Map<string, typeof allLines>();
+  for (const line of allLines) {
+    const group = linesByAccount.get(line.chartAccountId);
+    if (group) {
+      group.push(line);
+    } else {
+      linesByAccount.set(line.chartAccountId, [line]);
+    }
+  }
+
+  for (const account of accounts) {
+    const lines = linesByAccount.get(account.id) ?? [];
 
     const totalDebit = lines.reduce((sum, l) => sum + Number(l.debit), 0);
     const totalCredit = lines.reduce((sum, l) => sum + Number(l.credit), 0);
@@ -239,7 +251,7 @@ export async function getTrialBalance(
 
 export async function getIncomeStatement(
   businessId: string,
-  dateFrom: Date,
+//   dateFrom: Date,
   dateTo: Date,
 ): Promise<{ revenue: AccountBalance[]; expenses: AccountBalance[]; netIncome: number }> {
   const allBalances = await getTrialBalance(businessId, dateTo);

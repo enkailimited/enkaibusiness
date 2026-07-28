@@ -2,10 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 
 export async function updateLeadStageAction(leadId: string, status: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "leads.update");
+  if (!can) return { success: false, message: "You do not have permission" };
   await prisma.lead.update({ where: { id: leadId }, data: { status: status as any } });
   revalidatePath("/platform/sales-team/leads");
   return { success: true };

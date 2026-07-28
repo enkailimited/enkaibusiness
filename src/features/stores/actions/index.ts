@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
+import { getBranch } from "@/features/branches/services/branch-service";
 import {
   createStore,
   updateStore,
@@ -17,7 +19,12 @@ export async function createStoreAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const branch = await getBranch(branchId);
+  if (!branch) return { success: false, message: "Branch not found" };
+  const can = await hasPermission(user.id, "stores.create", branch.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createStoreSchema.safeParse({
     name: formData.get("name"),
@@ -48,7 +55,12 @@ export async function updateStoreAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const branch = await getBranch(branchId);
+  if (!branch) return { success: false, message: "Branch not found" };
+  const can = await hasPermission(user.id, "stores.update", branch.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateStoreSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -84,7 +96,13 @@ export async function getBranchStoresAction(branchId: string) {
 }
 
 export async function deleteStoreAction(branchId: string, storeId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const branch = await getBranch(branchId);
+  if (!branch) return { success: false, message: "Branch not found" };
+  const can = await hasPermission(user.id, "stores.delete", branch.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const result = await deleteStore(storeId);
   if (result.success) {
     revalidatePath(`/branches/${branchId}/stores`);

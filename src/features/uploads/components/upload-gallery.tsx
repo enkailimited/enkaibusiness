@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDate, truncate } from "@/lib/utils";
+
+import { truncate } from "@/lib/utils";
 import { FOLDER_LABELS } from "../constants";
 import type { UploadWithUser } from "../types";
 

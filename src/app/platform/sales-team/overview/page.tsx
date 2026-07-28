@@ -61,12 +61,12 @@ function PipelineBar({ stages, total }: { stages: Record<string, number>; total:
   return (
     <div className="flex h-8 w-full overflow-hidden rounded-lg">
       {sorted.map((s) => {
-        const pct = total > 0 ? (stages[s] / total) * 100 : 0;
+        const pct = total > 0 ? ((stages[s] ?? 0) / total) * 100 : 0;
         if (pct < 1) return null;
         return (
           <div
             key={s}
-            className={`${STAGE_COLORS[s]} flex items-center justify-center text-[10px] font-semibold text-gray-700 first:rounded-l-lg last:rounded-r-lg`}
+            className={`${STAGE_COLORS[s] ?? ""} flex items-center justify-center text-[10px] font-semibold text-gray-700 first:rounded-l-lg last:rounded-r-lg`}
             style={{ width: `${pct}%` }}
             title={`${STAGE_LABELS[s]}: ${stages[s]}`}
           >
@@ -100,7 +100,7 @@ function TeamMemberRow({ member }: { member: any }) {
 export default function SalesTeamOverview() {
   const { user } = useAuth();
   const [salesStats, setSalesStats] = useState<any>(null);
-  const [perfMetrics, setPerfMetrics] = useState<any>(null);
+//   const [perfMetrics, setPerfMetrics] = useState<any>(null);
   const [commMetrics, setCommMetrics] = useState<any>(null);
   const [leadMetrics, setLeadMetrics] = useState<any>(null);
   const [clientData, setClientData] = useState<any>(null);

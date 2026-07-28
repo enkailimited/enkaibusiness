@@ -9,7 +9,7 @@ export const createUnitSchema = z.object({
     .string()
     .min(1, "Abbreviation is required")
     .max(20, "Abbreviation is too long"),
-  type: z.enum(["count", "weight", "volume", "length"], {
+  type: z.enum(["count", "weight", "volume", "length"] as const, {
     errorMap: () => ({ message: "Type must be count, weight, volume, or length" }),
   }),
   isBase: z.boolean().default(false),
@@ -18,7 +18,7 @@ export const createUnitSchema = z.object({
 export const updateUnitSchema = z.object({
   name: z.string().min(1, "Unit name is required").max(100).optional(),
   abbreviation: z.string().min(1, "Abbreviation is required").max(20).optional(),
-  type: z.enum(["count", "weight", "volume", "length"]).optional(),
+  type: z.enum(["count", "weight", "volume", "length"] as const).optional(),
   isBase: z.boolean().optional(),
 });
 

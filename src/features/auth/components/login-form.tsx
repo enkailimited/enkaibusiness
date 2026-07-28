@@ -50,7 +50,7 @@ export function LoginForm() {
         return;
       }
 
-      router.push("/platform/dashboard");
+      router.push("/");
       router.refresh();
     } catch {
       setError("An unexpected error occurred. Please try again.");

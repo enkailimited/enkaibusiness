@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, FormError } from "@/components/ui/form";
 import { changePasswordAction } from "./actions";
@@ -38,7 +36,7 @@ export default function ChangePasswordPage() {
 
       if (result.success) {
         setSuccess(true);
-        setTimeout(() => router.push("/platform/dashboard"), 2000);
+        setTimeout(() => router.push("/"), 2000);
       } else {
         setError(result.message);
       }

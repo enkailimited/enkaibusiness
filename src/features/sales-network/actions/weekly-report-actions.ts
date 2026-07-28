@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 
 function getWeekStart(date: Date = new Date()): Date {
@@ -34,7 +35,13 @@ export async function upsertWeeklyReportAction(
   salesProfileId: string,
   data: { leadsContacted: number; demosDone: number; registrations: number; challenges?: string; nextPlan?: string },
 ) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canCreate = await hasPermission(user.id, "sales_network.create");
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to submit weekly reports" };
+  }
+
   const weekStart = getWeekStart();
   const report = await prisma.weeklyReport.upsert({
     where: { salesProfileId_weekStart: { salesProfileId, weekStart } },
@@ -46,7 +53,13 @@ export async function upsertWeeklyReportAction(
 }
 
 export async function submitWeeklyReportAction(reportId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "sales_network.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to submit weekly reports" };
+  }
+
   await prisma.weeklyReport.update({
     where: { id: reportId },
     data: { status: "SUBMITTED", submittedAt: new Date() },
@@ -57,6 +70,11 @@ export async function submitWeeklyReportAction(reportId: string) {
 
 export async function reviewWeeklyReportAction(reportId: string, reviewNotes: string) {
   const user = await requireAuth();
+
+  const canUpdate = await hasPermission(user.id, "sales_network.update");
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to review weekly reports" };
+  }
   await prisma.weeklyReport.update({
     where: { id: reportId },
     data: { status: "REVIEWED", reviewedById: user.id, reviewedAt: new Date(), reviewNotes },

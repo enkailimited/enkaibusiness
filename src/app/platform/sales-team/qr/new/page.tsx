@@ -70,11 +70,11 @@ export default function NewQRExperiencePage() {
           </select>
         </div>
 
-        {modes.length > 0 && (
+        {modes && modes.length > 0 && (
           <div className="space-y-2">
             <Label>Experience Mode</Label>
             <div className="grid gap-2">
-              {modes.map((m) => (
+              {modes.map((m: { value: string; label: string; description: string }) => (
                 <label key={m.value} className="flex items-center gap-3 border rounded-md p-3 cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                   <input type="radio" name="mode" value={m.value} className="accent-primary" />
                   <div>

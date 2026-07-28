@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   getBusinessOutstandingSuppliers,
   getEnhancedPayablesSummary,
@@ -49,9 +50,12 @@ export async function recordPurchasePaymentAction(
 ): Promise<ActionResponse> {
   const user = await requireAuth();
 
+  const businessId = formData.get("businessId") as string;
+  const can = await hasPermission(user.id, "purchases.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
+
   const purchaseId = formData.get("purchaseId") as string;
   const amount = parseFloat(formData.get("amount") as string) || 0;
-  const businessId = formData.get("businessId") as string;
   const workspaceId = formData.get("workspaceId") as string || undefined;
   const paymentMethodId = formData.get("paymentMethodId") as string || undefined;
   const notes = formData.get("notes") as string || undefined;

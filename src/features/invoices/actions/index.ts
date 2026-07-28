@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createInvoice,
   updateInvoice,
@@ -22,6 +23,11 @@ export async function createInvoiceAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "invoices.create", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const items: Array<{ catalogItemId?: string; description?: string; quantity: number; unitPrice: number }> = [];
   let i = 0;
@@ -51,7 +57,7 @@ export async function createInvoiceAction(
     };
   }
 
-  const result = await createInvoice(parsed.data, businessId, user.workspaceId);
+  const result = await createInvoice(parsed.data, businessId, (user as any).workspaceId);
 
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
@@ -66,7 +72,12 @@ export async function updateInvoiceAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "invoices.update", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
 
   const parsed = updateInvoiceSchema.safeParse({
     customerId: formData.get("customerId") || undefined,
@@ -132,7 +143,11 @@ export async function recordPaymentAction(
   amount: number,
   businessId: string,
 ) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "invoices.record_payment", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await recordPayment(id, amount);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);
@@ -150,7 +165,11 @@ export async function markAsOverdueAction(id: string, businessId: string) {
 }
 
 export async function deleteInvoiceAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "invoices.delete", businessId);
+  if (!can) {
+    return { success: false, message: "You do not have permission" };
+  }
   const result = await deleteInvoice(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/invoices`);

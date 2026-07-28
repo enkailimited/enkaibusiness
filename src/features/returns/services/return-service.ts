@@ -6,6 +6,7 @@ import type { CreateReturnSchema, UpdateReturnSchema, ReturnFilterSchema } from 
 import type { ReturnWithItems, ReturnWithRelations, ReturnItemData } from "../types";
 import { recordCashTransaction } from "@/features/cash-management/services/cash-integration";
 import { resolveInventoryLocation } from "@/features/inventory/services/location-resolver";
+import { searchService } from "@/server/search";
 
 function toItem(raw: Record<string, unknown>): ReturnItemData {
   return {
@@ -125,7 +126,7 @@ export async function listReturns(
   businessId: string,
   filter?: ReturnFilterSchema,
 ): Promise<ReturnWithRelations[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.status) where.status = filter.status;
   if (filter?.saleId) where.saleId = filter.saleId;
@@ -137,14 +138,9 @@ export async function listReturns(
     where.returnDate = dateFilter;
   }
 
-  if (filter?.search) {
-    where.OR = [
-      { reference: { contains: filter.search, mode: "insensitive" } },
-      { reason: { contains: filter.search, mode: "insensitive" } },
-    ];
-  }
-
-  const raw = await prisma.return.findMany({
+  const result = await searchService.returns({
+    query: filter?.search,
+    businessId,
     where,
     include: {
       items: true,
@@ -152,6 +148,8 @@ export async function listReturns(
     },
     orderBy: { createdAt: "desc" },
   });
+
+  const raw = result.items;
 
   return raw as unknown as ReturnWithRelations[];
 }

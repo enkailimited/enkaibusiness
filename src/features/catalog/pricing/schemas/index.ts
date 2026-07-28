@@ -9,7 +9,7 @@ export const priceListItemSchema = z.object({
 
 export const createPriceListSchema = z.object({
   name: z.string().min(1, "Price list name is required").max(200),
-  type: z.enum(["retail", "wholesale", "promo"], {
+  type: z.enum(["retail", "wholesale", "promo"] as const, {
     errorMap: () => ({ message: "Type must be retail, wholesale, or promo" }),
   }),
   priority: z.number().int().min(0).max(99).default(0),
@@ -21,7 +21,7 @@ export const createPriceListSchema = z.object({
 
 export const updatePriceListSchema = z.object({
   name: z.string().min(1).max(200).optional(),
-  type: z.enum(["retail", "wholesale", "promo"]).optional(),
+  type: z.enum(["retail", "wholesale", "promo"] as const).optional(),
   priority: z.number().int().min(0).max(99).optional(),
   startDate: z.string().nullable().optional(),
   endDate: z.string().nullable().optional(),

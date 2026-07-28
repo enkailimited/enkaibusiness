@@ -101,7 +101,7 @@ export function NotificationBellClient({
   async function handleMarkRead(id: string) {
     await markAsReadAction(id);
     setUnreadCount((prev) => Math.max(0, prev - 1));
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => (n as any).id !== id));
   }
 
   return (
@@ -145,8 +145,8 @@ export function NotificationBellClient({
                   <CheckCheck className="h-3 w-3" /> Mark all read
                 </Button>
               )}
-              <Volume2 className="h-3.5 w-3.5 text-muted-foreground" title="Sound on" />
-              <VibrateIcon className="h-3.5 w-3.5 text-muted-foreground" title="Vibration on" />
+              <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <VibrateIcon className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
@@ -156,46 +156,47 @@ export function NotificationBellClient({
               </p>
             ) : (
               notifications.map((notif) => {
+                const n = notif as any;
                 const content = (
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {notif.title}
+                        {n.title}
                       </p>
-                      {notif.message && (
+                      {n.message && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {notif.message}
+                          {n.message}
                         </p>
                       )}
                     </div>
                     <Badge
-                      variant={TYPE_VARIANTS[notif.type] ?? "default"}
+                      variant={TYPE_VARIANTS[n.type] ?? "default"}
                       className="shrink-0 text-[10px] px-1.5 py-0"
                     >
-                      {TYPE_LABELS[notif.type] ?? notif.type}
+                      {TYPE_LABELS[n.type] ?? n.type}
                     </Badge>
                   </div>
                 );
 
                 return (
                   <div
-                    key={notif.id}
+                    key={n.id}
                     className="group p-3 border-b last:border-b-0 hover:bg-muted/50 transition-colors"
                   >
-                    {notif.link ? (
-                      <Link href={notif.link} onClick={() => handleMarkRead(notif.id)}>
+                    {n.link ? (
+                      <Link href={n.link} onClick={() => handleMarkRead(n.id)}>
                         {content}
                       </Link>
                     ) : (
                       <button
                         className="w-full text-left"
-                        onClick={() => handleMarkRead(notif.id)}
+                        onClick={() => handleMarkRead(n.id)}
                       >
                         {content}
                       </button>
                     )}
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      {formatDate(notif.createdAt)}
+                      {formatDate(n.createdAt)}
                     </p>
                   </div>
                 );

@@ -3,7 +3,7 @@ import { getHierarchyLevels } from "../services/hierarchy-service";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import type { HierarchyWithCount } from "../types";
-import { deleteHierarchyLevelAction } from "../actions";
+// import { deleteHierarchyLevelAction } from "../actions";
 
 export async function HierarchyList() {
   await requireAuth();

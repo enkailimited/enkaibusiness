@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import {
   generateTempPassword as genTempPassword,
@@ -89,6 +90,9 @@ export async function inviteSalesTeamMemberAction(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const authUser = await requireAuth();
+
+    const can = await hasPermission(authUser.id, "sales_network.invite");
+    if (!can) return { success: false, message: "You do not have permission" };
 
     const firstName = (formData.get("firstName") || "").toString().trim();
     const lastName = (formData.get("lastName") || "").toString().trim();
@@ -238,6 +242,8 @@ export async function reinviteTeamMemberAction(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const authUser = await requireAuth();
+    const can = await hasPermission(authUser.id, "sales_network.invite");
+    if (!can) return { success: false, message: "You do not have permission" };
     const userId = (formData.get("userId") || "").toString().trim();
     const email = (formData.get("email") || "").toString().trim();
     const phone = (formData.get("phone") || "").toString().trim();
@@ -287,7 +293,9 @@ export async function updateTeamMemberAction(
   formData: FormData,
 ): Promise<{ success: boolean; message: string }> {
   try {
-    await requireAuth();
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "sales_network.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const userId = (formData.get("userId") || "").toString().trim();
     const email = (formData.get("email") || "").toString().trim();
     const phone = (formData.get("phone") || "").toString().trim();

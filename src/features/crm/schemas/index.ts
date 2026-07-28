@@ -8,7 +8,7 @@ export const createContactSchema = z.object({
   title: z.string().max(200).optional().or(z.literal("")),
   organizationId: z.string().uuid().optional().or(z.literal("")),
   isActive: z.boolean().default(true),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const updateContactSchema = createContactSchema.partial();
@@ -20,7 +20,7 @@ export const createOrganizationSchema = z.object({
   taxId: z.string().optional().or(z.literal("")),
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
   isActive: z.boolean().default(true),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const createAddressSchema = z.object({

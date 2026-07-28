@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/server/db";
 import { headers } from "next/headers";
+import { logger } from "@/server/logger";
 
 export async function createAuditLog(
   userId: string,
@@ -28,6 +29,6 @@ export async function createAuditLog(
       },
     });
   } catch (error) {
-    console.error("Failed to create audit log:", error);
+    logger.error("Failed to create audit log", error, { module: "AuditService" });
   }
 }

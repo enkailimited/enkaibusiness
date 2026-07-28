@@ -41,12 +41,36 @@ ADD COLUMN     "adjustment_reason" TEXT,
 ADD COLUMN     "payment_reference" TEXT,
 ADD COLUMN     "payout_method_id" UUID;
 
--- AlterTable
-ALTER TABLE "installation_tickets" ADD COLUMN     "customer_signed" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "customer_signed_at" TIMESTAMP(3),
-ADD COLUMN     "go_live_at" TIMESTAMP(3),
-ADD COLUMN     "installer_id" UUID,
-ADD COLUMN     "package_id" UUID;
+-- Create installation_tickets if missing (needed for clean shadow DB replay)
+CREATE TABLE IF NOT EXISTS "installation_tickets" (
+    "id" UUID NOT NULL,
+    "business_id" UUID NOT NULL,
+    "branch_id" UUID,
+    "ticket_number" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'NEW_BUSINESS',
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "distributor_id" UUID,
+    "requested_by" UUID NOT NULL,
+    "assigned_at" TIMESTAMP(3),
+    "site_visit_date" TIMESTAMP(3),
+    "site_visit_notes" TEXT,
+    "verification_notes" TEXT,
+    "owner_approved" BOOLEAN NOT NULL DEFAULT false,
+    "owner_approved_at" TIMESTAMP(3),
+    "activated_at" TIMESTAMP(3),
+    "metadata" JSONB DEFAULT '{}',
+    "notes" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    CONSTRAINT "installation_tickets_pkey" PRIMARY KEY ("id")
+);
+
+-- AlterTable (safe: columns may already exist)
+ALTER TABLE "installation_tickets" ADD COLUMN IF NOT EXISTS "customer_signed" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "installation_tickets" ADD COLUMN IF NOT EXISTS "customer_signed_at" TIMESTAMP(3);
+ALTER TABLE "installation_tickets" ADD COLUMN IF NOT EXISTS "go_live_at" TIMESTAMP(3);
+ALTER TABLE "installation_tickets" ADD COLUMN IF NOT EXISTS "installer_id" UUID;
+ALTER TABLE "installation_tickets" ADD COLUMN IF NOT EXISTS "package_id" UUID;
 
 -- CreateTable
 CREATE TABLE "commission_rules_v2" (

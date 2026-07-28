@@ -4,7 +4,7 @@ import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { TYPE_LABELS, TYPE_VARIANTS } from "../constants";
 import { formatDate } from "@/lib/utils";
-import type { NotificationWithUser } from "../types";
+// import type { NotificationWithUser } from "../types";
 
 interface NotificationListProps {
   type?: string;
@@ -26,11 +26,12 @@ export async function NotificationList({
     limit: 20,
   });
 
+  const notifs = (notifications ?? []) as any[];
   const columns = [
     {
       key: "title",
       header: "Title",
-      cell: (notif: NotificationWithUser) => (
+      cell: (notif: any) => (
         <div className="flex items-center gap-2">
           <span className={notif.isRead ? "" : "font-semibold"}>{notif.title}</span>
           {!notif.isRead && (
@@ -42,7 +43,7 @@ export async function NotificationList({
     {
       key: "message",
       header: "Message",
-      cell: (notif: NotificationWithUser) => (
+      cell: (notif: any) => (
         <span className="text-sm text-muted-foreground truncate max-w-xs block">
           {notif.message ?? "-"}
         </span>
@@ -51,7 +52,7 @@ export async function NotificationList({
     {
       key: "type",
       header: "Type",
-      cell: (notif: NotificationWithUser) => (
+      cell: (notif: any) => (
         <Badge variant={TYPE_VARIANTS[notif.type] ?? "default"}>
           {TYPE_LABELS[notif.type] ?? notif.type}
         </Badge>
@@ -60,7 +61,7 @@ export async function NotificationList({
     {
       key: "isRead",
       header: "Status",
-      cell: (notif: NotificationWithUser) => (
+      cell: (notif: any) => (
         <Badge variant={notif.isRead ? "secondary" : "default"}>
           {notif.isRead ? "Read" : "Unread"}
         </Badge>
@@ -69,7 +70,7 @@ export async function NotificationList({
     {
       key: "createdAt",
       header: "Date",
-      cell: (notif: NotificationWithUser) => (
+      cell: (notif: any) => (
         <span className="text-sm text-muted-foreground">{formatDate(notif.createdAt)}</span>
       ),
     },
@@ -78,7 +79,7 @@ export async function NotificationList({
   return (
     <DataTable
       columns={columns}
-      data={notifications}
+      data={notifs}
       emptyTitle="No notifications"
       emptyDescription="You have no notifications yet."
     />

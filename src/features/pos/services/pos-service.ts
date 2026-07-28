@@ -117,8 +117,8 @@ export async function getBusinessSessions(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.openedAt = {};
-    if (filter.dateFrom) where.openedAt.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.openedAt.lte = new Date(filter.dateTo);
+    if (filter.dateFrom) where.openedAt as any.gte = new Date(filter.dateFrom);
+    if (filter.dateTo) where.openedAt as any.lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;

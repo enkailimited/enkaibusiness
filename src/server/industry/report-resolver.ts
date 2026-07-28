@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getIndustry } from "./registry";
+// import { getIndustry } from "./registry";
 import { prisma } from "@/server/db";
 
 export interface ReportDefinition {

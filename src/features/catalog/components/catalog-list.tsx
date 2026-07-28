@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DataTable } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -188,7 +188,7 @@ export function CatalogList({ items, businessId, categories, brands, units, comm
                 trackStock: editItem.trackStock,
                 imageUrl: editItem.imageUrl,
                 isActive: editItem.isActive,
-                variants: editItem.variants?.map((v) => ({
+                variants: (editItem as any).variants?.map((v: { id: string; name: string; sku?: string; barcode?: string; imageUrl?: string; sortOrder?: number }) => ({
                   id: v.id,
                   name: v.name,
                   sku: v.sku,

@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Loader2, Users, Target, DollarSign, PhoneCall, BarChart3 } from "lucide-react";
+// import { Badge } from "@/components/ui/badge";
+import { Users, Target, DollarSign, PhoneCall, BarChart3 } from "lucide-react";
 import { getMyPerformanceMetrics, getMyLeadMetrics, getMyMonthlySalesHistory } from "@/server/actions/sales-team";
 import { formatCurrency } from "@/lib/utils";
 

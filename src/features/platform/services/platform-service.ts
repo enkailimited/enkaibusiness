@@ -3,6 +3,7 @@ import "server-only";
 import { SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
 import type { PlatformStats } from "../types";
+import { searchService } from "@/server/search";
 
 export async function getPlatformStats(): Promise<PlatformStats> {
   const [totalBusinesses, totalUsers, totalStaff, totalSales, activeSubscriptions, pendingLeads, openSupportTickets] = await Promise.all([
@@ -16,7 +17,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
   ]);
 
   const revenueAgg = await prisma.sale.aggregate({
-    _sum: { total: true },
+    _sum: { grandTotal: true },
   });
 
   return {
@@ -24,7 +25,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     totalUsers,
     totalStaff,
     totalSales,
-    totalRevenue: revenueAgg._sum.total || 0,
+    totalRevenue: revenueAgg._sum?.grandTotal || 0,
     activeSubscriptions,
     pendingLeads,
     openSupportTickets,
@@ -46,29 +47,16 @@ export async function getPlatformUsers(options?: { search?: string; page?: numbe
   const limit = options?.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where = options?.search
-    ? {
-        OR: [
-          { email: { contains: options.search, mode: "insensitive" as const } },
-          { firstName: { contains: options.search, mode: "insensitive" as const } },
-          { lastName: { contains: options.search, mode: "insensitive" as const } },
-        ],
-      }
-    : {};
+  const result = await searchService.users({
+    query: options?.search,
+    orderBy: { createdAt: "desc" },
+    offset: skip,
+    limit,
+    include: {
+      userRoles: { include: { role: true } },
+      workspaceMemberships: { include: { workspace: true } },
+    },
+  });
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        userRoles: { include: { role: true } },
-        workspaceMemberships: { include: { workspace: true } },
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
-
-  return { users, total, page, limit };
+  return { users: result.items, total: result.total, page, limit };
 }

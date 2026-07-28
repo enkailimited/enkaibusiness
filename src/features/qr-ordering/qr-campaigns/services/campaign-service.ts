@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import { slugify } from "@/lib/utils";
 import { CampaignStatus } from "@/types/enums";
 import type { ActionResponse } from "@/types/relationships";
@@ -69,12 +70,6 @@ export async function listCampaigns(filters?: CampaignFilterSchema) {
   const where: Record<string, unknown> = {};
 
   if (filters?.status) where.status = filters.status;
-  if (filters?.search) {
-    where.OR = [
-      { name: { contains: filters.search, mode: "insensitive" } },
-      { slug: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
   if (filters?.fromDate) {
     where.createdAt = { ...(where.createdAt as Record<string, unknown> || {}), gte: new Date(filters.fromDate) };
   }
@@ -82,13 +77,16 @@ export async function listCampaigns(filters?: CampaignFilterSchema) {
     where.createdAt = { ...(where.createdAt as Record<string, unknown> || {}), lte: new Date(filters.toDate) };
   }
 
-  return prisma.distributionCampaign.findMany({
+  const result = await searchService.campaigns({
+    query: filters?.search,
     where,
     include: {
       _count: { select: { qrCodes: true } },
     },
     orderBy: { createdAt: "desc" },
-  }) as Promise<CampaignWithCount[]>;
+  });
+
+  return result.items as unknown as CampaignWithCount[];
 }
 
 export async function updateCampaign(

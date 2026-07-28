@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Award, Loader2, Trophy, Star, Zap, Target, TrendingUp, Users, DollarSign } from "lucide-react";
 import { getMyPerformanceMetrics } from "@/server/actions/sales-team";
 import { formatCurrency } from "@/lib/utils";
 

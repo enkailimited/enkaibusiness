@@ -12,6 +12,7 @@ import {
 } from "../services/adjustment-service";
 import { createAdjustmentSchema, updateAdjustmentSchema, adjustmentFilterSchema } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createAdjustmentAction(
   businessId: string,
@@ -19,6 +20,8 @@ export async function createAdjustmentAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_adjustments.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;
@@ -67,7 +70,9 @@ export async function updateAdjustmentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_adjustments.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items = [];
   let i = 0;
@@ -130,7 +135,9 @@ export async function listAdjustmentsAction(
 }
 
 export async function deleteAdjustmentAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_adjustments.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteAdjustment(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-adjustments`);
@@ -143,6 +150,8 @@ export async function approveAdjustmentAction(
   businessId: string,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "stock_adjustments.approve", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await approveAdjustment(id, user.id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/stock-adjustments`);

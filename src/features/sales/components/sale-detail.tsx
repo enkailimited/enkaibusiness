@@ -73,7 +73,7 @@ export async function SaleDetail({ id }: SaleDetailProps) {
               </tr>
             </thead>
             <tbody>
-              {sale.items.map((item) => (
+              {sale.items.map((item: { id: string; catalogItem: { name: string; sku?: string | null }; quantity: number; unitPrice: number; discount: number; subtotal: number }) => (
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="px-4 py-2">
                     <span className="font-medium">{item.catalogItem.name}</span>

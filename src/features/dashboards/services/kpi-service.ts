@@ -94,23 +94,33 @@ async function aggregateCLVMetrics() {
     return { averageCLV: 0, medianCLV: 0, totalBusinessesTracked: 0 };
   }
 
+  const businessIds = businesses.map(b => b.id);
+
+  const [subPayments, saleAggs] = await Promise.all([
+    prisma.subscriptionPayment.findMany({
+      where: { subscription: { businessId: { in: businessIds } } },
+      select: { amount: true, subscription: { select: { businessId: true } } },
+    }),
+    prisma.sale.groupBy({
+      by: ['businessId'],
+      where: { businessId: { in: businessIds }, status: { not: "VOIDED" } },
+      _sum: { grandTotal: true },
+    }),
+  ]);
+
+  const subByBusiness = new Map<string, number>();
+  for (const sp of subPayments) {
+    const bid = sp.subscription.businessId;
+    subByBusiness.set(bid, (subByBusiness.get(bid) ?? 0) + Number(sp.amount));
+  }
+  const saleByBusiness = new Map(saleAggs.map(s => [s.businessId, Number(s._sum.grandTotal ?? 0)]));
+
   const clvValues: number[] = [];
 
   for (const business of businesses) {
-    const [subscriptionPayments, salesTotal] = await Promise.all([
-      prisma.subscriptionPayment.aggregate({
-        _sum: { amount: true },
-        where: { subscription: { businessId: business.id } },
-      }),
-      prisma.sale.aggregate({
-        _sum: { grandTotal: true },
-        where: { businessId: business.id, status: { not: "VOIDED" } },
-      }),
-    ]);
-
     const lifetimeValue =
-      (Number(subscriptionPayments._sum?.amount) || 0) +
-      (Number(salesTotal._sum?.grandTotal) || 0);
+      (subByBusiness.get(business.id) ?? 0) +
+      (saleByBusiness.get(business.id) ?? 0);
 
     clvValues.push(lifetimeValue);
   }

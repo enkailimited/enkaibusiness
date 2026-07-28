@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getProfitLossAction, getCashFlowAction } from "@/features/financial/actions";
-import { TrendingUp, TrendingDown, DollarSign, Receipt } from "lucide-react";
+
 
 function fmt(n: number): string {
   return new Intl.NumberFormat("en-TZ", { style: "currency", currency: "TZS", minimumFractionDigits: 0 }).format(n);

@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { IndustryPermission } from "./types";
+// import type { IndustryPermission } from "./types";
 
 export interface ModulePermission {
   module: string;

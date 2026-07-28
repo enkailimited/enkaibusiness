@@ -40,7 +40,7 @@ export interface TaxRequest {
 
 export class TaxEngine {
   async calculate(request: TaxRequest): Promise<TaxCalculation> {
-    const business = await prisma.business.findUnique({
+//     const business = await prisma.business.findUnique({
       where: { id: request.businessId },
       select: { currency: true },
     });
@@ -148,7 +148,7 @@ export class TaxEngine {
 
   private getDefaultTaxRate(countryCode: string): number {
     const rules = COUNTRY_TAX_RULES[countryCode] ?? COUNTRY_TAX_RULES.TZ;
-    const vatRule = rules.find((r) => r.type === "vat");
+    const vatRule = (rules as any).find((r) => r.type === "vat");
     return vatRule?.rate ?? 0;
   }
 

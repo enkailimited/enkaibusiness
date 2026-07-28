@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { registerCustomer, loginCustomer, logoutCustomer, getCustomerProfile } from "../service/customer-auth";
+import { registerCustomer, loginCustomer, getCustomerProfile } from "../service/customer-auth";
 
 const COOKIE_OPTIONS = {
   name: "customer_token",

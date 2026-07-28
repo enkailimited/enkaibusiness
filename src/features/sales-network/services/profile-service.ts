@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateSalesProfileSchema, UpdateSalesProfileSchema } from "../schemas";
 import type { ProfileWithCounts, ProfileWithTree, ProfileWithUser, FreelancerProfile, ProfileFilter } from "../types";
@@ -15,7 +16,7 @@ const userSelect = {
   isActive: true,
 } as const;
 
-const subUserSelect = {
+// const subUserSelect = {
   id: true,
   firstName: true,
   lastName: true,
@@ -121,15 +122,8 @@ export async function listProfiles(filter?: ProfileFilter): Promise<ProfileWithC
   if (filter?.status) where.status = filter.status;
   if (filter?.hierarchyId) where.hierarchyId = filter.hierarchyId;
   if (filter?.managerId) where.managerId = filter.managerId;
-  if (filter?.search) {
-    where.OR = [
-      { user: { firstName: { contains: filter.search, mode: "insensitive" } } },
-      { user: { lastName: { contains: filter.search, mode: "insensitive" } } },
-      { user: { email: { contains: filter.search, mode: "insensitive" } } },
-    ];
-  }
-
-  const profiles = await prisma.salesProfile.findMany({
+  const result = await searchService.salesProfiles({
+    query: filter?.search,
     where,
     include: {
       user: { select: userSelect },
@@ -140,7 +134,7 @@ export async function listProfiles(filter?: ProfileFilter): Promise<ProfileWithC
     orderBy: { createdAt: "desc" },
   });
 
-  return profiles as unknown as ProfileWithCounts[];
+  return result.items as unknown as ProfileWithCounts[];
 }
 
 async function buildSubTree(profileId: string): Promise<ProfileWithTree[]> {

@@ -5,14 +5,14 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, DollarSign, AlertTriangle, Truck, FileText, TrendingDown } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   getPayablesSummaryAction,
   getOutstandingSuppliersAction,
   getPayablesAgingAction,
-  getOutstandingPurchasesAction,
+//   getOutstandingPurchasesAction,
   getOverduePurchasesAction,
   getRecentSupplierPaymentsAction,
   recordPurchasePaymentAction,

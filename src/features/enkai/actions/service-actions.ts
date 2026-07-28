@@ -1,8 +1,10 @@
 "use server";
 
 import { z } from "zod";
+import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { processMessage } from "../assistant/assistant-service";
-import { generateInsights, getCachedInsights } from "../insights/insights-service";
+
 import { evaluateRules } from "../automation/automation-service";
 import { generateProactiveInsights } from "../services/proactive-insights";
 import { memoryStore } from "../memory/memory-store";
@@ -14,19 +16,26 @@ import { detectChurnRisk } from "@/enkai/intelligence/anomaly-detection/churn-de
 import { getSalesTrends, getProfitAnalysis } from "@/enkai/intelligence/trend-analysis/sales-trends";
 
 const bizId = z.string().uuid("Invalid business ID");
-const userId = z.string().uuid("Invalid user ID");
+// const userId = z.string().uuid("Invalid user ID");
 const sessionIdSchema = z.string().min(1, "Session ID required");
 const inputSchema = z.string().min(1, "Input required");
 const triggerSchema = z.string().min(1, "Trigger required");
-const daysNum = z.coerce.number().int().positive().optional();
+// const daysNum = z.coerce.number().int().positive().optional();
 
 export async function sendMessageAction(
   input: string,
   context: { userId: string; businessId?: string; staffId?: string; workspaceId?: string },
   sessionId?: string,
 ) {
+  const authUser = await requireAuth();
+
+  const canChat = await hasPermission(authUser.id, "enkai.chat", context.businessId);
+  if (!canChat) {
+    return { success: false, message: "You do not have permission to use Enkai assistant" };
+  }
+
   const inputParsed = inputSchema.safeParse(input);
-  if (!inputParsed.success) return { success: false, message: inputParsed.error.errors[0].message };
+  if (!inputParsed.success) return { success: false, message: inputParsed.error.issues[0].message };
   return processMessage(input, context, sessionId);
 }
 
@@ -35,8 +44,15 @@ export async function sendVoiceMessageAction(
   context: { userId: string; businessId?: string; staffId?: string; workspaceId?: string },
   sessionId?: string,
 ) {
+  const authUser = await requireAuth();
+
+  const canChat = await hasPermission(authUser.id, "enkai.chat", context.businessId);
+  if (!canChat) {
+    return { success: false, message: "You do not have permission to use Enkai assistant" };
+  }
+
   const inputParsed = inputSchema.safeParse(input);
-  if (!inputParsed.success) return { success: false, message: inputParsed.error.errors[0].message };
+  if (!inputParsed.success) return { success: false, message: inputParsed.error.issues[0].message };
   const { processVoiceInput } = await import("../voice/voice-service");
   const voiceResult = processVoiceInput(input);
   const messageToSend = voiceResult.parsed.confidence > 0 ? voiceResult.normalized : input;
@@ -57,11 +73,18 @@ export async function evaluateAutomationRulesAction(
   const bParsed = bizId.safeParse(businessId);
   const tParsed = triggerSchema.safeParse(trigger);
   if (!bParsed.success) return { success: false, message: "Invalid business ID" };
-  if (!tParsed.success) return { success: false, message: tParsed.error.errors[0].message };
+  if (!tParsed.success) return { success: false, message: tParsed.error.issues[0].message };
   return evaluateRules(businessId, trigger, context);
 }
 
 export async function clearAssistantMemoryAction(sessionId: string) {
+  const authUser = await requireAuth();
+
+  const canManage = await hasPermission(authUser.id, "enkai.manage");
+  if (!canManage) {
+    return { success: false, message: "You do not have permission to manage Enkai memory" };
+  }
+
   const sParsed = sessionIdSchema.safeParse(sessionId);
   if (!sParsed.success) return { success: false, message: "Invalid session ID" };
   memoryStore.clear(sessionId);
@@ -70,7 +93,7 @@ export async function clearAssistantMemoryAction(sessionId: string) {
 
 export async function processVoiceAction(input: string) {
   const inputParsed = inputSchema.safeParse(input);
-  if (!inputParsed.success) return { success: false, message: inputParsed.error.errors[0].message };
+  if (!inputParsed.success) return { success: false, message: inputParsed.error.issues[0].message };
   const { processVoiceInput } = await import("../voice/voice-service");
   return processVoiceInput(input);
 }

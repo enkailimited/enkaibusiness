@@ -17,7 +17,7 @@ import { Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/platform/dashboard";
+  const redirectTo = searchParams.get("redirect") || "/";
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);

@@ -17,8 +17,9 @@ interface PriceListFormProps {
 }
 
 export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFormProps) {
-  const [itemCount, setItemCount] = useState(priceList?.items?.length ?? 0);
-  const action = priceList ? updatePriceListAction.bind(null, priceList.id) : createPriceListAction;
+  const pl = priceList as any;
+  const [itemCount, setItemCount] = useState(pl?.items?.length ?? 0);
+  const action = priceList ? updatePriceListAction.bind(null, pl.id) : createPriceListAction;
   const [state, formAction, pending] = useActionState(action, null);
 
   if (state?.success && onSuccess) {
@@ -26,7 +27,7 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
   }
 
   const addItem = () => setItemCount((c) => c + 1);
-  const removeItem = (index: number) => setItemCount((c) => Math.max(0, c - 1));
+//   const removeItem = (index: number) => setItemCount((c) => Math.max(0, c - 1));
 
   return (
     <Card>
@@ -42,7 +43,7 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
             <Input
               id="name"
               name="name"
-              defaultValue={priceList?.name ?? ""}
+              defaultValue={pl?.name ?? ""}
               placeholder="e.g. Summer Sale 2024"
               required
             />
@@ -56,7 +57,7 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
             <select
               id="type"
               name="type"
-              defaultValue={priceList?.type ?? "retail"}
+              defaultValue={pl?.type ?? "retail"}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
               required
             >
@@ -76,7 +77,7 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
             <select
               id="priority"
               name="priority"
-              defaultValue={priceList?.priority ?? 0}
+              defaultValue={pl?.priority ?? 0}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
             >
               {PRICE_LIST_PRIORITIES.map((p) => (
@@ -95,8 +96,8 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
                 name="startDate"
                 type="date"
                 defaultValue={
-                  priceList?.startDate
-                    ? new Date(priceList.startDate).toISOString().split("T")[0]
+                  pl?.startDate
+                    ? new Date(pl.startDate).toISOString().split("T")[0]
                     : ""
                 }
               />
@@ -108,8 +109,8 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
                 name="endDate"
                 type="date"
                 defaultValue={
-                  priceList?.endDate
-                    ? new Date(priceList.endDate).toISOString().split("T")[0]
+                  pl?.endDate
+                    ? new Date(pl.endDate).toISOString().split("T")[0]
                     : ""
                 }
               />
@@ -120,7 +121,7 @@ export function PriceListForm({ businessId, priceList, onSuccess }: PriceListFor
             <Switch
               id="isActive"
               name="isActive"
-              defaultChecked={priceList?.isActive ?? true}
+              defaultChecked={pl?.isActive ?? true}
               value="true"
             />
             <Label htmlFor="isActive">Active</Label>

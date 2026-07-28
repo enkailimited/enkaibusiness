@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-import { Sidebar } from "@/components/layout/sidebar";
+// import { Sidebar } from "@/components/layout/sidebar";
 import { Navbar } from "@/components/layout/navbar";
-import { BottomNav } from "@/components/layout/bottom-nav";
+// import { BottomNav } from "@/components/layout/bottom-nav";
 import {
   LayoutDashboard,
-  Settings,
-  BarChart3,
+//   Settings,
+//   BarChart3,
 } from "lucide-react";
 
 interface NavItem {
@@ -17,9 +17,9 @@ interface NavItem {
   badge?: string;
 }
 
-const platformNavItems: NavItem[] = [
-  { title: "Dashboard", href: "/platform/dashboard", icon: LayoutDashboard },
-];
+// const platformNavItems: NavItem[] = [
+//   { title: "Dashboard", href: "/platform/dashboard", icon: LayoutDashboard },
+// ];
 
 interface AppShellProps {
   children: React.ReactNode;

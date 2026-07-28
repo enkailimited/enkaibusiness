@@ -1,10 +1,15 @@
 "use server";
 
+import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { createStorefront, updateStorefront, publishStorefront, archiveStorefront, setActiveTheme } from "../services/storefront-service";
 
 export async function createStorefrontAction(_prev: unknown, formData: FormData) {
   try {
+    const user = await requireAuth();
     const businessId = formData.get("businessId") as string;
+    const can = await hasPermission(user.id, "storefront.create", businessId);
+    if (!can) return { success: false, message: "You do not have permission" };
     const name = formData.get("name") as string;
     if (!businessId || !name) return { success: false, message: "Business and name required" };
 
@@ -26,8 +31,12 @@ export async function createStorefrontAction(_prev: unknown, formData: FormData)
 
 export async function updateStorefrontAction(_prev: unknown, formData: FormData) {
   try {
+    const user = await requireAuth();
     const id = formData.get("id") as string;
     if (!id) return { success: false, message: "Storefront ID required" };
+
+    const can = await hasPermission(user.id, "storefront.update");
+    if (!can) return { success: false, message: "You do not have permission" };
 
     const data: Record<string, unknown> = {};
     for (const [key, val] of formData.entries()) {
@@ -43,6 +52,9 @@ export async function updateStorefrontAction(_prev: unknown, formData: FormData)
 
 export async function publishStorefrontAction(storefrontId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "storefront.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await publishStorefront(storefrontId);
     return { success: true, message: "Storefront published" };
   } catch (error) {
@@ -52,6 +64,9 @@ export async function publishStorefrontAction(storefrontId: string) {
 
 export async function archiveStorefrontAction(storefrontId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "storefront.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await archiveStorefront(storefrontId);
     return { success: true, message: "Storefront archived" };
   } catch (error) {
@@ -61,6 +76,9 @@ export async function archiveStorefrontAction(storefrontId: string) {
 
 export async function setActiveThemeAction(storefrontId: string, themeId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "storefront.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await setActiveTheme(storefrontId, themeId);
     return { success: true, message: "Theme activated" };
   } catch (error) {

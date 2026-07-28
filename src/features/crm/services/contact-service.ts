@@ -3,7 +3,7 @@ import "server-only";
 import { prisma } from "@/server/db";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateContactSchema, UpdateContactSchema } from "../schemas";
-import type { ContactWithRelations } from "../types";
+// import type { ContactWithRelations } from "../types";
 
 export async function createContact(
   businessId: string,

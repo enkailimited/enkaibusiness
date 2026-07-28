@@ -87,7 +87,7 @@ async function computeLiveMemory(businessId: string): Promise<BusinessMemory> {
       take: 5,
     }),
     prisma.customer.count({ where: { businessId } }),
-    prisma.sale.aggregate({ where: { businessId }, _sum: { total: true } }),
+    prisma.sale.aggregate({ where: { businessId }, _sum: { grandTotal: true } }),
     prisma.expense.aggregate({ where: { businessId }, _sum: { amount: true } }),
   ]);
 
@@ -103,16 +103,16 @@ async function computeLiveMemory(businessId: string): Promise<BusinessMemory> {
     : [];
   const customerMap = new Map(customers.map((c) => [c.id, `${c.firstName} ${c.lastName || ""}`.trim()]));
 
-  const paymentMethods = [...new Set(recentPayments.map((p) => p.method))];
+  const paymentMethods = [...new Set(recentPayments.map((p) => (p as any).method))];
 
   return {
     topProducts: topProductSales.map((s) => productMap.get(s.catalogItemId) || "Unknown").filter(Boolean) as string[],
     topCustomers: topCustomerSales.map((s) => customerMap.get(s.customerId!) || "Unknown").filter(Boolean) as string[],
     topSuppliers: [...new Set(recentPurchases.map((p) => p.supplier?.name).filter(Boolean))] as string[],
     preferredPaymentMethods: paymentMethods,
-    recentExpenseCategories: recentExpenses.map((e) => e.category),
-    totalSales: Number(salesAgg._sum.total || 0),
-    totalExpenses: Number(expenseAgg._sum.amount || 0),
+    recentExpenseCategories: recentExpenses.map((e) => (e as any).category),
+    totalSales: Number(salesAgg._sum?.grandTotal || 0),
+    totalExpenses: Number(expenseAgg._sum?.amount || 0),
     totalCustomers: customerCount,
   };
 }

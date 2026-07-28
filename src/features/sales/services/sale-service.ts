@@ -9,6 +9,7 @@ import { resolveInventoryLocation } from "@/features/inventory/services/location
 import { emitSaleCreated, emitSaleUpdated, emitSaleVoided } from "@/modules/ai/events/event-bus";
 import { pricingEngine } from "@/server/engines/pricing-engine";
 import { taxEngine } from "@/server/engines/tax-engine";
+import { searchService } from "@/server/search";
 
 function log(area: string, msg: string, meta?: Record<string, unknown>) {
   console.log(`[DIAG:${area}] ${msg}`, meta ?? "");
@@ -143,57 +144,68 @@ export async function createSale(
         log("sale.create", "resolvedLocation", { locationId: location?.id });
 
         if (location) {
-          for (const item of resolvedItems) {
-            const catalogItem = catalogMap.get(item.catalogItemId);
-            if (!catalogItem?.trackStock) continue;
-            const variantId = (item as { variantId?: string }).variantId ?? null;
+          const trackedItems = resolvedItems.filter(item => {
+            const catItem = catalogMap.get(item.catalogItemId);
+            return catItem?.trackStock;
+          });
 
-            let balance = await tx.inventoryBalance.findFirst({
+          if (trackedItems.length > 0) {
+            const trackedCatalogItemIds = [...new Set(trackedItems.map(i => i.catalogItemId))];
+            const existingBalances = await tx.inventoryBalance.findMany({
               where: {
                 locationId: location.id,
-                catalogItemId: item.catalogItemId,
-                variantId,
+                catalogItemId: { in: trackedCatalogItemIds },
               },
             });
+            const balanceMap = new Map(existingBalances.map(b => [`${b.catalogItemId}:${b.variantId ?? ''}`, b]));
 
-            if (!balance) {
-              balance = await tx.inventoryBalance.create({
+            for (const item of trackedItems) {
+              const catalogItem = catalogMap.get(item.catalogItemId)!;
+              const variantId = (item as { variantId?: string }).variantId ?? null;
+              const mapKey = `${item.catalogItemId}:${variantId}`;
+
+              let balance = balanceMap.get(mapKey);
+
+              if (!balance) {
+                balance = await tx.inventoryBalance.create({
+                  data: {
+                    locationId: location.id,
+                    catalogItemId: item.catalogItemId,
+                    variantId,
+                    quantityOnHand: 0,
+                    quantityAvailable: 0,
+                    quantityCommitted: 0,
+                  },
+                });
+                balanceMap.set(mapKey, balance);
+              }
+
+              const currentQty = Number(balance.quantityOnHand);
+              if (currentQty < item.quantity) {
+                throw new Error(`Insufficient stock for "${catalogItem.name || item.catalogItemId}". Available: ${currentQty}, requested: ${item.quantity}`);
+              }
+              const newQty = currentQty - item.quantity;
+
+              await tx.inventoryBalance.update({
+                where: { id: balance.id },
+                data: { quantityOnHand: newQty, quantityAvailable: newQty },
+              });
+
+              await tx.stockMovement.create({
                 data: {
                   locationId: location.id,
                   catalogItemId: item.catalogItemId,
                   variantId,
-                  quantityOnHand: 0,
-                  quantityAvailable: 0,
-                  quantityCommitted: 0,
+                  quantityChange: -item.quantity,
+                  balanceBefore: currentQty,
+                  balanceAfter: newQty,
+                  referenceType: "sale",
+                  reference: created.id,
+                  notes: `Sale ${created.reference || created.id}`,
+                  createdById: createdById || null,
                 },
               });
             }
-
-            const currentQty = Number(balance.quantityOnHand);
-            if (currentQty < item.quantity) {
-              throw new Error(`Insufficient stock for "${catalogItem.name || item.catalogItemId}". Available: ${currentQty}, requested: ${item.quantity}`);
-            }
-            const newQty = currentQty - item.quantity;
-
-            await tx.inventoryBalance.update({
-              where: { id: balance.id },
-              data: { quantityOnHand: newQty, quantityAvailable: newQty },
-            });
-
-            await tx.stockMovement.create({
-              data: {
-                locationId: location.id,
-                catalogItemId: item.catalogItemId,
-                variantId,
-                quantityChange: -item.quantity,
-                balanceBefore: currentQty,
-                balanceAfter: newQty,
-                referenceType: "sale",
-                reference: created.id,
-                notes: `Sale ${created.reference || created.id}`,
-                createdById: createdById || null,
-              },
-            });
           }
         }
 
@@ -372,7 +384,7 @@ export async function getBusinessSales(
   businessId: string,
   filter?: SaleFilterSchema,
 ): Promise<SaleListItem[]> {
-  const where: Record<string, unknown> = { businessId };
+  const where: Record<string, unknown> = {};
 
   if (filter?.branchId) where.branchId = filter.branchId;
   if (filter?.storeId) where.storeId = filter.storeId;
@@ -382,30 +394,27 @@ export async function getBusinessSales(
 
   if (filter?.dateFrom || filter?.dateTo) {
     where.saleDate = {};
-    if (filter.dateFrom) where.saleDate.gte = new Date(filter.dateFrom);
-    if (filter.dateTo) where.saleDate.lte = new Date(filter.dateTo);
-  }
-
-  if (filter?.search) {
-    where.OR = [
-      { reference: { contains: filter.search, mode: "insensitive" } },
-      { notes: { contains: filter.search, mode: "insensitive" } },
-    ];
+    if (filter.dateFrom) where.saleDate as any.gte = new Date(filter.dateFrom);
+    if (filter.dateTo) where.saleDate as any.lte = new Date(filter.dateTo);
   }
 
   const take = filter?.limit ?? 20;
   const skip = ((filter?.page ?? 1) - 1) * take;
 
-  const raw = await prisma.sale.findMany({
+  const result = await searchService.sales({
+    query: filter?.search,
+    businessId,
     where,
     include: {
       customer: { select: { id: true, firstName: true, lastName: true } },
       _count: { select: { items: true } },
     },
     orderBy: { saleDate: "desc" },
-    skip,
-    take,
+    offset: skip,
+    limit: take,
   });
+
+  const raw = result.items;
 
   return raw.map((s) => ({
     id: s.id,
@@ -489,20 +498,28 @@ export async function updateSale(
         if (isCompleted && oldItems.length > 0) {
           const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
           if (location) {
-            for (const oldItem of oldItems) {
-              const catalogItem = await tx.catalogItem.findUnique({
-                where: { id: oldItem.catalogItemId },
-                select: { trackStock: true },
-              });
-              if (!catalogItem?.trackStock) continue;
-
-              let balance = await tx.inventoryBalance.findFirst({
+            const oldCatalogItemIds = [...new Set(oldItems.map(i => i.catalogItemId))];
+            const [catItems, existingBalances] = await Promise.all([
+              tx.catalogItem.findMany({
+                where: { id: { in: oldCatalogItemIds } },
+                select: { id: true, trackStock: true },
+              }),
+              tx.inventoryBalance.findMany({
                 where: {
                   locationId: location.id,
-                  catalogItemId: oldItem.catalogItemId,
-                  variantId: oldItem.variantId ?? null,
+                  catalogItemId: { in: oldCatalogItemIds },
                 },
-              });
+              }),
+            ]);
+            const catItemMap = new Map(catItems.map(c => [c.id, c]));
+            const balanceMap = new Map(existingBalances.map(b => [`${b.catalogItemId}:${b.variantId ?? ''}`, b]));
+
+            for (const oldItem of oldItems) {
+              const catalogItem = catItemMap.get(oldItem.catalogItemId);
+              if (!catalogItem?.trackStock) continue;
+
+              const mapKey = `${oldItem.catalogItemId}:${oldItem.variantId ?? ''}`;
+              const balance = balanceMap.get(mapKey);
 
               if (balance) {
                 const currentQty = Number(balance.quantityOnHand);
@@ -604,22 +621,31 @@ export async function updateSale(
         const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
         if (location) {
           const forDeduction = resolvedItems ?? data.items;
-          for (const item of forDeduction) {
-            const itemRecord = item as Record<string, unknown>;
-            const catalogItem = await tx.catalogItem.findUnique({
-              where: { id: itemRecord.catalogItemId as string },
-              select: { name: true, trackStock: true },
-            });
-            if (!catalogItem?.trackStock) continue;
-            const variantId = (itemRecord.variantId as string) ?? null;
-
-            let balance = await tx.inventoryBalance.findFirst({
+          const deductionItems = Array.isArray(forDeduction) ? Array.from(forDeduction) : [];
+          const dedupedCatalogItemIds = [...new Set(deductionItems.map(i => (i as Record<string, unknown>).catalogItemId as string))];
+          const [catItems, existingBalances] = await Promise.all([
+            tx.catalogItem.findMany({
+              where: { id: { in: dedupedCatalogItemIds } },
+              select: { id: true, name: true, trackStock: true },
+            }),
+            tx.inventoryBalance.findMany({
               where: {
                 locationId: location.id,
-                catalogItemId: itemRecord.catalogItemId as string,
-                variantId,
+                catalogItemId: { in: dedupedCatalogItemIds },
               },
-            });
+            }),
+          ]);
+          const catItemMap = new Map(catItems.map(c => [c.id, c]));
+          const balanceMap = new Map(existingBalances.map(b => [`${b.catalogItemId}:${b.variantId ?? ''}`, b]));
+
+          for (const item of forDeduction) {
+            const itemRecord = item as Record<string, unknown>;
+            const catalogItem = catItemMap.get(itemRecord.catalogItemId as string);
+            if (!catalogItem?.trackStock) continue;
+            const variantId = (itemRecord.variantId as string) ?? null;
+            const mapKey = `${itemRecord.catalogItemId as string}:${variantId}`;
+
+            let balance = balanceMap.get(mapKey);
 
             if (!balance) {
               balance = await tx.inventoryBalance.create({
@@ -632,6 +658,7 @@ export async function updateSale(
                   quantityCommitted: 0,
                 },
               });
+              balanceMap.set(mapKey, balance);
             }
 
             const qty = Number(itemRecord.quantity);
@@ -721,20 +748,28 @@ export async function voidSale(
       const location = await resolveInventoryLocation(existing.businessId, existing.branchId);
 
       if (location) {
-        for (const item of existing.items) {
-          const catalogItem = await tx.catalogItem.findUnique({
-            where: { id: item.catalogItemId },
-            select: { trackStock: true },
-          });
-          if (!catalogItem?.trackStock) continue;
-
-          let balance = await tx.inventoryBalance.findFirst({
+        const voidCatalogItemIds = [...new Set(existing.items.map(i => i.catalogItemId))];
+        const [catItems, existingBalances] = await Promise.all([
+          tx.catalogItem.findMany({
+            where: { id: { in: voidCatalogItemIds } },
+            select: { id: true, trackStock: true },
+          }),
+          tx.inventoryBalance.findMany({
             where: {
               locationId: location.id,
-              catalogItemId: item.catalogItemId,
-              variantId: item.variantId ?? null,
+              catalogItemId: { in: voidCatalogItemIds },
             },
-          });
+          }),
+        ]);
+        const catItemMap = new Map(catItems.map(c => [c.id, c]));
+        const balanceMap = new Map(existingBalances.map(b => [`${b.catalogItemId}:${b.variantId ?? ''}`, b]));
+
+        for (const item of existing.items) {
+          const catalogItem = catItemMap.get(item.catalogItemId);
+          if (!catalogItem?.trackStock) continue;
+
+          const mapKey = `${item.catalogItemId}:${item.variantId ?? ''}`;
+          const balance = balanceMap.get(mapKey);
 
           if (balance) {
             const currentQty = Number(balance.quantityOnHand);

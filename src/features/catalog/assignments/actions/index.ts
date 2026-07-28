@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { prisma } from "@/server/db";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { createAssignmentSchema, updateAssignmentSchema } from "../schemas";
 import {
   createAssignment,
   updateAssignment,
-  getAssignment,
   getAssignmentsForItem,
   removeAssignment,
 } from "../services/assignment-service";
@@ -16,10 +17,16 @@ export async function createAssignmentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const businessId = formData.get("businessId") as string;
+
+  const canCreate = await hasPermission(user.id, "catalog.create", businessId);
+  if (!canCreate) {
+    return { success: false, message: "You do not have permission to create assignments" };
+  }
 
   const parsed = createAssignmentSchema.safeParse({
-    businessId: formData.get("businessId"),
+    businessId,
     catalogItemId: formData.get("catalogItemId"),
     branchId: formData.get("branchId") || undefined,
     storeId: formData.get("storeId") || undefined,
@@ -49,7 +56,20 @@ export async function updateAssignmentAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const existing = await prisma.catalogItemAssignment.findUnique({
+    where: { id: assignmentId },
+    select: { businessId: true },
+  });
+  if (!existing) {
+    return { success: false, message: "Assignment not found" };
+  }
+
+  const canUpdate = await hasPermission(user.id, "catalog.update", existing.businessId);
+  if (!canUpdate) {
+    return { success: false, message: "You do not have permission to update assignments" };
+  }
 
   const parsed = updateAssignmentSchema.safeParse({
     isAvailable: formData.get("isAvailable") !== undefined
@@ -78,7 +98,12 @@ export async function removeAssignmentAction(
   assignmentId: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const canDelete = await hasPermission(user.id, "catalog.delete", businessId);
+  if (!canDelete) {
+    return { success: false, message: "You do not have permission to remove assignments" };
+  }
 
   const result = await removeAssignment(assignmentId);
 

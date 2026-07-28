@@ -2,6 +2,7 @@ import "server-only";
 
 import type { LeadStatus } from "@prisma/client";
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 import type { ActionResponse } from "@/types/relationships";
 import type { CreateLeadSchema, UpdateLeadSchema } from "../schemas";
 import type { LeadWithAssignments, LeadWithActivities, LeadFilters, LeadMetrics } from "../types";
@@ -38,14 +39,12 @@ export async function createLead(
 
     let territoryId: string | undefined;
     if (data.location) {
-      const territory = await prisma.territory.findFirst({
-        where: {
-          name: { contains: data.location, mode: "insensitive" },
-          isActive: true,
-        },
-        select: { id: true },
+      const result = await searchService.territories({
+        query: data.location,
+        where: { isActive: true },
+        limit: 1,
       });
-      territoryId = territory?.id;
+      territoryId = result.items[0]?.id;
     }
 
     const lead = await prisma.lead.create({
@@ -112,17 +111,8 @@ export async function getLeads(filters?: LeadFilters): Promise<LeadWithAssignmen
     }
   }
 
-  if (filters?.search) {
-    where.OR = [
-      { firstName: { contains: filters.search, mode: "insensitive" } },
-      { lastName: { contains: filters.search, mode: "insensitive" } },
-      { email: { contains: filters.search, mode: "insensitive" } },
-      { phone: { contains: filters.search, mode: "insensitive" } },
-      { businessName: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
-
-  const leads = await prisma.lead.findMany({
+  const result = await searchService.leads({
+    query: filters?.search,
     where,
     include: {
       assignedTo: assignedToInclude,
@@ -131,7 +121,7 @@ export async function getLeads(filters?: LeadFilters): Promise<LeadWithAssignmen
     orderBy: { createdAt: "desc" },
   });
 
-  return leads as unknown as LeadWithAssignments[];
+  return result.items as unknown as LeadWithAssignments[];
 }
 
 export async function getLead(id: string): Promise<LeadWithActivities | null> {

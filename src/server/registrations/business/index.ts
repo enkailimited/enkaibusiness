@@ -65,6 +65,11 @@ export class BusinessRegistrationEngine {
         let ownerRole: { id: string; name: string; slug: string } | null = null;
         ownerRole = await tx.role.findUnique({ where: { slug: "owner" } });
         if (ownerRole) {
+          // Remove any null-businessId owner role (assigned during registration)
+          // before creating the proper business-scoped one
+          await tx.userRole.deleteMany({
+            where: { userId: input.createdById, roleId: ownerRole.id, businessId: null },
+          });
           const existing = await tx.userRole.findFirst({
             where: { userId: input.createdById, roleId: ownerRole.id, businessId: business.id },
           });

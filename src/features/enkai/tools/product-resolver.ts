@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/server/db";
+import { searchService } from "@/server/search";
 
 export interface ResolvedProduct {
   id: string;
@@ -159,19 +160,14 @@ export async function searchCatalog(
 
   const normalized = normalize(query);
 
-  const items = await prisma.catalogItem.findMany({
-    where: {
-      businessId,
-      isActive: true,
-      OR: [
-        { name: { contains: normalized, mode: "insensitive" } },
-        { sku: { contains: normalized, mode: "insensitive" } },
-        { barcode: { contains: normalized, mode: "insensitive" } },
-      ],
-    },
+  const result = await searchService.catalogItems<any>({
+    query: normalized,
+    businessId,
+    where: { isActive: true },
     include: { balances: true },
-    take: 20,
+    limit: 20,
   });
+  const items = result.items;
 
   return items.map((item) => ({
     id: item.id,
@@ -179,7 +175,7 @@ export async function searchCatalog(
     sku: item.sku,
     price: Number(item.price),
     costPrice: item.costPrice ? Number(item.costPrice) : null,
-    stockOnHand: item.balances.reduce((s, b) => s + Number(b.quantityOnHand), 0),
+    stockOnHand: (item.balances as any[]).reduce((s: number, b: any) => s + Number(b.quantityOnHand), 0),
   }));
 }
 

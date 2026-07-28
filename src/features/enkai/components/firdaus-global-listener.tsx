@@ -11,8 +11,8 @@ import {
   MEDIUM_CONFIDENCE,
   COOLDOWN_MS,
 } from "../utils/wake-word";
-import { analyzeVoiceIntent, formatPipelineLog } from "../voice/voice-intent";
-import type { VoiceIntentResult } from "../voice/voice-intent";
+import { analyzeVoiceIntent } from "../voice/voice-intent";
+// import type { VoiceIntentResult } from "../voice/voice-intent";
 import { VoiceState, getStatusLabel, getVoiceStateMachine, isStandby } from "../voice/voice-state-machine";
 
 const PUBLIC_ROUTES = new Set([
@@ -30,9 +30,9 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
-function isAuthenticatedRoute(pathname: string): boolean {
-  return AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-}
+// function isAuthenticatedRoute(pathname: string): boolean {
+//   return AUTH_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+// }
 
 let instanceCount = 0;
 
@@ -70,7 +70,7 @@ export function FirdausGlobalListener() {
   const isSupported = typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
-  const shouldRender = mounted && isSupported && !isPublicRoute(pathname);
+//   const shouldRender = mounted && isSupported && !isPublicRoute(pathname);
 
   const NOISE_TRANSCRIPTS = new Set([
     "subscribe", "like", "share", "comment", "play", "pause",

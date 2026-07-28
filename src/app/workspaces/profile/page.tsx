@@ -10,9 +10,10 @@ export default async function WorkspaceProfilePage() {
     redirect("/login?redirect=/workspaces/profile");
   }
 
-  const [dbUser, staff] = await Promise.all([
+  const [dbUser, staff, guarantor] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id } }),
     prisma.staff.findFirst({ where: { userId: user.id }, select: { businessId: true } }),
+    prisma.guarantor.findUnique({ where: { userId: user.id } }),
   ]);
 
   if (!dbUser) {
@@ -27,10 +28,13 @@ export default async function WorkspaceProfilePage() {
     phone: dbUser.phone,
     username: dbUser.username,
     avatarUrl: dbUser.avatarUrl,
+    nida: dbUser.nida,
+    address: dbUser.address,
     isActive: dbUser.isActive,
     isOnboarded: dbUser.isOnboarded,
     createdAt: dbUser.createdAt,
     updatedAt: dbUser.updatedAt,
+    guarantor: guarantor ?? null,
   };
 
   const avatarBusinessId = staff?.businessId ?? undefined;

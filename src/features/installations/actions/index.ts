@@ -1,5 +1,7 @@
 "use server";
 
+import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import { prisma } from "@/server/db";
 import {
   createInstallationTicket,
@@ -10,7 +12,10 @@ import { createDefaultTasks, completeTask, uncompleteTask, addCustomTask } from 
 
 export async function createTicketAction(_prev: unknown, formData: FormData) {
   try {
+    const user = await requireAuth();
     const businessId = formData.get("businessId") as string;
+    const can = await hasPermission(user.id, "installations.create", businessId);
+    if (!can) return { success: false, message: "You do not have permission" };
     const branchId = (formData.get("branchId") as string) || undefined;
     const requestedById = formData.get("requestedById") as string;
     const type = (formData.get("type") as string) || "NEW_BUSINESS";
@@ -27,6 +32,9 @@ export async function createTicketAction(_prev: unknown, formData: FormData) {
 
 export async function updateStatusAction(ticketId: string, newStatus: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const result = await updateInstallationStatus(ticketId, newStatus, "");
     return result;
   } catch (error) {
@@ -36,6 +44,9 @@ export async function updateStatusAction(ticketId: string, newStatus: string) {
 
 export async function completeTaskAction(taskId: string, notes?: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await completeTask(taskId, "", notes);
     return { success: true, message: "Task completed" };
   } catch (error) {
@@ -45,6 +56,9 @@ export async function completeTaskAction(taskId: string, notes?: string) {
 
 export async function uncompleteTaskAction(taskId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await uncompleteTask(taskId);
     return { success: true, message: "Task reopened" };
   } catch (error) {
@@ -54,11 +68,13 @@ export async function uncompleteTaskAction(taskId: string) {
 
 export async function addCustomTaskAction(_prev: unknown, formData: FormData) {
   try {
+    const user = await requireAuth();
     const ticketId = formData.get("ticketId") as string;
     const name = formData.get("name") as string;
     const category = (formData.get("category") as string) || "setup";
     const description = (formData.get("description") as string) || undefined;
-
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     await addCustomTask(ticketId, name, category, description);
     return { success: true, message: "Task added" };
   } catch (error) {
@@ -68,6 +84,9 @@ export async function addCustomTaskAction(_prev: unknown, formData: FormData) {
 
 export async function assignDistributorAction(ticketId: string, distributorId: string, assignedById: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.assign");
+    if (!can) return { success: false, message: "You do not have permission" };
     return await assignDistributor(ticketId, distributorId, assignedById);
   } catch (error) {
     return { success: false, message: error instanceof Error ? error.message : "Failed to assign" };
@@ -88,6 +107,9 @@ export async function getDistributorsAction() {
 
 export async function approveInstallationAction(ticketId: string, approved: boolean, notes?: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.approve");
+    if (!can) return { success: false, message: "You do not have permission" };
     if (approved) {
       const result = await updateInstallationStatus(ticketId, "ACTIVATED", "");
       if (!result.success) return result;
@@ -104,6 +126,9 @@ export async function approveInstallationAction(ticketId: string, approved: bool
 
 export async function assignPackageToTicketAction(ticketId: string, packageId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const { assignPackageToTicket } = await import("@/server/enterprise/installation-packages/services/package-service");
     const result = await assignPackageToTicket(ticketId, packageId, {
       ticketId,
@@ -125,6 +150,9 @@ export async function assignPackageToTicketAction(ticketId: string, packageId: s
 
 export async function addServiceToTicketAction(ticketId: string, type: string, notes?: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const { addServiceToTicket } = await import("@/server/enterprise/installation-packages/services/package-service");
     return await addServiceToTicket(ticketId, type, notes);
   } catch (error) {
@@ -134,6 +162,9 @@ export async function addServiceToTicketAction(ticketId: string, type: string, n
 
 export async function goLiveAction(ticketId: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const { goLive } = await import("@/server/enterprise/installation-packages/services/workflow-service");
     return await goLive(ticketId);
   } catch (error) {
@@ -143,6 +174,9 @@ export async function goLiveAction(ticketId: string) {
 
 export async function customerSignoffAction(ticketId: string, signedBy: string) {
   try {
+    const user = await requireAuth();
+    const can = await hasPermission(user.id, "installations.update");
+    if (!can) return { success: false, message: "You do not have permission" };
     const { customerSignoff } = await import("@/server/enterprise/installation-packages/services/workflow-service");
     return await customerSignoff(ticketId, signedBy);
   } catch (error) {

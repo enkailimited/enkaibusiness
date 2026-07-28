@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   createQuotation,
   updateQuotation,
@@ -24,6 +25,8 @@ export async function createQuotationAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -83,7 +86,9 @@ export async function updateQuotationAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const items: Array<{
     catalogItemId: string;
@@ -158,7 +163,9 @@ export async function listQuotationsAction(
 }
 
 export async function deleteQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteQuotation(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);
@@ -167,7 +174,9 @@ export async function deleteQuotationAction(id: string, businessId: string) {
 }
 
 export async function sendQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markQuotationAsSent(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);
@@ -176,7 +185,9 @@ export async function sendQuotationAction(id: string, businessId: string) {
 }
 
 export async function acceptQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markQuotationAsAccepted(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);
@@ -185,7 +196,9 @@ export async function acceptQuotationAction(id: string, businessId: string) {
 }
 
 export async function convertQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markQuotationAsConverted(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);
@@ -194,7 +207,9 @@ export async function convertQuotationAction(id: string, businessId: string) {
 }
 
 export async function rejectQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markQuotationAsRejected(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);
@@ -203,7 +218,9 @@ export async function rejectQuotationAction(id: string, businessId: string) {
 }
 
 export async function expireQuotationAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "catalog.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await markQuotationAsExpired(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/quotations`);

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/server/auth";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 import {
   uploadFile,
   getUploads,
@@ -17,6 +18,9 @@ export async function uploadFileAction(
   data: ImageUploadResult & { businessId: string } & UploadOptions,
 ): Promise<ActionResponse & { data?: UploadWithUser }> {
   const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "uploads.create", data.businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await uploadFile({
     ...data,
@@ -52,7 +56,10 @@ export async function deleteUploadAction(
   id: string,
   businessId: string,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+
+  const can = await hasPermission(user.id, "uploads.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const result = await deleteUpload(id);
 

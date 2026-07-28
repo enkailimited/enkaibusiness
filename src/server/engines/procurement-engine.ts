@@ -72,11 +72,11 @@ export class ProcurementEngine {
 
     return {
       bestQuote: best,
-      savings: average - best.totalCost,
+      savings: average - (best as any).totalCost,
       comparisons: sorted.map((q) => ({
         supplierId: q.supplierId,
         totalCost: q.totalCost,
-        difference: q.totalCost - best.totalCost,
+        difference: q.totalCost - (best as any).totalCost,
       })),
     };
   }

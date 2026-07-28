@@ -22,6 +22,7 @@ import {
   transactionFilterSchema,
 } from "../schemas";
 import type { ActionResponse } from "@/types/relationships";
+import { hasPermission } from "@/features/roles/services/assignment-service";
 
 export async function createRegisterAction(
   businessId: string,
@@ -29,6 +30,8 @@ export async function createRegisterAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "cash_management.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createRegisterSchema.safeParse({
     name: formData.get("name"),
@@ -62,7 +65,9 @@ export async function updateRegisterAction(
   _prevState: ActionResponse | null,
   formData: FormData,
 ): Promise<ActionResponse> {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "cash_management.update", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = updateRegisterSchema.safeParse({
     name: formData.get("name") || undefined,
@@ -111,7 +116,9 @@ export async function listRegistersAction(
 }
 
 export async function deleteRegisterAction(id: string, businessId: string) {
-  await requireAuth();
+  const user = await requireAuth();
+  const can = await hasPermission(user.id, "cash_management.delete", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
   const result = await deleteRegister(id);
   if (result.success) {
     revalidatePath(`/workspaces/businesses/${businessId}/commerce/cash-management`);
@@ -125,6 +132,8 @@ export async function recordTransactionAction(
   formData: FormData,
 ): Promise<ActionResponse> {
   const user = await requireAuth();
+  const can = await hasPermission(user.id, "cash_management.create", businessId);
+  if (!can) return { success: false, message: "You do not have permission" };
 
   const parsed = createTransactionSchema.safeParse({
     registerId: formData.get("registerId"),

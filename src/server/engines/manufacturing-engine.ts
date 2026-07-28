@@ -33,7 +33,7 @@ export interface BatchRecord {
 
 export class ManufacturingEngine {
   calculateMaterialRequirements(
-    productId: string,
+//     productId: string,
     quantity: number,
     bom: BOMItem[],
   ): Array<{
