@@ -29,6 +29,7 @@ enum Industry {
   LOGISTICS
   REAL_ESTATE
   NON_PROFIT
+  MINING
 }
 
 enum CatalogItemType {
@@ -53,6 +54,9 @@ enum CatalogItemType {
   TRANSPORT
   MEAL
   LEARNING_MATERIAL
+  MINERAL
+  ORE
+  EQUIPMENT
 }
 
 enum RoleScope {

@@ -10,7 +10,8 @@ export type IndustrySlug =
   | "services"
   | "logistics"
   | "real-estate"
-  | "non-profit";
+  | "non-profit"
+  | "mining";
 
 export type IndustryEnum =
   | "COMMERCE"
@@ -22,7 +23,8 @@ export type IndustryEnum =
   | "SERVICES"
   | "LOGISTICS"
   | "REAL_ESTATE"
-  | "NON_PROFIT";
+  | "NON_PROFIT"
+  | "MINING";
 
 export interface IndustryMode {
   slug: string;

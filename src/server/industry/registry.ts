@@ -404,6 +404,55 @@ export const INDUSTRY_REGISTRY: Record<string, FullIndustryDefinition> = {
     workflows: [],
   },
 
+  mining: {
+    slug: "mining",
+    enum: "MINING",
+    name: "Mining",
+    description: "Mineral exploration, excavation, processing, and trading operations",
+    icon: "Pickaxe",
+    color: "#92400E",
+    modes: [
+      { slug: "gold-mining", name: "Gold Mining", description: "Gold and precious metal mining" },
+      { slug: "gemstone", name: "Gemstone", description: "Gemstone and precious stone mining" },
+      { slug: "coal", name: "Coal", description: "Coal and thermal mineral mining" },
+      { slug: "construction-minerals", name: "Construction Minerals", description: "Sand, gravel, limestone, and quarry operations" },
+      { slug: "processing", name: "Processing", description: "Mineral processing and beneficiation" },
+      { slug: "trading", name: "Mineral Trading", description: "Mineral and metal trading business" },
+    ],
+    defaultMode: "gold-mining",
+    requiredModules: ["core", "settings", "staff", "accounting"],
+    modules: [
+      { slug: "core", name: "Core", description: "Core business operations", icon: "LayoutDashboard", isRequired: true },
+      { slug: "settings", name: "Settings", description: "Business configuration", icon: "Settings", isRequired: true },
+      { slug: "staff", name: "Staff", description: "Employee and miner management", icon: "Users", isRequired: true },
+      { slug: "accounting", name: "Accounting", description: "Financial accounting", icon: "BookOpen", isRequired: true },
+      { slug: "sites", name: "Mining Sites", description: "Mining site and location management", icon: "Map", isRequired: false },
+      { slug: "claims", name: "Claims & Licenses", description: "Mining claims, licenses, and permits", icon: "FileText", isRequired: false },
+      { slug: "excavation", name: "Excavation", description: "Excavation planning and production tracking", icon: "Drill", isRequired: false },
+      { slug: "processing", name: "Processing", description: "Mineral processing plant management", icon: "Factory", isRequired: false },
+      { slug: "inventory", name: "Inventory", description: "Ore, mineral, and material inventory", icon: "Package", isRequired: false },
+      { slug: "equipment", name: "Equipment", description: "Heavy machinery and equipment management", icon: "Wrench", isRequired: false },
+      { slug: "assay", name: "Assay & Lab", description: "Mineral assay, grade analysis, and lab testing", icon: "Flask", isRequired: false },
+      { slug: "compliance", name: "Compliance", description: "Regulatory compliance and environmental tracking", icon: "Shield", isRequired: false },
+      { slug: "safety", name: "Safety", description: "Mine safety and incident management", icon: "AlertTriangle", isRequired: false },
+      { slug: "sales", name: "Sales", description: "Mineral sales and off-take agreements", icon: "TrendingUp", isRequired: false },
+      { slug: "purchasing", name: "Purchasing", description: "Supply procurement for mining operations", icon: "ShoppingBag", isRequired: false },
+      { slug: "suppliers", name: "Suppliers", description: "Supplier and contractor management", icon: "Truck", isRequired: false },
+      { slug: "payments", name: "Payments", description: "Payment processing", icon: "Wallet", isRequired: false },
+      { slug: "mining-ai", name: "Mining AI", description: "AI-powered mining tools", icon: "Brain", isRequired: false },
+    ],
+    permissions: [],
+    aiKnowledge: {
+      slug: "mining",
+      name: "Mining AI Knowledge",
+      layers: ["general", "business", "erp", "financial", "mining", "geology", "safety"],
+      prompt: "You are a mining AI assistant. Help with site management, excavation planning, mineral processing, equipment maintenance, safety compliance, and mineral trading.",
+    },
+    reports: [],
+    dashboards: [],
+    workflows: [],
+  },
+
   "non-profit": {
     slug: "non-profit",
     enum: "NON_PROFIT",
@@ -596,6 +645,27 @@ export function getModulesForMode(industrySlug: string, modeSlug: string): strin
       break;
     case "non-profit":
       modules.push("members", "donations", "projects", "events");
+      break;
+    case "mining":
+      modules.push("sites", "claims", "excavation", "inventory", "equipment", "assay", "compliance", "safety", "sales", "purchasing", "suppliers", "payments");
+      switch (modeSlug) {
+        case "gold-mining":
+        case "gemstone":
+          modules.push("processing");
+          break;
+        case "coal":
+          modules.push("processing");
+          break;
+        case "construction-minerals":
+          modules.push("processing");
+          break;
+        case "processing":
+          modules.push("processing");
+          break;
+        case "trading":
+          modules.push("sales", "suppliers", "assay");
+          break;
+      }
       break;
   }
 
